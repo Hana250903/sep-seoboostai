@@ -1,0 +1,6 @@
+@SEOBoostAI.API_HostAddress = http://localhost:5031
+
+GET {{SEOBoostAI.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
