@@ -15,33 +15,33 @@ namespace SEOBoostAI.Service.Services
         private readonly UserRepository _userRepository;
         public UserService() => _userRepository ??= new UserRepository();
 
-        public async Task<int> CreateUserAsync(User user)
+        public async Task<int> CreateAsync(User user)
         {
             return await _userRepository.CreateAsync(user);
         }
 
-        public async Task<List<User>> GetAllUserAsync()
+        public async Task<List<User>> GetUsersAsync()
         {
             return await _userRepository.GetAllAsync();
         }
 
-        public async Task<int> UpdateUserAsync(User user)
+        public async Task<int> UpdateAsync(User user)
         {
             return await _userRepository.UpdateAsync(user);
         }
 
-        public async Task<bool> DeleteUserAsync(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
             var user = await _userRepository.GetByIdAsync(id);
             return await _userRepository.RemoveAsync(user);
         }
 
-        public async Task<User> GetUsersByIdAsync(int id)
+        public async Task<User> GetUserByIdAsync(int id)
         {
             return await _userRepository.GetByIdAsync(id);
         }
 
-        public async Task<PaginationResult<List<User>>> GetUserWithPaginateAsync(int currentPage, int pageSize)
+        public async Task<PaginationResult<List<User>>> GetUsersWithPaginateAsync(int currentPage, int pageSize)
         {
             return await _userRepository.GetUserWithPaginateAsync(currentPage, pageSize);
         }
