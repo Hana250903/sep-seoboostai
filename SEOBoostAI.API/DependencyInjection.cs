@@ -1,5 +1,4 @@
 ﻿using SEOBoostAI.Repository.Repositories;
-using SEOBoostAI.Service;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
 

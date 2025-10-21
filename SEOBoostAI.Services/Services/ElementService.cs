@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEOBoostAI.Service
+namespace SEOBoostAI.Service.Services
 {
     public class ElementService : IElementService
     {
