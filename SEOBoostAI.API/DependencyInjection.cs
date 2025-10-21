@@ -11,10 +11,14 @@ namespace SEOBoostAI.API
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
             services.AddScoped<IPerformanceService, PerformanceService>();
-            services.AddScoped<UserRepository>();
+            services.AddScoped<IContentOptimizationService, ContentOptimizationService>();
+            services.AddScoped<IFeedbackService, FeedbackService>();
+			services.AddScoped<UserRepository>();
             services.AddScoped<ElementRepository>();
             services.AddScoped<PerformanceRepository>();
-            services.AddHttpClient();
+            services.AddScoped<ContentOptimizationRepository>();
+            services.AddScoped<FeedbackRepository>();
+			services.AddHttpClient();
             return services;
         }
     }
