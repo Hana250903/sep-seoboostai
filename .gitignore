@@ -416,3 +416,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Appsetting.json
+# Ignore settings files that may contain secrets
+appsettings.Development.json
+appsettings.Production.json
+local.settings.json
+/appsettings.json
