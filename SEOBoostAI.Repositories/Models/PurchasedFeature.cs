@@ -13,8 +13,6 @@ public partial class PurchasedFeature
     [Key]
     public int ID { get; set; }
 
-    public int UserID { get; set; }
-
     public int FeatureID { get; set; }
 
     public int? TransactionID { get; set; }
@@ -33,8 +31,4 @@ public partial class PurchasedFeature
     [ForeignKey("TransactionID")]
     [InverseProperty("PurchasedFeatures")]
     public virtual Transaction Transaction { get; set; }
-
-    [ForeignKey("UserID")]
-    [InverseProperty("PurchasedFeatures")]
-    public virtual User User { get; set; }
 }
