@@ -1,6 +1,8 @@
-﻿using SEOBoostAI.Repository.GenericRepository;
+﻿using Microsoft.EntityFrameworkCore;
+using SEOBoostAI.Repository.GenericRepository;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Repository.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,18 +11,18 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Repository.Repositories
 {
-	public class FeedbackRepository : GenericRepository<Feedback>
+	public class FeedbackRepository : GenericRepository<Feedback>, IFeedbackRepository
 	{
-		public FeedbackRepository() { }
+		public FeedbackRepository(SEP_SEOBoostAIContext context) : base(context) { }
 
 		public async Task<PaginationResult<List<Feedback>>> GetFeedbackWithPaginateAsync(int currentPage, int pageSize)
 		{
-			var feedbacks = await GetAllAsync();
-			var totalItems = feedbacks.Count;
+			var query = _context.Set<Feedback>().AsQueryable();
+			var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-			feedbacks = feedbacks.Skip((currentPage - 1) * pageSize)
+			var feedbacks = await query.Skip((currentPage - 1) * pageSize)
 				.Take(pageSize)
-				.ToList();
+				.ToListAsync();
 			var result = new PaginationResult<List<Feedback>>
 			{
 				TotalItems = totalItems,

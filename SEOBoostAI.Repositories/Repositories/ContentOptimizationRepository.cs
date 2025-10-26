@@ -1,6 +1,8 @@
-﻿using SEOBoostAI.Repository.GenericRepository;
+﻿using Microsoft.EntityFrameworkCore;
+using SEOBoostAI.Repository.GenericRepository;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Repository.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,20 +12,21 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Repository.Repositories
 {
-	public class ContentOptimizationRepository : GenericRepository<ContentOptimization>
+	public class ContentOptimizationRepository : GenericRepository<ContentOptimization>, IContentOptimizationRepository
 	{
-		public ContentOptimizationRepository() { }
 
-		public async Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationWithPaginateAsync(int currentPage, int pageSize)
+        public ContentOptimizationRepository(SEP_SEOBoostAIContext context): base(context) { }
+
+        public async Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationWithPaginateAsync(int currentPage, int pageSize)
 		{
-			var contents = await GetAllAsync();
+			var query = _context.Set<ContentOptimization>().AsQueryable();
 
-			var totalItems = contents.Count;
+            var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 
-			contents = contents.Skip((currentPage - 1) * pageSize)
+			var contents = await query.Skip((currentPage - 1) * pageSize)
 				.Take(pageSize)
-				.ToList();
+				.ToListAsync();
 
 			var result = new PaginationResult<List<ContentOptimization>>
 			{

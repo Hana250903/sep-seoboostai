@@ -1,6 +1,8 @@
-﻿using SEOBoostAI.Repository.GenericRepository;
+﻿using Microsoft.EntityFrameworkCore;
+using SEOBoostAI.Repository.GenericRepository;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Repository.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,20 +11,20 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Repository.Repositories
 {
-    public class ElementRepository : GenericRepository<Element>
+    public class ElementRepository : GenericRepository<Element>, IElementRepository
     {
-        public ElementRepository() { }
+        public ElementRepository(SEP_SEOBoostAIContext context) : base(context) { }
 
         public async Task<PaginationResult<List<Element>>> GetElementWithPaginateAsync(int currentPage, int pageSize)
         {
-            var elements = await GetAllAsync();
+            var query = _context.Set<Element>().AsQueryable();
 
-            var totalItems = elements.Count;
+            var totalItems = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 
-            elements = elements.Skip((currentPage - 1) * pageSize)
+            var elements = await query.Skip((currentPage - 1) * pageSize)
                 .Take(pageSize)
-                .ToList();
+                .ToListAsync();
 
             var result = new PaginationResult<List<Element>>
             {
