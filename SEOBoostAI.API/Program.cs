@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuration = builder.Configuration;
 
 // Add services to the container.
 
@@ -67,7 +68,7 @@ builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
-builder.Services.AddWebAPIServices();
+builder.Services.AddWebAPIServices(configuration);
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {

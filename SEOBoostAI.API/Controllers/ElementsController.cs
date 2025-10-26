@@ -42,23 +42,23 @@ namespace SEOBoostAI.API.Controllers
 
         // POST api/<ElementsController>
         [HttpPost]
-        public async Task<int> Post([FromBody] Element element)
+        public async Task<IActionResult> Post([FromBody] Element element)
         {
-            return await _elementService.CreateAsync(element);
+            throw new NotImplementedException();
         }
 
         // PUT api/<ElementsController>/
         [HttpPut]
-        public async Task<int> Put([FromBody] Element element)
+        public async Task<IActionResult> Put([FromBody] Element element)
         {
-            return await _elementService.UpdateAsync(element);
+            throw new NotImplementedException();
         }
 
         // DELETE api/<ElementsController>/5
         [HttpDelete("{id}")]
-        public async Task<bool> Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            return await _elementService.DeleteAsync(id);
+            throw new NotImplementedException();
         }
     }
 }

@@ -41,21 +41,21 @@ namespace SEOBoostAI.API.Controllers
 		[HttpPost]
 		public async Task<int> Post([FromBody] ContentOptimization contentOptimization)
 		{
-			return await _contentOptimizationService.CreateAsync(contentOptimization);
+			throw new NotImplementedException();
 		}
 
 		// PUT api/<ContentOptimizationsController>/
 		[HttpPut]
 		public async Task<int> Put([FromBody] ContentOptimization contentOptimization)
 		{
-			return await _contentOptimizationService.UpdateAsync(contentOptimization);
-		}
+            throw new NotImplementedException();
+        }
 
 		// DELETE api/<ContentOptimizationsController>/5
 		[HttpDelete("{id}")]
 		public async Task<bool> Delete(int id)
 		{
-			return await _contentOptimizationService.DeleteAsync(id);
-		}
+            throw new NotImplementedException();
+        }
 	}
 }

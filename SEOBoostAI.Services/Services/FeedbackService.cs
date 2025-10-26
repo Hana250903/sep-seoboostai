@@ -1,5 +1,6 @@
 ﻿using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
+using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -11,9 +12,9 @@ namespace SEOBoostAI.Service.Services
 {
 	public class FeedbackService : IFeedbackService
 	{
-		private readonly FeedbackRepository _feedbackRepository;
+		private readonly IFeedbackRepository _feedbackRepository;
 
-		public FeedbackService(FeedbackRepository feedbackRepository)
+		public FeedbackService(IFeedbackRepository feedbackRepository)
 		{
 			_feedbackRepository = feedbackRepository;
 		}
