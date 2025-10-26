@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-public partial class QuestionDatum
+public partial class QuestionData
 {
     [Key]
     public int ID { get; set; }

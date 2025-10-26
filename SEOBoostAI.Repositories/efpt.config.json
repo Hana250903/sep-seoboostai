@@ -40,7 +40,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[QuestionData]",
+         "Name": "[dbo].[QuestionDatas]",
          "ObjectType": 0
       },
       {
@@ -48,7 +48,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[UserMonthlyFreeQuota]",
+         "Name": "[dbo].[UserMonthlyFreeQuotas]",
          "ObjectType": 0
       },
       {

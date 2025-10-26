@@ -27,5 +27,5 @@ public partial class Feature
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
     [InverseProperty("Feature")]
-    public virtual ICollection<UserMonthlyFreeQuotum> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuotum>();
+    public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
 }

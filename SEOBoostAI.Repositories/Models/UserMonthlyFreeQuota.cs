@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SEOBoostAI.Repository.Models;
 
 [Index("UserID", "FeatureID", "MonthYear", Name = "UQ_UserMonthlyQuota", IsUnique = true)]
-public partial class UserMonthlyFreeQuotum
+public partial class UserMonthlyFreeQuota
 {
     [Key]
     public int ID { get; set; }

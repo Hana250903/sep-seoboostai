@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("Username", Name = "UQ__Users__536C85E40A1B4E40", IsUnique = true)]
+[Index("Username", Name = "UQ__Users__536C85E4739D8548", IsUnique = true)]
 public partial class User
 {
     [Key]
@@ -44,7 +44,7 @@ public partial class User
     public DateTime? CreatedAt { get; set; }
 
     [Column(TypeName = "datetime")]
-    public DateTime? UpdateAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public bool IsBanned { get; set; }
 
@@ -60,10 +60,10 @@ public partial class User
     public virtual ICollection<Performance> Performances { get; set; } = new List<Performance>();
 
     [InverseProperty("User")]
-    public virtual ICollection<QuestionDatum> QuestionData { get; set; } = new List<QuestionDatum>();
+    public virtual ICollection<QuestionData> QuestionData { get; set; } = new List<QuestionData>();
 
     [InverseProperty("User")]
-    public virtual ICollection<UserMonthlyFreeQuotum> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuotum>();
+    public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
 
     [InverseProperty("User")]
     public virtual Wallet Wallet { get; set; }
