@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("GatewayTransactionId", Name = "UQ__Transact__CAD5B8E60CBA8E08", IsUnique = true)]
+[Index("GatewayTransactionId", Name = "UQ__Transact__CAD5B8E6C2592A5F", IsUnique = true)]
 public partial class Transaction
 {
     [Key]
@@ -44,6 +44,8 @@ public partial class Transaction
 
     [Column(TypeName = "datetime")]
     public DateTime? CompletedTime { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     [InverseProperty("Transaction")]
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();

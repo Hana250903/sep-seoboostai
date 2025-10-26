@@ -30,6 +30,8 @@ public partial class Feedback
     [Column(TypeName = "datetime")]
     public DateTime UpdatedAt { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     [ForeignKey("UserID")]
     [InverseProperty("Feedbacks")]
     public virtual User User { get; set; }

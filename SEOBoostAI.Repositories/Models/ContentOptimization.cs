@@ -49,6 +49,11 @@ public partial class ContentOptimization
     [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime? UpdatedAt { get; set; }
+
+    public bool IsDeleted { get; set; }
+
     [ForeignKey("UserID")]
     [InverseProperty("ContentOptimizations")]
     public virtual User User { get; set; }

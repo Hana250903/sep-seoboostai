@@ -40,6 +40,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[QuestionData]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Transactions]",
          "ObjectType": 0
       },

@@ -40,6 +40,11 @@ public partial class Element
     [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime? UpdatedAt { get; set; }
+
+    public bool IsDeleted { get; set; }
+
     [ForeignKey("PerformanceID")]
     [InverseProperty("Elements")]
     public virtual Performance Performance { get; set; }

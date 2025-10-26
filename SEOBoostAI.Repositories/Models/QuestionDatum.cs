@@ -8,35 +8,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("UserID", "FeatureID", "MonthYear", Name = "UQ_UserMonthlyQuota", IsUnique = true)]
-public partial class UserMonthlyFreeQuotum
+public partial class QuestionDatum
 {
     [Key]
     public int ID { get; set; }
 
     public int UserID { get; set; }
 
-    public int FeatureID { get; set; }
-
     [Required]
-    [StringLength(7)]
-    [Unicode(false)]
-    public string MonthYear { get; set; }
+    [StringLength(255)]
+    public string Question { get; set; }
 
-    public int MonthlyLimit { get; set; }
-
-    public int UsageCount { get; set; }
+    public string DataResponse { get; set; }
 
     [Column(TypeName = "datetime")]
-    public DateTime? LastUsedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? UpdatedAt { get; set; }
 
     public bool IsDeleted { get; set; }
 
-    [ForeignKey("FeatureID")]
-    [InverseProperty("UserMonthlyFreeQuota")]
-    public virtual Feature Feature { get; set; }
-
     [ForeignKey("UserID")]
-    [InverseProperty("UserMonthlyFreeQuota")]
+    [InverseProperty("QuestionData")]
     public virtual User User { get; set; }
 }

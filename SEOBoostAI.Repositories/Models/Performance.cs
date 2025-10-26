@@ -39,6 +39,11 @@ public partial class Performance
     [Column(TypeName = "datetime")]
     public DateTime? FetchTime { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime? CompletedTime { get; set; }
+
+    public bool IsDeleted { get; set; }
+
     [InverseProperty("Performance")]
     public virtual ICollection<Element> Elements { get; set; } = new List<Element>();
 

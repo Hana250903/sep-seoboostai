@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("UserID", Name = "UQ__Wallets__1788CCAD1F09E078", IsUnique = true)]
+[Index("UserID", Name = "UQ__Wallets__1788CCAD6EFBA808", IsUnique = true)]
 public partial class Wallet
 {
     [Key]
@@ -24,6 +24,8 @@ public partial class Wallet
 
     [Column(TypeName = "datetime")]
     public DateTime? UpdatedAt { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     [InverseProperty("Wallet")]
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();

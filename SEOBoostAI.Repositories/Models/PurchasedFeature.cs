@@ -15,7 +15,7 @@ public partial class PurchasedFeature
 
     public int FeatureID { get; set; }
 
-    public int? TransactionID { get; set; }
+    public int TransactionID { get; set; }
 
     public int TotalQuantity { get; set; }
 
@@ -23,6 +23,8 @@ public partial class PurchasedFeature
 
     [Column(TypeName = "datetime")]
     public DateTime PurchaseDate { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     [ForeignKey("FeatureID")]
     [InverseProperty("PurchasedFeatures")]
