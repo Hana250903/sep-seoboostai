@@ -13,8 +13,8 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task<List<User>> GetUsersAsync();
         Task<PaginationResult<List<User>>> GetUsersWithPaginateAsync(int currentPage, int pageSize);
         Task<User> GetUserByIdAsync(int id);
-        Task<int> CreateAsync(User user);
-        Task<int> UpdateAsync(User user);
-        Task<bool> DeleteAsync(int id);
+        Task CreateAsync(User user);
+        Task UpdateAsync(User user);
+        Task DeleteAsync(int id);
     }
 }

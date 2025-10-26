@@ -13,8 +13,11 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task<List<Element>> GetElementsAsync();
         Task<PaginationResult<List<Element>>> GetElementsWithPaginateAsync(int currentPage, int pageSize);
         Task<Element> GetElementByIdAsync(int id);
-        Task<int> CreateAsync(Element element);
-        Task<int> UpdateAsync(Element element);
-        Task<bool> DeleteAsync(int id);
+        Task CreateAsync(Element element);
+        Task CreateRangeAsync(List<Element> elements);
+        Task UpdateAsync(Element element);
+        Task UpdateRangeAsync(List<Element> elements);
+        Task DeleteAsync(int id);
+        Task ShortDeleteRangeAsync(List<int> ids);
     }
 }

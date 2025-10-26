@@ -13,8 +13,8 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task<List<ContentOptimization>> GetContentOptimizationsAsync();
 		Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationsWithPaginateAsync(int currentPage, int pageSize);
 		Task<ContentOptimization> GetContentOptimizationByIdAsync(int id);
-		Task<int> CreateAsync(ContentOptimization contentOptimization);
-		Task<int> UpdateAsync(ContentOptimization contentOptimization);
-		Task<bool> DeleteAsync(int id);
+		Task CreateAsync(ContentOptimization contentOptimization);
+		Task UpdateAsync(ContentOptimization contentOptimization);
+		Task DeleteAsync(int id);
 	}
 }

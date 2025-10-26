@@ -1,6 +1,7 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
-using SEOBoostAI.Repository.Repositories;
+using SEOBoostAI.Repository.Repositories.Interfaces;
+using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -12,24 +13,42 @@ namespace SEOBoostAI.Service.Services
 {
     public class PerformanceService : IPerformanceService
     {
-        private readonly PerformanceRepository _performanceRepository;
-        private readonly UserRepository _userRepository;
+        private readonly IPerformanceRepository _performanceRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public PerformanceService(PerformanceRepository performanceRepository, UserRepository userRepository)
+        public PerformanceService(IPerformanceRepository performanceRepository, IUserRepository userRepository, IUnitOfWork unitOfWork)
         {
             _performanceRepository = performanceRepository;
             _userRepository = userRepository;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task<int> CreateAsync(Performance performance)
+        public async Task CreateAsync(Performance performance)
         {
-            return await _performanceRepository.CreateAsync(performance);
+            try
+            {
+                await _performanceRepository.CreateAsync(performance);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }            
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task DeleteAsync(int id)
         {
-            var performance = await _performanceRepository.GetByIdAsync(id);
-            return await _performanceRepository.RemoveAsync(performance);
+            try
+            {
+                var performance = await _performanceRepository.GetByIdAsync(id);
+                await _performanceRepository.RemoveAsync(performance);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         public async Task<Performance> GetPerformanceByIdAsync(int id)
@@ -47,9 +66,17 @@ namespace SEOBoostAI.Service.Services
             return await _performanceRepository.GetPerformancesWithPaginateAsync(currentPage, pageSize);
         }
 
-        public async Task<int> UpdateAsync(Performance performance)
+        public async Task UpdateAsync(Performance performance)
         {
-            return await _performanceRepository.UpdateAsync(performance);
+            try
+            {
+                await _performanceRepository.UpdateAsync(performance);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }

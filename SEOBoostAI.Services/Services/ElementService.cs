@@ -1,6 +1,8 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
+using SEOBoostAI.Repository.Repositories.Interfaces;
+using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -12,22 +14,53 @@ namespace SEOBoostAI.Service.Services
 {
     public class ElementService : IElementService
     {
-        private readonly ElementRepository _elementRepository;
+        private readonly IElementRepository _elementRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public ElementService(ElementRepository elementRepository)
+        public ElementService(IElementRepository elementRepository, IUnitOfWork unitOfWork)
         {
             _elementRepository = elementRepository;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task<int> CreateAsync(Element element)
+        public async Task CreateAsync(Element element)
         {
-            return await _elementRepository.CreateAsync(element);
+            try
+            {
+                await _elementRepository.CreateAsync(element);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task CreateRangeAsync(List<Element> lists)
         {
-            var element = await _elementRepository.GetByIdAsync(id);
-            return await _elementRepository.RemoveAsync(element);
+            try
+            {
+                await _elementRepository.CreateRangeAsync(lists);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            try
+            {
+                var element = await _elementRepository.GetByIdAsync(id);
+                await _elementRepository.RemoveAsync(element);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         public async Task<Element> GetElementByIdAsync(int id)
@@ -45,9 +78,34 @@ namespace SEOBoostAI.Service.Services
             return await _elementRepository.GetElementWithPaginateAsync(currentPage,pageSize);
         }
 
-        public async Task<int> UpdateAsync(Element element)
+        public async Task ShortDeleteRangeAsync(List<int> ids)
         {
-            return await _elementRepository.UpdateAsync(element);
+            try
+            {
+                throw new NotImplementedException();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public async Task UpdateAsync(Element element)
+        {
+            try
+            {
+                await _elementRepository.UpdateAsync(element);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public Task UpdateRangeAsync(List<Element> elements)
+        {
+            throw new NotImplementedException();
         }
     }
 }

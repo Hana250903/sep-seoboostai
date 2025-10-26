@@ -1,6 +1,7 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
-using SEOBoostAI.Repository.Repositories;
+using SEOBoostAI.Repository.Repositories.Interfaces;
+using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -12,12 +13,26 @@ namespace SEOBoostAI.Service.Services
 {
     public class UserService : IUserService
     {
-        private readonly UserRepository _userRepository;
-        public UserService() => _userRepository ??= new UserRepository();
+        private readonly IUserRepository _userRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public async Task<int> CreateAsync(User user)
+        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
         {
-            return await _userRepository.CreateAsync(user);
+            _userRepository = userRepository;
+            _unitOfWork = unitOfWork;
+        }
+
+        public async Task CreateAsync(User user)
+        {
+            try
+            {
+                await _userRepository.CreateAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         public async Task<List<User>> GetUsersAsync()
@@ -25,15 +40,31 @@ namespace SEOBoostAI.Service.Services
             return await _userRepository.GetAllAsync();
         }
 
-        public async Task<int> UpdateAsync(User user)
+        public async Task UpdateAsync(User user)
         {
-            return await _userRepository.UpdateAsync(user);
+            try
+            {
+                await _userRepository.UpdateAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task DeleteAsync(int id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            return await _userRepository.RemoveAsync(user);
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                await _userRepository.RemoveAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         public async Task<User> GetUserByIdAsync(int id)

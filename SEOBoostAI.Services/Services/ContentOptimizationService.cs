@@ -1,6 +1,7 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
-using SEOBoostAI.Repository.Repositories;
+using SEOBoostAI.Repository.Repositories.Interfaces;
+using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -12,22 +13,34 @@ namespace SEOBoostAI.Service.Services
 {
 	public class ContentOptimizationService : IContentOptimizationService
 	{
-		private readonly ContentOptimizationRepository _contentOptimizationRepository;
+		private readonly IContentOptimizationRepository _contentOptimizationRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-		public ContentOptimizationService(ContentOptimizationRepository contentOptimizationRepository)
+        public ContentOptimizationService(IContentOptimizationRepository contentOptimizationRepository, IUnitOfWork unitOfWork)
 		{
 			_contentOptimizationRepository = contentOptimizationRepository;
-		}
+            _unitOfWork = unitOfWork;
+        }
 
-		public async Task<int> CreateAsync(ContentOptimization content)
+		public async Task CreateAsync(ContentOptimization content)
 		{
-			return await _contentOptimizationRepository.CreateAsync(content);
+			try
+			{
+				await _contentOptimizationRepository.CreateAsync(content);
+				await _unitOfWork.SaveChangesAsync();
+            }
+			catch (Exception ex)
+			{
+				throw;
+			}
+
 		}
 
-		public async Task<bool> DeleteAsync(int id)
+		public async Task DeleteAsync(int id)
 		{
 			var content = await _contentOptimizationRepository.GetByIdAsync(id);
-			return await _contentOptimizationRepository.RemoveAsync(content);
+			//return await _contentOptimizationRepository.RemoveAsync(content);
+			throw new NotImplementedException();
 		}
 
 		public async Task<ContentOptimization> GetContentOptimizationByIdAsync(int id)
@@ -45,9 +58,10 @@ namespace SEOBoostAI.Service.Services
 			return await _contentOptimizationRepository.GetContentOptimizationWithPaginateAsync(currentPage, pageSize);
 		}
 
-		public async Task<int> UpdateAsync(ContentOptimization contentOptimization)
+		public async Task UpdateAsync(ContentOptimization contentOptimization)
 		{
-			return await _contentOptimizationRepository.UpdateAsync(contentOptimization);
-		}
+			//return await _contentOptimizationRepository.UpdateAsync(contentOptimization);
+            throw new NotImplementedException();
+        }
 	}
 }

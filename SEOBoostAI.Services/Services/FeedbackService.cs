@@ -17,15 +17,15 @@ namespace SEOBoostAI.Service.Services
 		{
 			_feedbackRepository = feedbackRepository;
 		}
-		public async Task<int> CreateAsync(Feedback feedback)
+		public async Task CreateAsync(Feedback feedback)
 		{
-			return await _feedbackRepository.CreateAsync(feedback);
+			throw new NotImplementedException();
 		}
-		public async Task<bool> DeleteAsync(int id)
+		public async Task DeleteAsync(int id)
 		{
 			var feedback = await _feedbackRepository.GetByIdAsync(id);
-			return await _feedbackRepository.RemoveAsync(feedback);
-		}
+            throw new NotImplementedException();
+        }
 		public async Task<Feedback> GetFeedbackByIdAsync(int id)
 		{
 			return await _feedbackRepository.GetByIdAsync(id);
@@ -38,9 +38,9 @@ namespace SEOBoostAI.Service.Services
 		{
 			return await _feedbackRepository.GetFeedbackWithPaginateAsync(currentPage, pageSize);
 		}
-		public async Task<int> UpdateAsync(Feedback feedback)
+		public async Task UpdateAsync(Feedback feedback)
 		{
-			return await _feedbackRepository.UpdateAsync(feedback);
-		}
+            throw new NotImplementedException();
+        }
 	}
 }
