@@ -14,13 +14,13 @@ namespace SEOBoostAI.Service.Services
 	public class ContentOptimizationService : IContentOptimizationService
 	{
 		private readonly IContentOptimizationRepository _contentOptimizationRepository;
-        private readonly IUnitOfWork _unitOfWork;
+		private readonly IUnitOfWork _unitOfWork;
 
-        public ContentOptimizationService(IContentOptimizationRepository contentOptimizationRepository, IUnitOfWork unitOfWork)
+		public ContentOptimizationService(IContentOptimizationRepository contentOptimizationRepository, IUnitOfWork unitOfWork)
 		{
 			_contentOptimizationRepository = contentOptimizationRepository;
-            _unitOfWork = unitOfWork;
-        }
+			_unitOfWork = unitOfWork;
+		}
 
 		public async Task CreateAsync(ContentOptimization content)
 		{
@@ -28,7 +28,7 @@ namespace SEOBoostAI.Service.Services
 			{
 				await _contentOptimizationRepository.CreateAsync(content);
 				await _unitOfWork.SaveChangesAsync();
-            }
+			}
 			catch (Exception ex)
 			{
 				throw;
@@ -38,9 +38,16 @@ namespace SEOBoostAI.Service.Services
 
 		public async Task DeleteAsync(int id)
 		{
-			var content = await _contentOptimizationRepository.GetByIdAsync(id);
-			//return await _contentOptimizationRepository.RemoveAsync(content);
-			throw new NotImplementedException();
+			try
+			{
+				var content = await _contentOptimizationRepository.GetByIdAsync(id);
+				await _contentOptimizationRepository.RemoveAsync(content);
+				await _unitOfWork.SaveChangesAsync();
+			}
+			catch (Exception ex)
+			{
+				throw;
+			}
 		}
 
 		public async Task<ContentOptimization> GetContentOptimizationByIdAsync(int id)
@@ -60,8 +67,15 @@ namespace SEOBoostAI.Service.Services
 
 		public async Task UpdateAsync(ContentOptimization contentOptimization)
 		{
-			//return await _contentOptimizationRepository.UpdateAsync(contentOptimization);
-            throw new NotImplementedException();
-        }
+			try
+			{
+				await _contentOptimizationRepository.UpdateAsync(contentOptimization);
+				await _unitOfWork.SaveChangesAsync();
+			}
+			catch (Exception ex)
+			{
+				throw;
+			}
+		}
 	}
 }
