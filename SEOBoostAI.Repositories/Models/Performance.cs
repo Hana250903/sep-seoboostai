@@ -11,7 +11,7 @@ namespace SEOBoostAI.Repository.Models;
 public partial class Performance
 {
     [Key]
-    public int ID { get; set; }
+    public int PerformanceID { get; set; }
 
     public int UserID { get; set; }
 
@@ -19,19 +19,23 @@ public partial class Performance
     [StringLength(255)]
     public string Url { get; set; }
 
-    public double PerformanceScore { get; set; }
+    public double? PerformanceScore { get; set; }
 
-    public double FCP { get; set; }
+    public double? FCP { get; set; }
 
-    public double LCP { get; set; }
+    public double? LCP { get; set; }
 
-    public double CLS { get; set; }
+    public double? CLS { get; set; }
 
-    public double TBT { get; set; }
+    public double? TBT { get; set; }
 
-    public double SpeedIndex { get; set; }
+    public double? SpeedIndex { get; set; }
 
-    public double TimeToInteractive { get; set; }
+    public double? TimeToInteractive { get; set; }
+
+    public string GeneralAssessment { get; set; }
+
+    public string Suggestion { get; set; }
 
     [StringLength(50)]
     public string Strategy { get; set; }

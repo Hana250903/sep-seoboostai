@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("GatewayTransactionId", Name = "UQ__Transact__CAD5B8E6CE2F2D1F", IsUnique = true)]
+[Index("GatewayTransactionId", Name = "UQ__Transact__CAD5B8E6580890F6", IsUnique = true)]
 public partial class Transaction
 {
     [Key]
-    public int ID { get; set; }
+    public int TransactionID { get; set; }
 
     public int WalletID { get; set; }
 

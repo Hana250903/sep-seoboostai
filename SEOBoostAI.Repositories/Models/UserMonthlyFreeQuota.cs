@@ -12,7 +12,7 @@ namespace SEOBoostAI.Repository.Models;
 public partial class UserMonthlyFreeQuota
 {
     [Key]
-    public int ID { get; set; }
+    public int UserMonthlyFreeQuotaID { get; set; }
 
     public int UserID { get; set; }
 

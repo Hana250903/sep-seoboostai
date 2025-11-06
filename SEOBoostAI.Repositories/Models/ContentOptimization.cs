@@ -11,7 +11,7 @@ namespace SEOBoostAI.Repository.Models;
 public partial class ContentOptimization
 {
     [Key]
-    public int ID { get; set; }
+    public int ContentOptimizationID { get; set; }
 
     public int UserID { get; set; }
 

@@ -37,5 +37,10 @@ namespace SEOBoostAI.Repository.Repositories
             };
             return result;
         }
+
+        public async Task<List<Performance>> GetPerformancesByMemberID (int id)
+        {
+            return await _context.Set<Performance>().Include(p => p.Elements).Where(p => p.UserID == id).ToListAsync();
+        }
     }
 }

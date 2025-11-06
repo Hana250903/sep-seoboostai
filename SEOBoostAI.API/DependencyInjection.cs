@@ -26,6 +26,8 @@ namespace SEOBoostAI.API
             services.AddScoped<IPerformanceService, PerformanceService>();
             services.AddScoped<IContentOptimizationService, ContentOptimizationService>();
             services.AddScoped<IFeedbackService, FeedbackService>();
+            services.AddScoped<IPageSpeedService, PageSpeedService>();
+            services.AddScoped<ICrawlingService, CrawlingService>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -34,6 +36,7 @@ namespace SEOBoostAI.API
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
             });
             services.AddHttpClient();
+            services.AddLogging();
             return services;
         }
     }

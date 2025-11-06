@@ -18,7 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="ViewModels\" />
+		<Folder Include="ViewModels\ResponseModels\" />
 	</ItemGroup>
 
 	<ItemGroup>

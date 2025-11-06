@@ -11,7 +11,7 @@ namespace SEOBoostAI.Repository.Models;
 public partial class Element
 {
     [Key]
-    public int ID { get; set; }
+    public int ElementID { get; set; }
 
     public int PerformanceID { get; set; }
 
