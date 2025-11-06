@@ -2,6 +2,7 @@
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
+using SEOBoostAI.Service.ViewModels;
 using System.Threading.Tasks;
 
 
@@ -38,11 +39,11 @@ namespace SEOBoostAI.API.Controllers
 		}
 
 		// POST api/<ContentOptimizationsController>
-		[HttpPost]
-		public async Task<int> Post([FromBody] ContentOptimization contentOptimization)
-		{
-			throw new NotImplementedException();
-		}
+		//[HttpPost]
+		//public async Task<int> Post([FromBody] ContentOptimization contentOptimization)
+		//{
+		//	throw new NotImplementedException();
+		//}
 
 		// PUT api/<ContentOptimizationsController>/
 		[HttpPut]
@@ -57,5 +58,28 @@ namespace SEOBoostAI.API.Controllers
 		{
             throw new NotImplementedException();
         }
+
+		[HttpPost]
+		public async Task<IActionResult> Post([FromBody] OptimizeRequestDto requestDto)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			try
+			{
+				// Gọi phương thức service mới
+				ContentOptimization result = await _contentOptimizationService.OptimizeAndCreateAsync(requestDto);
+
+				// Trả về kết quả
+				return CreatedAtAction(nameof(Get), new { id = result.UserID }, result);
+			}
+			catch (Exception ex)
+			{
+				// Báo lỗi nếu có
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
 	}
 }

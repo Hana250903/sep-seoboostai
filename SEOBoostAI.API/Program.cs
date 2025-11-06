@@ -68,6 +68,9 @@ builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+//Add Http Client
+builder.Services.AddHttpClient();
+
 builder.Services.AddWebAPIServices(configuration);
 
 builder.Services.AddControllers().AddJsonOptions(options =>

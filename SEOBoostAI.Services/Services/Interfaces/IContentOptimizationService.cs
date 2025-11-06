@@ -1,5 +1,6 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Service.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,5 +17,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task CreateAsync(ContentOptimization contentOptimization);
 		Task UpdateAsync(ContentOptimization contentOptimization);
 		Task DeleteAsync(int id);
+		Task<ContentOptimization> OptimizeAndCreateAsync(OptimizeRequestDto request);
 	}
 }
