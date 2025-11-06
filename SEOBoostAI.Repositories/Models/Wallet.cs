@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("UserID", Name = "UQ__Wallets__1788CCAD1E047861", IsUnique = true)]
+[Index("UserID", Name = "UQ__Wallets__1788CCAD2C4BCE8F", IsUnique = true)]
 public partial class Wallet
 {
     [Key]

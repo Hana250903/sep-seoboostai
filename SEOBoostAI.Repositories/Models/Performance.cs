@@ -19,19 +19,8 @@ public partial class Performance
     [StringLength(255)]
     public string Url { get; set; }
 
-    public double? PerformanceScore { get; set; }
-
-    public double? FCP { get; set; }
-
-    public double? LCP { get; set; }
-
-    public double? CLS { get; set; }
-
-    public double? TBT { get; set; }
-
-    public double? SpeedIndex { get; set; }
-
-    public double? TimeToInteractive { get; set; }
+    [Required]
+    public string PageSpeedResponse { get; set; }
 
     public string GeneralAssessment { get; set; }
 

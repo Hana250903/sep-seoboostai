@@ -44,6 +44,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[SystemSettings]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Transactions]",
          "ObjectType": 0
       },

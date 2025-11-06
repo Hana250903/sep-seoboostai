@@ -64,4 +64,14 @@ namespace SEOBoostAI.Repository.ModelExtensions
         [JsonPropertyName("numericValue")]
         public double? NumericValue { get; set; }
     }
+
+    public record PageSpeedMetrics(
+        int PerformanceScore,
+        double? FCP,
+        double? LCP,
+        double? CLS,
+        double? TBT,
+        double? SpeedIndex,
+        double? TimeToInteractive
+    );
 }

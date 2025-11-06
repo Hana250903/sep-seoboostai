@@ -10,6 +10,7 @@ namespace SEOBoostAI.Repository.GenericRepository
     {
         Task<List<T>> GetAllAsync();
         Task<T> GetByIdAsync(int id);
+        Task<T> GetByIdAsync(string id);
         Task<T> GetByIdAsync(Guid code);
 
         Task CreateAsync(T entity);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
@@ -13,30 +14,26 @@ namespace SEOBoostAI.Service.Services
     public class PageSpeedService : IPageSpeedService
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly string _apiKey;
+        private readonly ISystemConfigService _systemConfigService;
 
-        public PageSpeedService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public PageSpeedService(IHttpClientFactory httpClientFactory, ISystemConfigService systemConfigService)
         {
             _httpClientFactory = httpClientFactory;
-            // Lấy API key từ appsettings.json
-            _apiKey = configuration["GooglePageSpeed:ApiKey"];
-            if (string.IsNullOrEmpty(_apiKey))
-            {
-                throw new InvalidOperationException("Chưa cấu hình GooglePageSpeed:ApiKey trong appsettings.json");
-            }
+            _systemConfigService = systemConfigService;
         }
 
         public async Task<PageSpeedResponse> GetPageSpeedAsync(string url, string strategy = "desktop")
         {
-            string endpoint = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
+            string endpoint = _systemConfigService.GetValue<string>("PageSpeedAPI", "link");
+            var apiKey = _systemConfigService.GetValue<string>("ApiKey", "api");
 
             // Xây dựng URL với query parameters
             var queryParams = new Dictionary<string, string>
-        {
-            { "url", url },
-            { "key", _apiKey },
-            { "strategy", strategy }
-        };
+            {
+                { "url", url },
+                { "key", apiKey },
+                { "strategy", strategy }
+            };
             var fullUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(endpoint, queryParams);
 
             var httpClient = _httpClientFactory.CreateClient();

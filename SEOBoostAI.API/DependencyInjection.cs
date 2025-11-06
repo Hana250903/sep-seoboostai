@@ -20,6 +20,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IPerformanceRepository, PerformanceRepository>();
             services.AddScoped<IContentOptimizationRepository, ContentOptimizationRepository>();
             services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+            services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();  
             
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
@@ -28,6 +29,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IFeedbackService, FeedbackService>();
             services.AddScoped<IPageSpeedService, PageSpeedService>();
             services.AddScoped<ICrawlingService, CrawlingService>();
+            services.AddSingleton<ISystemConfigService, SystemConfigService>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));

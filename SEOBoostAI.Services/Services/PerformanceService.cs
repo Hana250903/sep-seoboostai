@@ -46,7 +46,7 @@ namespace SEOBoostAI.Service.Services
             catch (Exception ex)
             {
                 throw;
-            }            
+            }
         }
 
         public async Task DeleteAsync(int id)
@@ -121,24 +121,23 @@ namespace SEOBoostAI.Service.Services
                 _logger.LogWarning(ex, "Không thể serialize đối tượng lighthouse để debug.");
             }
 
+            var metrics = new PageSpeedMetrics(
+                PerformanceScore: (int)((lighthouse.Categories?.Performance?.Score ?? 0) * 100),
+                FCP: lighthouse.Audits?.Fcp?.NumericValue,
+                LCP: lighthouse.Audits?.Lcp?.NumericValue,
+                CLS: lighthouse.Audits?.Cls?.NumericValue,
+                TBT: lighthouse.Audits?.Tbt?.NumericValue,
+                SpeedIndex: lighthouse.Audits?.Si?.NumericValue,
+                TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
+            );
+
             // 2. Map dữ liệu từ DTO sang Model (Performance)
             var performanceModel = new Performance
             {
                 UserID = userId,
                 Url = url,
                 Strategy = strategy, // Lưu lại chiến lược (desktop/mobile)
-
-                // Chuyển score (0-1) thành (0-100)
-                PerformanceScore = (int)(lighthouse.Categories?.Performance?.Score ?? 0 * 100),
-
-                // Lấy giá trị số (ví dụ: "999.2 ms" => "1.0 s")
-                FCP = lighthouse.Audits?.Fcp?.NumericValue,
-                LCP = lighthouse.Audits?.Lcp?.NumericValue,
-                CLS = lighthouse.Audits?.Cls?.NumericValue,
-                TBT = lighthouse.Audits?.Tbt?.NumericValue,
-                SpeedIndex = lighthouse.Audits?.Si?.NumericValue,
-                TimeToInteractive = lighthouse.Audits?.Tti?.NumericValue,
-
+                PageSpeedResponse = JsonSerializer.Serialize(metrics),
                 FetchTime = DateTime.UtcNow, // Ghi lại thời gian gọi
                 IsDeleted = false
                 // CompletedTime có thể bạn muốn xử lý riêng
@@ -155,8 +154,8 @@ namespace SEOBoostAI.Service.Services
 
                 _logger.LogInformation("Đã lưu Performance ID: {PerformanceID}", performanceModel.PerformanceID);
 
-                allSuggestions.AddRange(GenerateGeneralSuggestions(performanceModel)); // Cách đơn giản
-                allSuggestions.AddRange(GenerateAdvancedSuggestions(performanceModel, htmlDoc));     // Cách nâng cao
+                allSuggestions.AddRange(GenerateGeneralSuggestions(metrics)); // Cách đơn giản
+                allSuggestions.AddRange(GenerateAdvancedSuggestions(metrics, htmlDoc));     // Cách nâng cao
 
                 _logger.LogInformation("Đã tạo tổng cộng {Count} gợi ý.", allSuggestions.Count);
 
@@ -193,12 +192,12 @@ namespace SEOBoostAI.Service.Services
         // ==========================================================
         // CÁCH 1: GỢI Ý ĐƠN GIẢN (Dựa trên điểm số)
         // ==========================================================
-        private List<Element> GenerateGeneralSuggestions(Performance performance)
+        private List<Element> GenerateGeneralSuggestions(PageSpeedMetrics metrics)
         {
             var suggestions = new List<Element>();
 
             // CLS (ngưỡng 0.1)
-            if (performance.CLS > 0.1)
+            if (metrics.CLS > 0.1)
             {
                 suggestions.Add(new Element
                 {
@@ -210,7 +209,7 @@ namespace SEOBoostAI.Service.Services
             }
 
             // TBT (ngưỡng 300ms)
-            if (performance.TBT > 300)
+            if (metrics.TBT > 300)
             {
                 suggestions.Add(new Element
                 {
@@ -222,7 +221,7 @@ namespace SEOBoostAI.Service.Services
             }
 
             // LCP (ngưỡng 2500ms)
-            if (performance.LCP > 2500)
+            if (metrics.LCP > 2500)
             {
                 suggestions.Add(new Element
                 {
@@ -240,15 +239,15 @@ namespace SEOBoostAI.Service.Services
         // ==========================================================
         // CÁCH 2: GỢI Ý NÂNG CAO (Dựa trên chi tiết lỗi)
         // ==========================================================
-        private List<Element> GenerateAdvancedSuggestions(Performance performanceScores, HtmlDocument htmlDoc)
+        private List<Element> GenerateAdvancedSuggestions(PageSpeedMetrics metrics, HtmlDocument htmlDoc)
         {
             var suggestions = new List<Element>();
             var documentNode = htmlDoc.DocumentNode;
 
             // 1. Phân tích CLS (Lỗi `<img>` thiếu width/height)
-            if (performanceScores.CLS > 0.1) // Triệu chứng
+            if (metrics.CLS > 0.1) // Triệu chứng
             {
-                _logger.LogInformation("Phân tích CLS: Điểm cao {CLS}, đang tìm thẻ img/iframe...", performanceScores.CLS);
+                _logger.LogInformation("Phân tích CLS: Điểm cao {CLS}, đang tìm thẻ img/iframe...", metrics.CLS);
                 try
                 {
                     // Nguyên nhân: Tìm <img> không có width/height
@@ -272,9 +271,9 @@ namespace SEOBoostAI.Service.Services
             }
 
             // 2. Phân tích TBT (Lỗi `<script>` chặn hiển thị)
-            if (performanceScores.TBT > 300) // Triệu chứng
+            if (metrics.TBT > 300) // Triệu chứng
             {
-                _logger.LogInformation("Phân tích TBT: Điểm cao {TBT}, đang tìm thẻ script...", performanceScores.TBT);
+                _logger.LogInformation("Phân tích TBT: Điểm cao {TBT}, đang tìm thẻ script...", metrics.TBT);
                 try
                 {
                     // Nguyên nhân: Tìm <script> có 'src' nhưng không có 'async' hoặc 'defer'
@@ -298,9 +297,9 @@ namespace SEOBoostAI.Service.Services
             }
 
             // 3. Phân tích LCP (Lỗi <img> không được ưu tiên)
-            if (performanceScores.LCP > 2500) // Triệu chứng
+            if (metrics.LCP > 2500) // Triệu chứng
             {
-                _logger.LogInformation("Phân tích LCP: Điểm cao {LCP}, đang tìm thẻ img không lazy...", performanceScores.LCP);
+                _logger.LogInformation("Phân tích LCP: Điểm cao {LCP}, đang tìm thẻ img không lazy...", metrics.LCP);
                 try
                 {
                     // Nguyên nhân (Dự đoán): Các ảnh không lazy-load (thường là LCP)

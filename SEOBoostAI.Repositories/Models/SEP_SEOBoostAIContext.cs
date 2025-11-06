@@ -32,6 +32,8 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
     public virtual DbSet<QuestionData> QuestionDatas { get; set; }
 
+    public virtual DbSet<SystemSetting> SystemSettings { get; set; }
+
     public virtual DbSet<Transaction> Transactions { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
@@ -54,15 +56,15 @@ public partial class SEP_SEOBoostAIContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseSqlServer(GetConnectionString("DefaultConnection")).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 
-    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-    //        => optionsBuilder.UseSqlServer("Data Source=HANAYUKI;Initial Catalog=SEP_SEOBoostAI;Persist Security Info=True;User ID=sa;Password=12345;Encrypt=False");
+//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+//        => optionsBuilder.UseSqlServer("Data Source=HANAYUKI;Initial Catalog=SEP_SEOBoostAI;Persist Security Info=True;User ID=sa;Password=12345;Encrypt=False");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ContentOptimization>(entity =>
         {
-            entity.HasKey(e => e.ContentOptimizationID).HasName("PK__ContentO__27E3172DCE2F95D4");
+            entity.HasKey(e => e.ContentOptimizationID).HasName("PK__ContentO__27E3172DDE9406B0");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
@@ -71,7 +73,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Element>(entity =>
         {
-            entity.HasKey(e => e.ElementID).HasName("PK__Elements__A429723AB4E3620F");
+            entity.HasKey(e => e.ElementID).HasName("PK__Elements__A429723A6AB04D28");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
@@ -80,12 +82,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Feature>(entity =>
         {
-            entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A299A1C112E");
+            entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A29FB3E8E7B");
         });
 
         modelBuilder.Entity<Feedback>(entity =>
         {
-            entity.HasKey(e => e.FeedbackID).HasName("PK__Feedback__6A4BEDF64041937A");
+            entity.HasKey(e => e.FeedbackID).HasName("PK__Feedback__6A4BEDF6573A672F");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
@@ -95,7 +97,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Performance>(entity =>
         {
-            entity.HasKey(e => e.PerformanceID).HasName("PK__Performa__F9606DE1CCC2EDA5");
+            entity.HasKey(e => e.PerformanceID).HasName("PK__Performa__F9606DE14E38CDA5");
 
             entity.Property(e => e.FetchTime).HasDefaultValueSql("(getdate())");
 
@@ -104,7 +106,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<PurchasedFeature>(entity =>
         {
-            entity.HasKey(e => e.PurchasedFeatureID).HasName("PK__Purchase__2DD96E5360207B1A");
+            entity.HasKey(e => e.PurchasedFeatureID).HasName("PK__Purchase__2DD96E53234ADAD4");
 
             entity.Property(e => e.PurchaseDate).HasDefaultValueSql("(getdate())");
 
@@ -115,16 +117,23 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<QuestionData>(entity =>
         {
-            entity.HasKey(e => e.QuestionDataID).HasName("PK__Question__566565E04B9C5A6C");
+            entity.HasKey(e => e.QuestionDataID).HasName("PK__Question__566565E0B58A0F19");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
             entity.HasOne(d => d.User).WithMany(p => p.QuestionData).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
+        modelBuilder.Entity<SystemSetting>(entity =>
+        {
+            entity.HasKey(e => e.SettingKey).HasName("PK__SystemSe__01E719ACD0D317CE");
+
+            entity.Property(e => e.LastUpdatedDate).HasDefaultValueSql("(getdate())");
+        });
+
         modelBuilder.Entity<Transaction>(entity =>
         {
-            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4BBBE96EE0");
+            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4BA5420C37");
 
             entity.Property(e => e.RequestTime).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Status).HasDefaultValue("PENDING");
@@ -134,14 +143,14 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserID).HasName("PK__Users__1788CCAC64F3D352");
+            entity.HasKey(e => e.UserID).HasName("PK__Users__1788CCAC28BAA165");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<UserMonthlyFreeQuota>(entity =>
         {
-            entity.HasKey(e => e.UserMonthlyFreeQuotaID).HasName("PK__UserMont__3A7DB1E01AE054A9");
+            entity.HasKey(e => e.UserMonthlyFreeQuotaID).HasName("PK__UserMont__3A7DB1E03BB4DD74");
 
             entity.Property(e => e.MonthYear).IsFixedLength();
             entity.Property(e => e.MonthlyLimit).HasDefaultValue(3);
@@ -157,7 +166,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Wallet>(entity =>
         {
-            entity.HasKey(e => e.WalletID).HasName("PK__Wallets__84D4F92EC826CF11");
+            entity.HasKey(e => e.WalletID).HasName("PK__Wallets__84D4F92E2EC0216D");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(NULL)");
