@@ -30,6 +30,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IPageSpeedService, PageSpeedService>();
             services.AddScoped<ICrawlingService, CrawlingService>();
             services.AddSingleton<ISystemConfigService, SystemConfigService>();
+            services.AddScoped<IGeminiAIService, GeminiAIService>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));

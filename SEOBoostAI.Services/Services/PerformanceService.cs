@@ -24,8 +24,9 @@ namespace SEOBoostAI.Service.Services
         private readonly IElementRepository _elementRepository;
         private readonly ILogger<PerformanceService> _logger;
         private readonly ICrawlingService _crawlingService;
+        private readonly IGeminiAIService _geminiAIService;
 
-        public PerformanceService(IPerformanceRepository performanceRepository, IUserRepository userRepository, IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementRepository elementRepository, ILogger<PerformanceService> logger, ICrawlingService crawlingService)
+        public PerformanceService(IPerformanceRepository performanceRepository, IUserRepository userRepository, IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementRepository elementRepository, ILogger<PerformanceService> logger, ICrawlingService crawlingService, IGeminiAIService geminiAIService)
         {
             _performanceRepository = performanceRepository;
             _userRepository = userRepository;
@@ -34,6 +35,7 @@ namespace SEOBoostAI.Service.Services
             _elementRepository = elementRepository;
             _logger = logger;
             _crawlingService = crawlingService;
+            _geminiAIService = geminiAIService;
         }
 
         public async Task CreateAsync(Performance performance)
@@ -93,7 +95,15 @@ namespace SEOBoostAI.Service.Services
 
         public async Task<Performance> AnalyzeAndSavePerformanceAsync(int userId, string url, string strategy)
         {
-            // 1. Gọi API bên ngoài để lấy dữ liệu
+            var performanceModel = new Performance
+            {
+                UserID = userId,
+                Url = url,
+                Strategy = strategy,
+                FetchTime = DateTime.UtcNow.AddHours(7),
+                IsDeleted = false
+            };
+
             var apiResult = await _pageSpeedService.GetPageSpeedAsync(url, strategy);
 
             if (apiResult == null || apiResult.LighthouseResult == null)
@@ -102,12 +112,6 @@ namespace SEOBoostAI.Service.Services
             }
 
             var lighthouse = apiResult.LighthouseResult;
-
-            var htmlDoc = await _crawlingService.GetHtmlDocumentAsync(url);
-            if (htmlDoc == null)
-            {
-                throw new Exception("Không thể tải hoặc phân tích HTML của trang.");
-            }
 
             try
             {
@@ -131,67 +135,124 @@ namespace SEOBoostAI.Service.Services
                 TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
             );
 
-            // 2. Map dữ liệu từ DTO sang Model (Performance)
-            var performanceModel = new Performance
-            {
-                UserID = userId,
-                Url = url,
-                Strategy = strategy, // Lưu lại chiến lược (desktop/mobile)
-                PageSpeedResponse = JsonSerializer.Serialize(metrics),
-                FetchTime = DateTime.UtcNow, // Ghi lại thời gian gọi
-                IsDeleted = false
-                // CompletedTime có thể bạn muốn xử lý riêng
-            };
+            var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(metrics));
 
-            var allSuggestions = new List<Element>();
+            performanceModel.PageSpeedResponse = JsonSerializer.Serialize(metrics);
+            performanceModel.Suggestion = geminiResponse.Suggestion;
+            performanceModel.GeneralAssessment = geminiResponse.GeneralAssessment;
+            performanceModel.CompletedTime = DateTime.UtcNow.AddHours(7);
 
-            // 3. Dùng UnitOfWork để lưu vào DB
-            await _unitOfWork.BeginTransactionAsync();
             try
             {
                 await _performanceRepository.CreateAsync(performanceModel);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Đã lưu Performance ID: {PerformanceID}", performanceModel.PerformanceID);
-
-                allSuggestions.AddRange(GenerateGeneralSuggestions(metrics)); // Cách đơn giản
-                allSuggestions.AddRange(GenerateAdvancedSuggestions(metrics, htmlDoc));     // Cách nâng cao
-
-                _logger.LogInformation("Đã tạo tổng cộng {Count} gợi ý.", allSuggestions.Count);
-
-                if (allSuggestions.Any())
-                {
-                    // 6. Gán PerformanceID cho tất cả gợi ý
-                    foreach (var suggestion in allSuggestions)
-                    {
-                        suggestion.PerformanceID = performanceModel.PerformanceID;
-                        suggestion.IsDeleted = false;
-                        suggestion.Status = "Gợi ý"; // Hoặc "Pending"
-                    }
-
-                    // 7. LƯU LẦN 2: Lưu tất cả Element (gợi ý)
-                    _logger.LogInformation("Đang lưu {Count} Element vào DB...", allSuggestions.Count);
-                    await _elementRepository.CreateRangeAsync(allSuggestions);
-                    await _unitOfWork.SaveChangesAsync();
-                    _logger.LogInformation("Đã lưu Element thành công.");
-                }
-
-                await _unitOfWork.CommitTransactionAsync();
-
-                performanceModel.Elements = allSuggestions;
                 return performanceModel;
             }
             catch (Exception ex)
             {
-                await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Lỗi trong transaction AnalyzeAndSavePerformance");
-                throw new Exception("Lỗi khi lưu kết quả Performance và Element vào DB.", ex);
+                throw new Exception("Lỗi khi lưu kết quả Performance vào DB.", ex);
             }
         }
 
-        // ==========================================================
-        // CÁCH 1: GỢI Ý ĐƠN GIẢN (Dựa trên điểm số)
-        // ==========================================================
+        //public async Task<Performance> AnalyzeAndSavePerformanceAsync(int userId, string url, string strategy)
+        //{
+        //    // 1. Gọi API bên ngoài để lấy dữ liệu
+        //    var apiResult = await _pageSpeedService.GetPageSpeedAsync(url, strategy);
+
+        //    if (apiResult == null || apiResult.LighthouseResult == null)
+        //    {
+        //        throw new Exception("Không nhận được kết quả từ PageSpeed API.");
+        //    }
+
+        //    var lighthouse = apiResult.LighthouseResult;
+
+        //    var htmlDoc = await _crawlingService.GetHtmlDocumentAsync(url);
+        //    if (htmlDoc == null)
+        //    {
+        //        throw new Exception("Không thể tải hoặc phân tích HTML của trang.");
+        //    }
+
+        //    try
+        //    {
+        //        string lighthouseJson = JsonSerializer.Serialize(lighthouse, new JsonSerializerOptions { WriteIndented = true });
+        //        _logger.LogInformation("--- START DESERIALIZED LIGHTHOUSE OBJECT ---");
+        //        _logger.LogInformation(lighthouseJson);
+        //        _logger.LogInformation("--- END DESERIALIZED LIGHTHOUSE OBJECT ---");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogWarning(ex, "Không thể serialize đối tượng lighthouse để debug.");
+        //    }
+
+        //    var metrics = new PageSpeedMetrics(
+        //        PerformanceScore: (int)((lighthouse.Categories?.Performance?.Score ?? 0) * 100),
+        //        FCP: lighthouse.Audits?.Fcp?.NumericValue,
+        //        LCP: lighthouse.Audits?.Lcp?.NumericValue,
+        //        CLS: lighthouse.Audits?.Cls?.NumericValue,
+        //        TBT: lighthouse.Audits?.Tbt?.NumericValue,
+        //        SpeedIndex: lighthouse.Audits?.Si?.NumericValue,
+        //        TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
+        //    );
+
+        //    // 2. Map dữ liệu từ DTO sang Model (Performance)
+        //    var performanceModel = new Performance
+        //    {
+        //        UserID = userId,
+        //        Url = url,
+        //        Strategy = strategy, // Lưu lại chiến lược (desktop/mobile)
+        //        PageSpeedResponse = JsonSerializer.Serialize(metrics),
+        //        FetchTime = DateTime.UtcNow, // Ghi lại thời gian gọi
+        //        IsDeleted = false
+        //        // CompletedTime có thể bạn muốn xử lý riêng
+        //    };
+
+        //    var allSuggestions = new List<Element>();
+
+        //    // 3. Dùng UnitOfWork để lưu vào DB
+        //    await _unitOfWork.BeginTransactionAsync();
+        //    try
+        //    {
+        //        await _performanceRepository.CreateAsync(performanceModel);
+        //        await _unitOfWork.SaveChangesAsync();
+
+        //        _logger.LogInformation("Đã lưu Performance ID: {PerformanceID}", performanceModel.PerformanceID);
+
+        //        allSuggestions.AddRange(GenerateGeneralSuggestions(metrics)); // Cách đơn giản
+        //        allSuggestions.AddRange(GenerateAdvancedSuggestions(metrics, htmlDoc));     // Cách nâng cao
+
+        //        _logger.LogInformation("Đã tạo tổng cộng {Count} gợi ý.", allSuggestions.Count);
+
+        //        if (allSuggestions.Any())
+        //        {
+        //            // 6. Gán PerformanceID cho tất cả gợi ý
+        //            foreach (var suggestion in allSuggestions)
+        //            {
+        //                suggestion.PerformanceID = performanceModel.PerformanceID;
+        //                suggestion.IsDeleted = false;
+        //                suggestion.Status = "Gợi ý"; // Hoặc "Pending"
+        //            }
+
+        //            // 7. LƯU LẦN 2: Lưu tất cả Element (gợi ý)
+        //            _logger.LogInformation("Đang lưu {Count} Element vào DB...", allSuggestions.Count);
+        //            await _elementRepository.CreateRangeAsync(allSuggestions);
+        //            await _unitOfWork.SaveChangesAsync();
+        //            _logger.LogInformation("Đã lưu Element thành công.");
+        //        }
+
+        //        await _unitOfWork.CommitTransactionAsync();
+
+        //        performanceModel.Elements = allSuggestions;
+        //        return performanceModel;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await _unitOfWork.RollbackTransactionAsync();
+        //        _logger.LogError(ex, "Lỗi trong transaction AnalyzeAndSavePerformance");
+        //        throw new Exception("Lỗi khi lưu kết quả Performance và Element vào DB.", ex);
+        //    }
+        //}
+
         private List<Element> GenerateGeneralSuggestions(PageSpeedMetrics metrics)
         {
             var suggestions = new List<Element>();
@@ -236,9 +297,6 @@ namespace SEOBoostAI.Service.Services
             return suggestions;
         }
 
-        // ==========================================================
-        // CÁCH 2: GỢI Ý NÂNG CAO (Dựa trên chi tiết lỗi)
-        // ==========================================================
         private List<Element> GenerateAdvancedSuggestions(PageSpeedMetrics metrics, HtmlDocument htmlDoc)
         {
             var suggestions = new List<Element>();
