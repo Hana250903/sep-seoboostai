@@ -49,3 +49,10 @@ public partial class Element
     [InverseProperty("Elements")]
     public virtual Performance Performance { get; set; }
 }
+
+public class ElementFinding
+{
+    public string TagName { get; set; }
+    public string OuterHtml { get; set; }
+    public string InnerHtml { get; set; }
+}
