@@ -1,4 +1,5 @@
 ﻿using HtmlAgilityPack;
+using SEOBoostAI.Repository.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,11 +10,10 @@ namespace SEOBoostAI.Service.Services.Interfaces
 {
     public interface ICrawlingService
     {
-        /// <summary>
-        /// Tải nội dung HTML từ một URL và parse thành đối tượng HtmlDocument
-        /// </summary>
-        /// <param name="url">URL của trang web</param>
-        /// <returns>Đối tượng HtmlDocument của HtmlAgilityPack</returns>
         Task<HtmlDocument> GetHtmlDocumentAsync(string url);
+        List<ElementFinding> CheckLCP(HtmlDocument htmlDoc);
+        List<ElementFinding> CheckCLS(HtmlDocument htmlDoc);
+        List<ElementFinding> CheckFCP(HtmlDocument htmlDoc);
+        List<ElementFinding> FindThirdPartyScripts(HtmlDocument htmlDoc, string originalUrl);
     }
 }

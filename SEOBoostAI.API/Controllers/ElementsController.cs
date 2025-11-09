@@ -60,5 +60,24 @@ namespace SEOBoostAI.API.Controllers
         {
             throw new NotImplementedException();
         }
+
+        [HttpPost("suggestion")]
+        public async Task<IActionResult> Suggestion([FromBody] int id)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var result = await _elementService.Suggestion(id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
+        }
     }
 }

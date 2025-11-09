@@ -42,5 +42,10 @@ namespace SEOBoostAI.Repository.Repositories
         {
             return await _context.Set<Performance>().Include(p => p.Elements).Where(p => p.UserID == id).ToListAsync();
         }
+
+        public async Task<Performance> GetPerformanceAsync(int id)
+        {
+            return await _context.Set<Performance>().Include(p => p.Elements).FirstOrDefaultAsync(p => p.PerformanceID == id);
+        }
     }
 }

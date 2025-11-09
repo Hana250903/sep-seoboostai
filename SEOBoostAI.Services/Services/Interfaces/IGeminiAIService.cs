@@ -11,5 +11,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
     public interface IGeminiAIService
     {
         Task<AiAssessment> SuggestionAnalysisPerformance(string metrics);
+        Task<List<AiElementAnalysis>> SuggestionElement(List<ElementRequest> elements);
     }
 }
