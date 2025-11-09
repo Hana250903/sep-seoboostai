@@ -75,14 +75,15 @@ namespace SEOBoostAI.Service.Services
 
         public async Task<PaginationResult<List<Element>>> GetElementsWithPaginateAsync(int currentPage, int pageSize)
         {
-            return await _elementRepository.GetElementWithPaginateAsync(currentPage,pageSize);
+            return await _elementRepository.GetElementWithPaginateAsync(currentPage, pageSize);
         }
 
-        public async Task ShortDeleteRangeAsync(List<int> ids)
+        public async Task ShortDeleteRangeAsync(List<Element> elements)
         {
             try
             {
-                throw new NotImplementedException();
+                await _elementRepository.ShortDeleteRangeAsync(elements);
+                await _unitOfWork.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -103,9 +104,18 @@ namespace SEOBoostAI.Service.Services
             }
         }
 
-        public Task UpdateRangeAsync(List<Element> elements)
+        public async Task UpdateRangeAsync(List<Element> elements)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _elementRepository.UpdateRangeAsync(elements);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
+
     }
 }

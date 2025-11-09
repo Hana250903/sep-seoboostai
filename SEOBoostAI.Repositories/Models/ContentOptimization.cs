@@ -11,40 +11,16 @@ namespace SEOBoostAI.Repository.Models;
 public partial class ContentOptimization
 {
     [Key]
-    public int ID { get; set; }
+    public int ContentOptimizationID { get; set; }
 
     public int UserID { get; set; }
 
     [StringLength(50)]
     public string Model { get; set; }
 
-    [Required]
-    [StringLength(255)]
-    [Unicode(false)]
-    public string Keyword { get; set; }
+    public string UserRequest { get; set; }
 
-    [Required]
-    public string OriginalContent { get; set; }
-
-    [Required]
-    [StringLength(20)]
-    public string ContentLenght { get; set; }
-
-    public int OptimizationLevel { get; set; }
-
-    [Required]
-    [StringLength(20)]
-    public string ReadabilityLevel { get; set; }
-
-    public string OptimizedContent { get; set; }
-
-    public int? SEOScore { get; set; }
-
-    public int? Readability { get; set; }
-
-    public int? Engagement { get; set; }
-
-    public int? Originality { get; set; }
+    public string AIResponse { get; set; }
 
     [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }

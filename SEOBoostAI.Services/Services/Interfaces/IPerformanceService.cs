@@ -16,5 +16,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task CreateAsync(Performance performance);
         Task UpdateAsync(Performance performance);
         Task DeleteAsync(int id);
+        Task<Performance> AnalyzeAndSavePerformanceAsync(int userId, string url, string strategy);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
@@ -59,6 +60,36 @@ namespace SEOBoostAI.API.Controllers
         public async Task<bool> Delete(int id)
         {
             throw new NotImplementedException();
+        }
+
+        [HttpPost("analyze")]
+        public async Task<IActionResult> AnalysisPerformance ([FromBody] AnalyzeUrlViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrEmpty(model.Strategy))
+            {
+                model.Strategy = "desktop"; // Giá trị mặc định
+            }
+
+            try
+            {
+                var result = await _performanceService.AnalyzeAndSavePerformanceAsync(
+                    model.UserId,
+                    model.Url,
+                    model.Strategy
+                );
+
+                // Trả về đối tượng Performance vừa được tạo
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Error = ex.Message });
+            }
         }
     }
 }

@@ -11,7 +11,7 @@ namespace SEOBoostAI.Repository.Models;
 public partial class Feature
 {
     [Key]
-    public int ID { get; set; }
+    public int FeatureID { get; set; }
 
     [Required]
     [StringLength(100)]

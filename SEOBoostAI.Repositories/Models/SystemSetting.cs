@@ -8,31 +8,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-public partial class Feedback
+public partial class SystemSetting
 {
     [Key]
-    public int FeedbackID { get; set; }
+    [StringLength(100)]
+    public string SettingKey { get; set; }
 
-    public int UserID { get; set; }
-
+    [Required]
     [StringLength(255)]
-    public string Topic { get; set; }
-
-    [StringLength(255)]
-    public string Status { get; set; }
+    public string SettingValue { get; set; }
 
     [StringLength(255)]
     public string Description { get; set; }
 
     [Column(TypeName = "datetime")]
-    public DateTime CreatedAt { get; set; }
-
-    [Column(TypeName = "datetime")]
-    public DateTime UpdatedAt { get; set; }
-
-    public bool IsDeleted { get; set; }
-
-    [ForeignKey("UserID")]
-    [InverseProperty("Feedbacks")]
-    public virtual User User { get; set; }
+    public DateTime? LastUpdatedDate { get; set; }
 }

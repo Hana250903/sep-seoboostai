@@ -4,7 +4,7 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": true,
-   "MinimumProductVersion": "2.6.1093",
+   "MinimumProductVersion": "2.6.1186",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models",
@@ -41,6 +41,10 @@
       },
       {
          "Name": "[dbo].[QuestionDatas]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SystemSettings]",
          "ObjectType": 0
       },
       {
