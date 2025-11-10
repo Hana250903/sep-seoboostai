@@ -211,8 +211,6 @@ namespace SEOBoostAI.Service.Services
                 {
                     ElementID = original.ElementID,
                     TagName = original.TagName,
-                    Attribute = original.Attribute,
-                    Status = original.Status,
                     Important = original.Important,
                     Description = suggestion.Description,
                     AIRecommendation = suggestion.AIRecommendation,
