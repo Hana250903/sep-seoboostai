@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("UserName", Name = "UQ__Users__C9F28456098FFD53", IsUnique = true)]
+[Index("UserName", Name = "UQ__Users__C9F28456AF81EB46", IsUnique = true)]
 public partial class User
 {
     [Key]
@@ -59,8 +59,8 @@ public partial class User
     [InverseProperty("User")]
     public virtual ICollection<Performance> Performances { get; set; } = new List<Performance>();
 
-    [InverseProperty("User")]
-    public virtual ICollection<QuestionData> QuestionData { get; set; } = new List<QuestionData>();
+    [InverseProperty("Member")]
+    public virtual ICollection<QueryHistory> QueryHistories { get; set; } = new List<QueryHistory>();
 
     [InverseProperty("User")]
     public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
