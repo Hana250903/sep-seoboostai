@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEOBoostAI.Service.ViewModels
+namespace SEOBoostAI.Repository.ModelExtensions
 {
 	public class OptimizeRequestDto
 	{

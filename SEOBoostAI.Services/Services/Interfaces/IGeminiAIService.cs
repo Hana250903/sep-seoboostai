@@ -1,4 +1,5 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
+using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
 using SEOBoostAI.Repository.Models;
 using System;
 using System.Collections.Generic;
@@ -11,5 +12,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
     public interface IGeminiAIService
     {
         Task<AiAssessment> SuggestionAnalysisPerformance(string metrics);
-    }
+
+		Task<AiOptimizationResponse> OptimizeContentAsync(OptimizeRequestDto request);
+	}
 }

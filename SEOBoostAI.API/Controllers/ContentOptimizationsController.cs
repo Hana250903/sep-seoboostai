@@ -2,7 +2,6 @@
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
-using SEOBoostAI.Service.ViewModels;
 using System.Threading.Tasks;
 
 
@@ -20,20 +19,20 @@ namespace SEOBoostAI.API.Controllers
 
 		// GET: api/<ContentOptimizationsController>
 		[HttpGet]
-		public async Task<IEnumerable<ContentOptimization>> Get()
+		public async Task<IEnumerable<ContentOptimizationDto>> Get()
 		{
 			return await _contentOptimizationService.GetContentOptimizationsAsync();
 		}
 
 		[HttpGet("{currentPage}/{pageSize}")]
-		public async Task<PaginationResult<List<ContentOptimization>>> Get(int currentPage, int pageSize)
+		public async Task<PaginationResult<List<ContentOptimizationDto>>> Get(int currentPage, int pageSize)
 		{
 			return await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(currentPage, pageSize);
 		}
 
 		// GET api/<ContentOptimizationsController>/5
 		[HttpGet("{id}")]
-		public async Task<ContentOptimization> Get(int id)
+		public async Task<ContentOptimizationDto> Get(int id)
 		{
 			return await _contentOptimizationService.GetContentOptimizationByIdAsync(id);
 		}
@@ -70,10 +69,10 @@ namespace SEOBoostAI.API.Controllers
 			try
 			{
 				// Gọi phương thức service mới
-				ContentOptimization result = await _contentOptimizationService.OptimizeAndCreateAsync(requestDto);
+				ContentOptimizationDto result = await _contentOptimizationService.OptimizeAndCreateAsync(requestDto);
 
 				// Trả về kết quả
-				return CreatedAtAction(nameof(Get), new { id = result.UserID }, result);
+				return CreatedAtAction(nameof(Get), new { id = result.ContentOptimizationID }, result);
 			}
 			catch (Exception ex)
 			{

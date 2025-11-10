@@ -1,6 +1,5 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
-using SEOBoostAI.Service.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,12 +10,12 @@ namespace SEOBoostAI.Service.Services.Interfaces
 {
 	public interface IContentOptimizationService
 	{
-		Task<List<ContentOptimization>> GetContentOptimizationsAsync();
-		Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationsWithPaginateAsync(int currentPage, int pageSize);
-		Task<ContentOptimization> GetContentOptimizationByIdAsync(int id);
+		Task<List<ContentOptimizationDto>> GetContentOptimizationsAsync();
+		Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(int currentPage, int pageSize);
+		Task<ContentOptimizationDto> GetContentOptimizationByIdAsync(int id);
 		Task CreateAsync(ContentOptimization contentOptimization);
 		Task UpdateAsync(ContentOptimization contentOptimization);
 		Task DeleteAsync(int id);
-		Task<ContentOptimization> OptimizeAndCreateAsync(OptimizeRequestDto request);
+		Task<ContentOptimizationDto> OptimizeAndCreateAsync(OptimizeRequestDto request);
 	}
 }
