@@ -19,30 +19,30 @@ namespace SEOBoostAI.API.Controllers
 
 		// GET: api/<ContentOptimizationsController>
 		[HttpGet]
-		public async Task<IEnumerable<ContentOptimization>> Get()
+		public async Task<IEnumerable<ContentOptimizationDto>> Get()
 		{
 			return await _contentOptimizationService.GetContentOptimizationsAsync();
 		}
 
 		[HttpGet("{currentPage}/{pageSize}")]
-		public async Task<PaginationResult<List<ContentOptimization>>> Get(int currentPage, int pageSize)
+		public async Task<PaginationResult<List<ContentOptimizationDto>>> Get(int currentPage, int pageSize)
 		{
 			return await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(currentPage, pageSize);
 		}
 
 		// GET api/<ContentOptimizationsController>/5
 		[HttpGet("{id}")]
-		public async Task<ContentOptimization> Get(int id)
+		public async Task<ContentOptimizationDto> Get(int id)
 		{
 			return await _contentOptimizationService.GetContentOptimizationByIdAsync(id);
 		}
 
 		// POST api/<ContentOptimizationsController>
-		[HttpPost]
-		public async Task<int> Post([FromBody] ContentOptimization contentOptimization)
-		{
-			throw new NotImplementedException();
-		}
+		//[HttpPost]
+		//public async Task<int> Post([FromBody] ContentOptimization contentOptimization)
+		//{
+		//	throw new NotImplementedException();
+		//}
 
 		// PUT api/<ContentOptimizationsController>/
 		[HttpPut]
@@ -57,5 +57,28 @@ namespace SEOBoostAI.API.Controllers
 		{
             throw new NotImplementedException();
         }
+
+		[HttpPost]
+		public async Task<IActionResult> Post([FromBody] OptimizeRequestDto requestDto)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			try
+			{
+				// Gọi phương thức service mới
+				ContentOptimizationDto result = await _contentOptimizationService.OptimizeAndCreateAsync(requestDto);
+
+				// Trả về kết quả
+				return CreatedAtAction(nameof(Get), new { id = result.ContentOptimizationID }, result);
+			}
+			catch (Exception ex)
+			{
+				// Báo lỗi nếu có
+				return StatusCode(500, $"Internal server error: {ex.Message}");
+			}
+		}
 	}
 }

@@ -52,10 +52,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[QuestionDatas]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[RegionComparison]",
          "ObjectType": 0
       },

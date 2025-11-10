@@ -21,18 +21,20 @@ namespace SEOBoostAI.Service.Services
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPageSpeedService _pageSpeedService;
-        private readonly IElementRepository _elementRepository;
+        private readonly IElementService _elementService;
         private readonly ILogger<PerformanceService> _logger;
         private readonly ICrawlingService _crawlingService;
         private readonly IGeminiAIService _geminiAIService;
 
-        public PerformanceService(IPerformanceRepository performanceRepository, IUserRepository userRepository, IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementRepository elementRepository, ILogger<PerformanceService> logger, ICrawlingService crawlingService, IGeminiAIService geminiAIService)
+        public PerformanceService(IPerformanceRepository performanceRepository, IUserRepository userRepository, 
+            IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementService elementService, 
+            ILogger<PerformanceService> logger, ICrawlingService crawlingService, IGeminiAIService geminiAIService)
         {
             _performanceRepository = performanceRepository;
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _pageSpeedService = pageSpeedService;
-            _elementRepository = elementRepository;
+            _elementService = elementService;
             _logger = logger;
             _crawlingService = crawlingService;
             _geminiAIService = geminiAIService;
@@ -147,6 +149,9 @@ namespace SEOBoostAI.Service.Services
                 await _performanceRepository.CreateAsync(performanceModel);
                 await _unitOfWork.SaveChangesAsync();
 
+                var elements = await _elementService.GetElement(performanceModel.PerformanceID, url);
+                performanceModel.Elements = elements;
+
                 return performanceModel;
             }
             catch (Exception ex)
@@ -154,6 +159,11 @@ namespace SEOBoostAI.Service.Services
                 throw new Exception("Lỗi khi lưu kết quả Performance vào DB.", ex);
             }
         }
+
+        //public async Task Suggestion()
+        //{
+
+        //}
 
         //public async Task<Performance> AnalyzeAndSavePerformanceAsync(int userId, string url, string strategy)
         //{

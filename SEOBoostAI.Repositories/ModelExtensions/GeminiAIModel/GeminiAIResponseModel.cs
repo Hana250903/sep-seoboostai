@@ -42,4 +42,22 @@ namespace SEOBoostAI.Repository.ModelExtensions.GeminiAIModel
         [JsonPropertyName("text")]
         public string Text { get; set; }
     }
+
+	public class AiOptimizationResponse
+	{
+		[JsonPropertyName("optimized_content")]
+		public string OptimizedContent { get; set; }
+
+		[JsonPropertyName("seo_score")]
+		public int SeoScore { get; set; }
+
+		[JsonPropertyName("readability")]
+		public int Readability { get; set; }
+
+		[JsonPropertyName("engagement")]
+		public int Engagement { get; set; }
+
+		[JsonPropertyName("originality")]
+		public int Originality { get; set; }
+	}
 }

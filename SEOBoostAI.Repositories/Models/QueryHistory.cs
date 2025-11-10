@@ -8,28 +8,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-public partial class QuestionData
+[Table("QueryHistory")]
+public partial class QueryHistory
 {
     [Key]
-    public int QuestionDataID { get; set; }
+    public int Id { get; set; }
 
-    public int UserID { get; set; }
+    public int MemberId { get; set; }
 
     [Required]
-    [StringLength(255)]
-    public string Question { get; set; }
+    [StringLength(500)]
+    public string OriginalQuestion { get; set; }
 
-    public string DataResponse { get; set; }
+    [Required]
+    public string FinalAiResponse { get; set; }
 
     [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
-    [Column(TypeName = "datetime")]
-    public DateTime? UpdatedAt { get; set; }
-
-    public bool IsDeleted { get; set; }
-
-    [ForeignKey("UserID")]
-    [InverseProperty("QuestionData")]
-    public virtual User User { get; set; }
+    [ForeignKey("MemberId")]
+    [InverseProperty("QueryHistories")]
+    public virtual User Member { get; set; }
 }

@@ -18,15 +18,9 @@ public partial class Element
     [StringLength(50)]
     public string TagName { get; set; }
 
-    [StringLength(255)]
-    public string Attribute { get; set; }
-
     public string InnerText { get; set; }
 
     public string OuterHTML { get; set; }
-
-    [StringLength(20)]
-    public string Status { get; set; }
 
     public bool Important { get; set; }
 
@@ -48,11 +42,4 @@ public partial class Element
     [ForeignKey("PerformanceID")]
     [InverseProperty("Elements")]
     public virtual Performance Performance { get; set; }
-}
-
-public class ElementFinding
-{
-    public string TagName { get; set; }
-    public string OuterHtml { get; set; }
-    public string InnerHtml { get; set; }
 }
