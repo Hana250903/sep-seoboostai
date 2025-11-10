@@ -1,5 +1,6 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -15,12 +16,14 @@ namespace SEOBoostAI.Service.Services
 	{
 		private readonly IUserMonthlyFreeQuotaRepository _userMonthlyFreeQuotaRepository;
 		private readonly IUnitOfWork _unitOfWork;
+        private readonly IFeatureRepository _featureRepository;
 
-		public UserMonthlyFreeQuotaService(IUserMonthlyFreeQuotaRepository userMonthlyFreeQuotaRepository, IUnitOfWork unitOfWork)
+        public UserMonthlyFreeQuotaService(IUserMonthlyFreeQuotaRepository userMonthlyFreeQuotaRepository, IUnitOfWork unitOfWork, IFeatureRepository featureRepository)
 		{
 			_userMonthlyFreeQuotaRepository = userMonthlyFreeQuotaRepository;
 			_unitOfWork = unitOfWork;
-		}
+            _featureRepository = featureRepository;
+        }
 
 		public async Task<PaginationResult<List<UserMonthlyFreeQuota>>> GetUserMonthlyFreeQuotasWithPaginateAsync(int currentPage, int pageSize)
 		{
@@ -76,5 +79,65 @@ namespace SEOBoostAI.Service.Services
 				throw;
 			}
 		}
-	}
+
+        public async Task<int> CreateQuotaAsync(int userId)
+        {
+			try
+			{
+                var userMonthlyFreeQuotas = await _userMonthlyFreeQuotaRepository.CreateAsync(userId);
+                await _userMonthlyFreeQuotaRepository.CreateRangeAsync(userMonthlyFreeQuotas);
+                var result = await _unitOfWork.SaveChangesAsync();
+                return result;
+            }
+			catch (Exception ex)
+			{
+				throw;
+			}
+        }
+
+		public async Task<int> UpdateMonthQuotaAsync(int userId)
+		{
+			try
+			{
+				var userMonthlyFreeQuotas = await _userMonthlyFreeQuotaRepository.GetQuotasByUserId(userId);
+
+                foreach (var userMonthlyFreeQuota in userMonthlyFreeQuotas)
+                {
+					var checkMonthly = CheckMonthly(userMonthlyFreeQuota.MonthYear);
+					if (checkMonthly)
+					{
+						var currentMonth = DateTime.UtcNow.ToString("yyyy-MM");
+						userMonthlyFreeQuota.MonthYear = currentMonth;
+						await _userMonthlyFreeQuotaRepository.UpdateAsync(userMonthlyFreeQuota);
+					}
+					else
+					{
+						continue;
+					}
+                }
+				var result = await _unitOfWork.SaveChangesAsync();
+				return result;
+                
+            }
+			catch (Exception ex)
+			{
+				throw;
+			}
+		}
+
+		private bool CheckMonthly(string monthYear)
+		{
+            DateTime startOfTargetMonth = DateTime.Parse(monthYear + "-01");
+            DateTime startOfNextMonth = startOfTargetMonth.AddMonths(1);
+
+            if (DateTime.Now >= startOfNextMonth)
+            {
+				return true;
+            }
+            else
+            {
+				return false;
+            }
+        }
+    }
 }

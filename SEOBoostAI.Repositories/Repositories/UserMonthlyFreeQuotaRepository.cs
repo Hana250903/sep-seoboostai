@@ -32,5 +32,34 @@ namespace SEOBoostAI.Repository.Repositories
 			};
 			return result;
 		}
-	}
+
+        public async Task<List<UserMonthlyFreeQuota>> CreateAsync(int userId)
+		{
+			var features = _context.Set<Feature>().ToList();
+
+            var userMonthlyFreeQuotas = new List<UserMonthlyFreeQuota>();
+
+            foreach (var feature in features)
+            {
+                userMonthlyFreeQuotas.Add(new UserMonthlyFreeQuota
+                {
+                    UserID = userId,
+                    FeatureID = feature.FeatureID,
+                    MonthlyLimit = 3,
+                    MonthYear = DateTime.Now.ToString("yyyy-MM"),
+                    UsageCount = 0,
+                    IsDeleted = false,
+                });
+            }
+
+			return userMonthlyFreeQuotas;
+        }
+
+		public async Task<List<UserMonthlyFreeQuota>> GetQuotasByUserId(int userId)
+		{
+			var userMonthlyFreeQuota = _context.Set<UserMonthlyFreeQuota>().Where(u => u.UserID == userId).ToList();
+			return userMonthlyFreeQuota;
+		}
+
+    }
 }

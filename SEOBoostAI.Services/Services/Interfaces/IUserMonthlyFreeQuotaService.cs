@@ -16,5 +16,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task CreateAsync(UserMonthlyFreeQuota userMonthlyFreeQuota);
 		Task UpdateAsync(UserMonthlyFreeQuota userMonthlyFreeQuota);
 		Task DeleteAsync(int id);
-	}
+		Task<int> CreateQuotaAsync(int userId);
+		Task<int> UpdateMonthQuotaAsync(int userId);
+    }
 }

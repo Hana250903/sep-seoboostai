@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Repository.Repositories
 {
-	public class WalletRepositoriy : GenericRepository<Wallet>, IWalletRepositoriy
+	public class WalletRepositoriy : GenericRepository<Wallet>, IWalletRepository
 	{
 		public WalletRepositoriy(SEP_SEOBoostAIContext context) : base(context) { }
 		public async Task<PaginationResult<List<Wallet>>> GetWalletsWithPaginateAsync(int currentPage, int pageSize)

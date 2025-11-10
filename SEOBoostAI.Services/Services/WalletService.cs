@@ -13,10 +13,10 @@ namespace SEOBoostAI.Service.Services
 {
 	public class WalletService : IWalletService
 	{
-		private readonly IWalletRepositoriy _walletRepositoriy;
+		private readonly IWalletRepository _walletRepositoriy;
 		private readonly IUnitOfWork _unitOfWork;
 
-		public WalletService(IWalletRepositoriy walletRepositoriy, IUnitOfWork unitOfWork)
+		public WalletService(IWalletRepository walletRepositoriy, IUnitOfWork unitOfWork)
 		{
 			_walletRepositoriy = walletRepositoriy;
 			_unitOfWork = unitOfWork;

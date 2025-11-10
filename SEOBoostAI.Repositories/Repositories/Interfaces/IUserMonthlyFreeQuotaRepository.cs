@@ -12,5 +12,7 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 	public interface IUserMonthlyFreeQuotaRepository : IGenericRepository<UserMonthlyFreeQuota>
 	{
 		Task<PaginationResult<List<UserMonthlyFreeQuota>>> GetUserMonthlyFreeQuotasWithPaginateAsync(int currentPage, int pageSize);
-	}
+		Task<List<UserMonthlyFreeQuota>> CreateAsync(int userId);
+		Task<List<UserMonthlyFreeQuota>> GetQuotasByUserId(int userId);
+    }
 }

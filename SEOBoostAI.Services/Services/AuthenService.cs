@@ -1,5 +1,7 @@
 ﻿using Google.Apis.Auth;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
@@ -21,34 +23,45 @@ namespace SEOBoostAI.Service.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IWalletRepositoriy _walletRepositoriy;
+        private readonly IWalletRepository _walletRepository;
         private readonly IConfiguration _configuration;
+        private readonly IUserMonthlyFreeQuotaService _userMonthlyFreeQuotaService;
+        private readonly IFeatureRepository _featureRepository;
 
-        public AuthenService(IUserRepository userRepository, IUnitOfWork unitOfWork, IWalletRepositoriy walletRepositoriy, IConfiguration configuration)
+        public AuthenService(IUserRepository userRepository, IUnitOfWork unitOfWork, IWalletRepository walletRepository, IConfiguration configuration, 
+            IUserMonthlyFreeQuotaService userMonthlyFreeQuotaService, IFeatureRepository featureRepository)
         {
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
-            _walletRepositoriy = walletRepositoriy;
+            _walletRepository = walletRepository;
             _configuration = configuration;
+            _userMonthlyFreeQuotaService = userMonthlyFreeQuotaService;
+            _featureRepository = featureRepository;
         }
         public async Task<ResultModel> LoginWithGoogle(string credential)
         {
+            // Validate configuration
             string clientId = _configuration["GoogleCredential:ClientId"];
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                throw new InvalidOperationException("Google client ID is not configured.");
+            }
 
+            // Validate Google credential
             var settings = new GoogleJsonWebSignature.ValidationSettings()
             {
                 Audience = new List<string> { clientId }
             };
             var payload = await GoogleJsonWebSignature.ValidateAsync(credential, settings);
-
-            if (payload == null)
+            if (payload == null || string.IsNullOrWhiteSpace(payload.Email))
             {
-                throw new Exception("Credential không hợp lệ");
+                throw new Exception("Credential không hợp lệ"); // keep original language if needed
             }
+
+            string googleId = payload.Subject ?? payload.JwtId;
 
             var existUser = await _userRepository.GetUserByEmailAsync(payload.Email);
 
-            //nếu có user
             if (existUser != null)
             {
                 var accessToken = await GenerateAccessToken(existUser);
@@ -57,104 +70,153 @@ namespace SEOBoostAI.Service.Services
                 existUser.RefreshToken = refreshToken;
 
                 await _userRepository.UpdateAsync(existUser);
+                var saveResult = await _unitOfWork.SaveChangesAsync();
+                if (saveResult <= 0)
+                {
+                    throw new Exception("Failed to update user refresh token.");
+                }
 
-                // Check if the user has an active subscription
-                //var isExpired = await _userAccountSubscriptionRepository.IsExpired(existUser.Id);
-                //if (isExpired)
-                //{
-                //    // If the subscription is expired, you can handle it here (e.g., notify the user, update UI, etc.)
-                //    // For now, we just return the tokens.
-                //    return new ResultModel()
-                //    {
-                //        Success = true,
-                //        Message = "Login successfully, but user account subscription expired",
-                //        AccessToken = accessToken,
-                //        RefreshToken = refreshToken
-                //    };
-                //}
+                await _userMonthlyFreeQuotaService.UpdateQuotaAsync(existUser.UserID);
 
-                //return new ResultModel()
-                //{
-                //    Success = true,
-                //    Message = "Login successfully",
-                //    AccessToken = accessToken,
-                //    RefreshToken = refreshToken
-                //};
-
+                return new ResultModel()
+                {
+                    Success = true,
+                    Message = "Login successfully",
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                };
             }
             else
             {
+                await _unitOfWork.BeginTransactionAsync();
                 try
                 {
-                    //User newUser = new User()
-                    //{
-                    //    Username = payload.Email.Split('@')[0].Trim(),
-                    //    FullName = payload.Name,
-                    //    Email = payload.Email,
-                    //    Role = "User",
-                    //    Avatar = payload.Picture,
-                    //    Password = "".Trim(),
-                    //    CreatedAt = DateTime.UtcNow,
-                    //    GoogleId = payload.JwtId
-                    //};
+                    User newUser = new User()
+                    {
+                        UserName = payload.Email.Split('@')[0].Trim(),
+                        FullName = payload.Name,
+                        Email = payload.Email,
+                        Role = "User",
+                        Avatar = payload.Picture,
+                        Password = "".Trim(),
+                        CreatedAt = DateTime.UtcNow,
+                        GoogleID = googleId
+                    };
 
-                    //    var accessToken = await GenerateAccessToken(newUser);
-                    //    var refreshToken = GenerateRefreshToken(newUser.Email);
+                    // Create user (first save to get the generated UserID)
+                    await _userRepository.CreateAsync(newUser);
+                    var createResult = await _unitOfWork.SaveChangesAsync();
+                    if (createResult <= 0)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        throw new Exception("Failed to create user.");
+                    }
 
-                    //    newUser.RefreshToken = refreshToken;
+                    // Generate tokens now that UserID is assigned
+                    var accessToken = await GenerateAccessToken(newUser);
+                    var refreshToken = GenerateRefreshToken(newUser.Email);
 
-                    //    var result = await _userRepository.CreateAsync(newUser);
+                    // Store refresh token
+                    newUser.RefreshToken = refreshToken;
+                    await _userRepository.UpdateAsync(newUser);
+                    var updateResult = await _unitOfWork.SaveChangesAsync();
+                    if (updateResult <= 0)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        throw new Exception("Failed to store refresh token for new user.");
+                    }
 
-                    //    if (result > 0)
-                    //    {
-                    //        var user = await _userRepository.GetUserByEmailAsync(newUser.Email);
+                    // Create wallet
+                    Wallet wallet = new Wallet()
+                    {
+                        Currency = 0.0M,
+                        CreatedAt = DateTime.UtcNow,
+                        UserID = newUser.UserID
+                    };
 
-                    //        Wallet wallet = new Wallet()
-                    //        {
-                    //            Currency = 0.0M,
-                    //            CreatedAt = DateTime.UtcNow,
-                    //            UserId = user.Id
-                    //        };
+                    await _walletRepository.CreateAsync(wallet);
+                    var walletResult = await _unitOfWork.SaveChangesAsync();
+                    if (walletResult <= 0)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        throw new Exception("Failed to create user wallet.");
+                    }
 
-                    //        var walletResult = await _walletRepository.CreateAsync(wallet);
-                    //        if (walletResult > 0)
-                    //        {
-                    //            UserAccountSubscription userAccountSubscription = new UserAccountSubscription()
-                    //            {
-                    //                UserId = user.Id,
-                    //                AccountTypeId = 1,
-                    //                StartDate = DateTime.UtcNow,
-                    //                IsActive = true
-                    //            };
-                    //            var accountSubscriptionResult = await _userAccountSubscriptionRepository.CreateAsync(userAccountSubscription);
-                    //            if (accountSubscriptionResult <= 0)
-                    //            {
-                    //                throw new Exception("Failed to create user account subscription");
-                    //            }
-                    //        }
+                    // Create user monthly free quota entries
+                    var userMonthlyFreeQuotaResult = await _userMonthlyFreeQuotaService.CreateQuotaAsync(newUser.UserID);
+                    if (userMonthlyFreeQuotaResult <= 0)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        throw new Exception("Failed to create user account subscription.");
+                    }
 
-                    //        return new ResultModel()
-                    //        {
-                    //            Success = true,
-                    //            Message = "Login successfully",
-                    //            AccessToken = accessToken,
-                    //            RefreshToken = refreshToken
-                    //        };
-                    //    }
+                    await _unitOfWork.CommitTransactionAsync();
 
-                    //    throw new Exception("");
+                    return new ResultModel()
+                    {
+                        Success = true,
+                        Message = "Login successfully",
+                        AccessToken = accessToken,
+                        RefreshToken = refreshToken
+                    };
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    // Likely unique constraint (username/email) -- surface clearer message
+                    throw new Exception("Database update failed (possible unique constraint).", dbEx);
                 }
                 catch
                 {
+                    await _unitOfWork.RollbackTransactionAsync();
                     throw;
                 }
             }
-            throw new NotImplementedException();
         }
 
-        public Task<bool> LogOut(string refreshToken, int userId)
+        public async Task<bool> LogOut(string refreshToken, int userId)
         {
-            throw new NotImplementedException();
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:SecretKey"]));
+            var handler = new JwtSecurityTokenHandler();
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = authSigningKey,
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["JWT:ValidIssuer"],
+                ValidateAudience = true,
+                ValidAudience = _configuration["JWT:ValidAudience"],
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+            try
+            {
+                SecurityToken validatedToken;
+                var principal = handler.ValidateToken(refreshToken, validationParameters, out validatedToken);
+                var email = principal.Claims.FirstOrDefault(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+                if (email != null)
+                {
+                    var user = await _userRepository.GetByIdAsync(userId);
+                    if (email == user.Email)
+                    {
+                        var existUser = await _userRepository.GetUserByEmailAsync(email);
+
+                        if (existUser != null)
+                        {
+                            existUser.RefreshToken = null;
+                            await _userRepository.UpdateAsync(existUser);
+
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
         private async Task<string> GenerateAccessToken(User user)

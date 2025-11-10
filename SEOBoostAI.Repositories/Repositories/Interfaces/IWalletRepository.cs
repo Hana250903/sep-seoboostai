@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
-	public interface IWalletRepositoriy : IGenericRepository<Wallet>
+	public interface IWalletRepository : IGenericRepository<Wallet>
 	{
 		Task<PaginationResult<List<Wallet>>> GetWalletsWithPaginateAsync(int currentPage, int pageSize);
 	}
