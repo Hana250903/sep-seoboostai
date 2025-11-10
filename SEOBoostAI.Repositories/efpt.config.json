@@ -32,6 +32,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[InterestByRegion]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[InterestOverTime]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Performances]",
          "ObjectType": 0
       },
@@ -40,7 +48,23 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[QueryHistory]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[QuestionDatas]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[RegionComparison]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[RelatedQueries]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[RelatedTopics]",
          "ObjectType": 0
       },
       {
@@ -49,6 +73,10 @@
       },
       {
          "Name": "[dbo].[Transactions]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TrendSearches]",
          "ObjectType": 0
       },
       {
