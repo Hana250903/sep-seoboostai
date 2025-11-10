@@ -1,4 +1,5 @@
 ﻿using HtmlAgilityPack;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using System;
 using System.Collections.Generic;
