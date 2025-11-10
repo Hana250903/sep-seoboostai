@@ -7,6 +7,7 @@ using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
+using SEOBoostAI.Service.Ultils;
 using System.Configuration;
 
 namespace SEOBoostAI.API
@@ -31,6 +32,15 @@ namespace SEOBoostAI.API
             services.AddScoped<ICrawlingService, CrawlingService>();
             services.AddSingleton<ISystemConfigService, SystemConfigService>();
             services.AddScoped<IGeminiAIService, GeminiAIService>();
+
+            // test xong xóa ( 2 dòng dưới )
+            services.AddScoped<IGeminiAiKeywordService, GeminiAiKeywordService>();
+            services.AddScoped<IGeminiAiAnalysisService, GeminiAiAnalysisService>();
+            services.AddScoped<ISerpApiService, SerpApiService>();
+            services.AddScoped<ITrendSearchService, TrendSearchService>(); 
+            services.AddScoped<IQueryHistoryRepository, QueryHistoryRepository>();
+            services.AddScoped<ITrendSearchesRepository, TrendSearchesRepository>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));

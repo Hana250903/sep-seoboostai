@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,5 +23,11 @@ namespace SEOBoostAI.Repository.GenericRepository
         Task UpdateRangeAsync(IEnumerable<T> entities);
         Task RemoveRangeAsync(IEnumerable<T> entities);
         Task ShortDeleteRangeAsync(IEnumerable<T> entities);
+
+        //test gia, check nguoc case
+        Task<T> GetAsync(
+            Expression<Func<T, bool>> filter = null,
+            string includeProperties = "");
+
     }
 }

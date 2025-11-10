@@ -3,6 +3,7 @@ using SEOBoostAI.Repository.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,6 +12,7 @@ namespace SEOBoostAI.Repository.GenericRepository
     public class GenericRepository<T> where T : class
     {
         protected readonly SEP_SEOBoostAIContext _context;
+
 
         // Bắt buộc dùng constructor này để đảm bảo Dependency Injection
         // và tất cả repository dùng chung 1 DbContext
@@ -187,5 +189,34 @@ namespace SEOBoostAI.Repository.GenericRepository
         }
 
         #endregion
+
+
+        public async Task<T> GetAsync(
+    Expression<Func<T, bool>> filter = null,
+    string includeProperties = "")
+        {
+            IQueryable<T> query = _context.Set<T>().AsQueryable();
+
+            // 1. Áp dụng bộ lọc (WHERE)
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            // 2. Áp dụng Include (JOIN các bảng con)
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                // Tách chuỗi "InterestOverTimes,RelatedTopics,..."
+                foreach (var includeProperty in includeProperties.Split(
+                    new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProperty);
+                }
+            }
+
+            // 3. Trả về đối tượng đầu tiên tìm thấy
+            return await query.FirstOrDefaultAsync();
+        }
+
     }
 }
