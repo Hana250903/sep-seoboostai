@@ -12,5 +12,7 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
     public interface IPerformanceRepository : IGenericRepository<Performance>
     {
         Task<PaginationResult<List<Performance>>> GetPerformancesWithPaginateAsync(int currentPage, int pageSize);
+        Task<List<Performance>> GetPerformancesByMemberID(int id);
+        Task<Performance> GetPerformanceAsync(int id);
     }
 }

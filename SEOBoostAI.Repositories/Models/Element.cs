@@ -56,3 +56,18 @@ public class ElementFinding
     public string OuterHtml { get; set; }
     public string InnerHtml { get; set; }
 }
+
+public class ElementRequest
+{
+    public int ElementID { get; set; }
+    public string TagName { get; set; }
+    public string OuterHtml { get; set; }
+    public string InnerHtml { get; set; }
+}
+
+public record AiElementAnalysis
+{
+    public int ElementID { get; set; }
+    public string AIRecommendation { get; set; }
+    public string Description { get; set; }
+}

@@ -75,9 +75,77 @@ namespace SEOBoostAI.Service.Services
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
 
-            var assessmentResult = DeserializeResponse<AiAssessment>(geminiResponse);
-
+            var assessmentResult = DeserializeResponse<AiAssessment>(geminiResponse)
+;
             return assessmentResult;
+        }
+
+        public async Task<List<AiElementAnalysis>> SuggestionElement(List<ElementRequest> elements)
+        {
+            string fullUrl = $"{_url}?key={_apikey}";
+
+            using HttpClient client = new HttpClient();
+
+            string jsonRequest = JsonSerializer.Serialize(elements);
+
+            string promptTemplate = $@"Bạn là một chuyên gia phân tích HTML, tối ưu hiệu suất website (Core Web Vitals) và SEO. Tôi sẽ cung cấp cho bạn một **danh sách (JSON array)** các phần tử HTML. Mỗi phần tử sẽ có `ElementID`, `TagName`, và `OuterHTML`.
+
+                Nhiệm vụ của bạn là:
+                1.  Phân tích **từng element** trong danh sách để tìm ra các vấn đề tiềm ẩn về hiệu suất (ví dụ: gây CLS, chặn hiển thị) hoặc SEO (ví dụ: thiếu alt text).
+                2.  Trả về **DUY NHẤT** một **JSON array** hợp lệ, không dùng markdown, không giải thích.
+                3.  Array này phải chứa một đối tượng cho **mỗi element** đã được phân tích.
+
+                **Quan trọng:** Mỗi đối tượng trong array trả về **PHẢI** chứa:
+                * `ElementID`: (Giữ nguyên `ElementID` từ đầu vào để map dữ liệu).
+                * `Description`: Mô tả ngắn gọn vấn đề (ví dụ: ""Thẻ <img> thiếu 'alt'"").
+                * `AIRecommendation`: Gợi ý cụ thể để sửa lỗi (ví dụ: ""Hãy bổ sung thuộc tính alt='mô tả ảnh'"").
+
+                Sử dụng cấu trúc JSON array bắt buộc sau (ví dụ cho 2 element):
+                [
+                  {{
+                    ""ElementID"": 1,
+                    ""AIRecommendation"": ""..."",
+                    ""Description"": ""...""
+                  }},
+                  {{
+                    ""ElementID"": 2,
+                    ""Attribute"": ""..."",
+                    ""Description"": ""...""
+                  }}
+                ]
+
+                Dữ liệu Elements đầu vào (dạng JSON array):
+                {jsonRequest}";
+
+            var requestData = new GeminiAIRequestModel
+            {
+                Contents = new[]
+                {
+                    new ContentRequest
+                    {
+                        Parts = new[]
+                        {
+                            new PartRequest
+                            {
+                                Text = promptTemplate,
+                            }
+                        }
+                    }
+                }
+            };
+
+            string json = JsonSerializer.Serialize(requestData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync(fullUrl, content);
+            string result = await response.Content.ReadAsStringAsync();
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+
+            var suggestResult = DeserializeResponse<List<AiElementAnalysis>>(geminiResponse);
+
+            return suggestResult;
         }
 
 		public async Task<AiOptimizationResponse> OptimizeContentAsync(OptimizeRequestDto request)
@@ -171,6 +239,5 @@ namespace SEOBoostAI.Service.Services
 
             return result;
         }
-
 	}
 }
