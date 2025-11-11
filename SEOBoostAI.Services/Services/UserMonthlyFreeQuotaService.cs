@@ -106,9 +106,10 @@ namespace SEOBoostAI.Service.Services
 					var checkMonthly = CheckMonthly(userMonthlyFreeQuota.MonthYear);
 					if (checkMonthly)
 					{
-						var currentMonth = DateTime.UtcNow.ToString("yyyy-MM");
+						var currentMonth = DateTime.UtcNow.AddHours(7).ToString("yyyy-MM");
 						userMonthlyFreeQuota.MonthYear = currentMonth;
-						await _userMonthlyFreeQuotaRepository.UpdateAsync(userMonthlyFreeQuota);
+                        userMonthlyFreeQuota.UsageCount = 0;
+                        await _userMonthlyFreeQuotaRepository.UpdateAsync(userMonthlyFreeQuota);
 					}
 					else
 					{
@@ -137,6 +138,40 @@ namespace SEOBoostAI.Service.Services
             else
             {
 				return false;
+            }
+        }
+		public async Task<bool> CheckLimit(int userId, int featureId)
+		{
+			var userQuota = await _userMonthlyFreeQuotaRepository.GetQuotaByUserIdAndFeatureId(userId, featureId);
+			if (userQuota != null)
+			{
+				if (userQuota.UsageCount < userQuota.MonthlyLimit)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else
+			{
+				return false;
+            }
+        }
+		public async Task<int> IncrementUsageCount(int userId, int featureId)
+		{
+			var userQuota = await _userMonthlyFreeQuotaRepository.GetQuotaByUserIdAndFeatureId(userId, featureId);
+			if (userQuota != null)
+			{
+				userQuota.UsageCount += 1;
+				await _userMonthlyFreeQuotaRepository.UpdateAsync(userQuota);
+				var result = await _unitOfWork.SaveChangesAsync();
+				return result;
+			}
+			else
+			{
+				return 0;
             }
         }
     }

@@ -61,5 +61,11 @@ namespace SEOBoostAI.Repository.Repositories
 			return userMonthlyFreeQuota;
 		}
 
+		public async Task<UserMonthlyFreeQuota> GetQuotaByUserIdAndFeatureId(int userId, int featureId)
+		{
+			var userMonthlyFreeQuota = await _context.Set<UserMonthlyFreeQuota>()
+				.FirstOrDefaultAsync(u => u.UserID == userId && u.FeatureID == featureId);
+			return userMonthlyFreeQuota;
+        }
     }
 }
