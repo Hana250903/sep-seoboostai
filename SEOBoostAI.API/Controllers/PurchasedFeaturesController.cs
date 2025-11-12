@@ -38,23 +38,26 @@ namespace SEOBoostAI.API.Controllers
 
 		// POST api/<PurchasedFeaturesController>
 		[HttpPost]
-		public async Task<int> Post([FromBody] PurchasedFeature purchasedFeature)
+		public async Task<IActionResult> Post([FromBody] PurchasedFeature purchasedFeature)
 		{
-			throw new NotImplementedException();
-		}
+			await _purchasedFeatureService.CreateAsync(purchasedFeature);
+			return Ok(purchasedFeature);
+        }
 
 		// PUT api/<PurchasedFeaturesController>/
 		[HttpPut]
-		public async Task<int> Put([FromBody] PurchasedFeature purchasedFeature)
+		public async Task<IActionResult> Put([FromBody] PurchasedFeature purchasedFeature)
 		{
-			throw new NotImplementedException();
-		}
+			await _purchasedFeatureService.UpdateAsync(purchasedFeature);
+			return Ok(purchasedFeature);
+        }
 
 		// DELETE api/<PurchasedFeaturesController>/5
 		[HttpDelete("{id}")]
-		public async Task<bool> Delete(int id)
+		public async Task<IActionResult> Delete(int id)
 		{
-			throw new NotImplementedException();
-		}
+			await _purchasedFeatureService.DeleteAsync(id);
+			return Ok();
+        }
 	}
 }

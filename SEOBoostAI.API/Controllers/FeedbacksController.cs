@@ -38,23 +38,26 @@ namespace SEOBoostAI.API.Controllers
 
 		// POST api/<FeedbacksController>
 		[HttpPost]
-		public async Task<int> Post([FromBody] Feedback feedback)
+		public async Task<IActionResult> Post([FromBody] Feedback feedback)
 		{
-            throw new NotImplementedException();
+            await _feedbackService.CreateAsync(feedback);
+			return Ok(feedback);
         }
 
 		// PUT api/<FeedbacksController>/
 		[HttpPut]
-		public async Task<int> Put([FromBody] Feedback feedback)
+		public async Task<IActionResult> Put([FromBody] Feedback feedback)
 		{
-            throw new NotImplementedException();
+            await _feedbackService.UpdateAsync(feedback);
+			return Ok(feedback);
         }
 
 		// DELETE api/<FeedbacksController>/5
 		[HttpDelete("{id}")]
-		public async Task<bool> Delete(int id)
+		public async Task<IActionResult> Delete(int id)
 		{
-            throw new NotImplementedException();
+            await _feedbackService.DeleteAsync(id);
+			return Ok();
         }
 	}
 }

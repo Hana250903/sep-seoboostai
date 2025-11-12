@@ -1,6 +1,7 @@
 ﻿using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
+using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -13,19 +14,37 @@ namespace SEOBoostAI.Service.Services
 	public class FeedbackService : IFeedbackService
 	{
 		private readonly IFeedbackRepository _feedbackRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-		public FeedbackService(IFeedbackRepository feedbackRepository)
+        public FeedbackService(IFeedbackRepository feedbackRepository, IUnitOfWork unitOfWork)
 		{
 			_feedbackRepository = feedbackRepository;
-		}
+            _unitOfWork = unitOfWork;
+
+        }
 		public async Task CreateAsync(Feedback feedback)
 		{
-			throw new NotImplementedException();
-		}
+			try
+			{
+                await _feedbackRepository.CreateAsync(feedback);
+				await _unitOfWork.SaveChangesAsync();
+            }
+			catch
+			{
+				throw;
+            }
+        }
 		public async Task DeleteAsync(int id)
 		{
-			var feedback = await _feedbackRepository.GetByIdAsync(id);
-            throw new NotImplementedException();
+			try
+			{
+                var feedback = await _feedbackRepository.GetByIdAsync(id);
+                await _feedbackRepository.RemoveAsync(feedback);
+            }
+			catch
+			{
+				throw;
+            }
         }
 		public async Task<Feedback> GetFeedbackByIdAsync(int id)
 		{
@@ -41,7 +60,15 @@ namespace SEOBoostAI.Service.Services
 		}
 		public async Task UpdateAsync(Feedback feedback)
 		{
-            throw new NotImplementedException();
+			try
+			{
+                await _feedbackRepository.UpdateAsync(feedback);
+                await _unitOfWork.SaveChangesAsync();
+            }
+			catch
+			{
+				throw;
+			}
         }
 	}
 }

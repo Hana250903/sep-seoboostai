@@ -44,21 +44,24 @@ namespace SEOBoostAI.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Element element)
         {
-            throw new NotImplementedException();
+            await _elementService.CreateAsync(element);
+            return Ok(element);
         }
 
         // PUT api/<ElementsController>/
         [HttpPut]
         public async Task<IActionResult> Put([FromBody] Element element)
         {
-            throw new NotImplementedException();
+            await _elementService.UpdateAsync(element);
+            return Ok(element);
         }
 
         // DELETE api/<ElementsController>/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            throw new NotImplementedException();
+            await _elementService.DeleteAsync(id);
+            return Ok();
         }
 
         [HttpPost("suggestion")]

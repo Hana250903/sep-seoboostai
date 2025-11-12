@@ -38,23 +38,26 @@ namespace SEOBoostAI.API.Controllers
 
 		// POST api/<TransactionsController>
 		[HttpPost]
-		public async Task<int> Post([FromBody] Transaction transaction)
+		public async Task<IActionResult> Post([FromBody] Transaction transaction)
 		{
-			throw new NotImplementedException();
-		}
+			await _transactionService.CreateAsync(transaction);
+			return Ok(transaction);
+        }
 
 		// PUT api/<TransactionsController>/
 		[HttpPut]
-		public async Task<int> Put([FromBody] Transaction transaction)
+		public async Task<IActionResult> Put([FromBody] Transaction transaction)
 		{
-			throw new NotImplementedException();
-		}
+			await _transactionService.UpdateAsync(transaction);
+			return Ok(transaction);
+        }
 
 		// DELETE api/<TransactionsController>/5
 		[HttpDelete("{id}")]
-		public async Task<bool> Delete(int id)
+		public async Task<IActionResult> Delete(int id)
 		{
-			throw new NotImplementedException();
-		}
+			await _transactionService.DeleteAsync(id);
+			return Ok();
+        }
 	}
 }

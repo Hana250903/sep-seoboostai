@@ -38,23 +38,26 @@ namespace SEOBoostAI.API.Controllers
 
 		// POST api/<WalletsController>
 		[HttpPost]
-		public async Task<int> Post([FromBody] Wallet wallet)
+		public async Task<IActionResult> Post([FromBody] Wallet wallet)
 		{
-			throw new NotImplementedException();
-		}
+			await _walletService.CreateAsync(wallet);
+			return Ok(wallet);
+        }
 
 		// PUT api/<WalletsController>/
 		[HttpPut]
-		public async Task<int> Put([FromBody] Wallet wallet)
+		public async Task<IActionResult> Put([FromBody] Wallet wallet)
 		{
-			throw new NotImplementedException();
-		}
+			await _walletService.UpdateAsync(wallet);
+			return Ok(wallet);
+        }
 
 		// DELETE api/<WalletsController>/5
 		[HttpDelete("{id}")]
-		public async Task<bool> Delete(int id)
+		public async Task<IActionResult> Delete(int id)
 		{
-			throw new NotImplementedException();
-		}
+			await _walletService.DeleteAsync(id);
+            return Ok();
+        }
 	}
 }

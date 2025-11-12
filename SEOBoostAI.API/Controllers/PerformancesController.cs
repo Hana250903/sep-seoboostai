@@ -43,23 +43,26 @@ namespace SEOBoostAI.API.Controllers
 
         // POST api/<PerformancesController>
         [HttpPost]
-        public async Task<int> Post([FromBody] Performance performance)
+        public async Task<IActionResult> Post([FromBody] Performance performance)
         {
-            throw new NotImplementedException();
+            await _performanceService.CreateAsync(performance);
+            return Ok(performance);
         }
 
         // PUT api/<PerformancesController>
         [HttpPut]
-        public async Task<int> Put([FromBody] Performance performance)
+        public async Task<IActionResult> Put([FromBody] Performance performance)
         {
-            throw new NotImplementedException();
+            await _performanceService.UpdateAsync(performance);
+            return Ok(performance);
         }
 
         // DELETE api/<PerformancesController>/5
         [HttpDelete("{id}")]
-        public async Task<bool> Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            throw new NotImplementedException();
+            await _performanceService.DeleteAsync(id);
+            return Ok();
         }
 
         [HttpPost("analyze")]

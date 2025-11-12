@@ -33,5 +33,18 @@ namespace SEOBoostAI.Repository.Repositories
 			};
 			return result;
 		}
-	}
+
+		public async Task<List<Feedback>> GetFeedbackByUserIdAsync(int userId)
+		{
+			return await _context.Set<Feedback>()
+				.Where(f => f.UserID == userId)
+				.ToListAsync();
+        }
+
+		public async Task UpdateFeedback(Feedback feedback)
+		{
+			feedback.UpdatedAt = DateTime.UtcNow.AddHours(7);
+            _context.Set<Feedback>().Update(feedback);
+        }
+    }
 }

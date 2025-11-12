@@ -38,23 +38,26 @@ namespace SEOBoostAI.API.Controllers
 
 		// POST api/<UserMonthlyFreeQuotasController>
 		[HttpPost]
-		public async Task<int> Post([FromBody] UserMonthlyFreeQuota userMonthlyFreeQuota)
+		public async Task<IActionResult> Post([FromBody] UserMonthlyFreeQuota userMonthlyFreeQuota)
 		{
-			throw new NotImplementedException();
-		}
+			await _userMonthlyFreeQuotaService.CreateAsync(userMonthlyFreeQuota);
+			return Ok(userMonthlyFreeQuota);
+        }
 
 		// PUT api/<UserMonthlyFreeQuotasController>/
 		[HttpPut]
-		public async Task<int> Put([FromBody] UserMonthlyFreeQuota userMonthlyFreeQuota)
+		public async Task<IActionResult> Put([FromBody] UserMonthlyFreeQuota userMonthlyFreeQuota)
 		{
-			throw new NotImplementedException();
-		}
+			await _userMonthlyFreeQuotaService.UpdateAsync(userMonthlyFreeQuota);
+			return Ok(userMonthlyFreeQuota);
+        }
 
 		// DELETE api/<UserMonthlyFreeQuotasController>/5
 		[HttpDelete("{id}")]
-		public async Task<bool> Delete(int id)
+		public async Task<IActionResult> Delete(int id)
 		{
-			throw new NotImplementedException();
-		}
+			await _userMonthlyFreeQuotaService.DeleteAsync(id);
+			return Ok();
+        }
 	}
 }

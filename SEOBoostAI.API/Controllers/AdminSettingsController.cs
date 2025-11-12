@@ -18,21 +18,16 @@ namespace SEOBoostAI.API.Controllers
             _systemConfigService = systemConfigService;
         }
 
-        // GET: api/<AdminSettingsController>
         [HttpGet]
         public IActionResult GetAllSettings()
         {
-            // Hàm này đọc TRỰC TIẾP từ cache (Singleton)
             var settings = _systemConfigService.GetAllSettings();
-
-            // Trả về một đối tượng JSON chứa tất cả cài đặt
             return Ok(settings);
         }
 
         [HttpPut]
         public async Task<IActionResult> UpdateSetting([FromBody] UpdateSettingRequest request)
         {
-            // Kiểm tra xem dữ liệu gửi lên có hợp lệ không (dựa trên DTO)
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -40,15 +35,11 @@ namespace SEOBoostAI.API.Controllers
 
             try
             {
-                // Gọi service, nó sẽ tự động cập nhật cả DB và Cache
                 await _systemConfigService.UpdateValueAsync(request.Key, request.Value);
-
-                // Trả về thông báo thành công
                 return Ok(new { message = $"Đã cập nhật '{request.Key}' thành công." });
             }
             catch (Exception ex)
             {
-                // (Nên log lỗi ex ra file/console)
                 return StatusCode(500, "Đã xảy ra lỗi máy chủ khi cập nhật.");
             }
         }
