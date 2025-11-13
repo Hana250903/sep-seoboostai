@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Index("Query", "Geolocation", "Timeframe", "Language", "CreatedAt", Name = "IX_TrendSearches_CacheCheck")]
 public partial class TrendSearch
 {
     [Key]

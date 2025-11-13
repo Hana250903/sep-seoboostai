@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SEOBoostAI.Repository.Models;
 
 [Table("InterestByRegion")]
+[Index("TrendSearchId", Name = "IX_InterestByRegion_TrendSearchId")]
 public partial class InterestByRegion
 {
     [Key]

@@ -15,22 +15,22 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Service.Services
 {
-    public class PerformanceService : IPerformanceService
+    public class AnalysisCacheService : IAnalysisCacheService
     {
-        private readonly IPerformanceRepository _performanceRepository;
+        private readonly IAnalysisCacheRepository _analysisCacheRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPageSpeedService _pageSpeedService;
         private readonly IElementService _elementService;
-        private readonly ILogger<PerformanceService> _logger;
+        private readonly ILogger<AnalysisCacheService> _logger;
         private readonly ICrawlingService _crawlingService;
         private readonly IGeminiAIService _geminiAIService;
 
-        public PerformanceService(IPerformanceRepository performanceRepository, IUserRepository userRepository, 
-            IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementService elementService, 
-            ILogger<PerformanceService> logger, ICrawlingService crawlingService, IGeminiAIService geminiAIService)
+        public AnalysisCacheService(IAnalysisCacheRepository analysisCacheRepository, IUserRepository userRepository,
+            IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementService elementService,
+            ILogger<AnalysisCacheService> logger, ICrawlingService crawlingService, IGeminiAIService geminiAIService)
         {
-            _performanceRepository = performanceRepository;
+            _analysisCacheRepository = analysisCacheRepository;
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _pageSpeedService = pageSpeedService;
@@ -40,11 +40,11 @@ namespace SEOBoostAI.Service.Services
             _geminiAIService = geminiAIService;
         }
 
-        public async Task CreateAsync(Performance performance)
+        public async Task CreateAsync(AnalysisCache analysisCache)
         {
             try
             {
-                await _performanceRepository.CreateAsync(performance);
+                await _analysisCacheRepository.CreateAsync(analysisCache);
                 await _unitOfWork.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -57,8 +57,8 @@ namespace SEOBoostAI.Service.Services
         {
             try
             {
-                var performance = await _performanceRepository.GetByIdAsync(id);
-                await _performanceRepository.RemoveAsync(performance);
+                var analysisCache = await _analysisCacheRepository.GetByIdAsync(id);
+                await _analysisCacheRepository.RemoveAsync(analysisCache);
                 await _unitOfWork.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -67,26 +67,26 @@ namespace SEOBoostAI.Service.Services
             }
         }
 
-        public async Task<Performance> GetPerformanceByIdAsync(int id)
+        public async Task<AnalysisCache> GetAnalysisCacheByIdAsync(int id)
         {
-            return await _performanceRepository.GetByIdAsync(id);
+            return await _analysisCacheRepository.GetByIdAsync(id);
         }
 
-        public async Task<List<Performance>> GetPerformancesAsync()
+        public async Task<List<AnalysisCache>> GetAnalysisCachesAsync()
         {
-            return await _performanceRepository.GetAllAsync();
+            return await _analysisCacheRepository.GetAllAsync();
         }
 
-        public async Task<PaginationResult<List<Performance>>> GetPerformancesWithPaginateAsync(int currentPage, int pageSize)
+        public async Task<PaginationResult<List<AnalysisCache>>> GetAnalysisCachesWithPaginateAsync(int currentPage, int pageSize)
         {
-            return await _performanceRepository.GetPerformancesWithPaginateAsync(currentPage, pageSize);
+            return await _analysisCacheRepository.GetAnalysisCachesWithPaginateAsync(currentPage, pageSize);
         }
 
-        public async Task UpdateAsync(Performance performance)
+        public async Task UpdateAsync(AnalysisCache analysisCache)
         {
             try
             {
-                await _performanceRepository.UpdateAsync(performance);
+                await _analysisCacheRepository.UpdateAsync(analysisCache);
                 await _unitOfWork.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -95,15 +95,13 @@ namespace SEOBoostAI.Service.Services
             }
         }
 
-        public async Task<Performance> AnalyzeAndSavePerformanceAsync(int userId, string url, string strategy)
+        public async Task<AnalysisCache> AnalyzeAndSaveAnalysisCacheAsync(string url, string strategy)
         {
-            var performanceModel = new Performance
+            var analysisCacheModel = new AnalysisCache
             {
-                UserID = userId,
                 Url = url,
                 Strategy = strategy,
-                FetchTime = DateTime.UtcNow.AddHours(7),
-                IsDeleted = false
+                LastAnalyzedAt = DateTime.UtcNow.AddHours(7)
             };
 
             var apiResult = await _pageSpeedService.GetPageSpeedAsync(url, strategy);
@@ -139,25 +137,29 @@ namespace SEOBoostAI.Service.Services
 
             var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(metrics));
 
-            performanceModel.PageSpeedResponse = JsonSerializer.Serialize(metrics);
-            performanceModel.Suggestion = geminiResponse.Suggestion;
-            performanceModel.GeneralAssessment = geminiResponse.GeneralAssessment;
-            performanceModel.CompletedTime = DateTime.UtcNow.AddHours(7);
+            analysisCacheModel.PageSpeedResponse = JsonSerializer.Serialize(metrics);
+            analysisCacheModel.Suggestion = geminiResponse.Suggestion;
+            analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
 
             try
             {
-                await _performanceRepository.CreateAsync(performanceModel);
+                await _analysisCacheRepository.CreateAsync(analysisCacheModel);
                 await _unitOfWork.SaveChangesAsync();
 
-                var elements = await _elementService.GetElement(performanceModel.PerformanceID, url);
-                performanceModel.Elements = elements;
+                var elements = await _elementService.GetElement(analysisCacheModel.AnalysisCacheID, url);
+                analysisCacheModel.Elements = elements;
 
-                return performanceModel;
+                return analysisCacheModel;
             }
             catch (Exception ex)
             {
-                throw new Exception("Lỗi khi lưu kết quả Performance vào DB.", ex);
+                throw new Exception("Lỗi khi lưu kết quả AnalysisCache vào DB.", ex);
             }
+        }
+
+        private void CheckDuplicateUrl(string url)
+        {
+
         }
 
         //public async Task Suggestion()
@@ -165,7 +167,7 @@ namespace SEOBoostAI.Service.Services
 
         //}
 
-        //public async Task<Performance> AnalyzeAndSavePerformanceAsync(int userId, string url, string strategy)
+        //public async Task<AnalysisCache> AnalyzeAndSaveAnalysisCacheAsync(int userId, string url, string strategy)
         //{
         //    // 1. Gọi API bên ngoài để lấy dữ liệu
         //    var apiResult = await _pageSpeedService.GetPageSpeedAsync(url, strategy);
@@ -196,7 +198,7 @@ namespace SEOBoostAI.Service.Services
         //    }
 
         //    var metrics = new PageSpeedMetrics(
-        //        PerformanceScore: (int)((lighthouse.Categories?.Performance?.Score ?? 0) * 100),
+        //        AnalysisCacheScore: (int)((lighthouse.Categories?.AnalysisCache?.Score ?? 0) * 100),
         //        FCP: lighthouse.Audits?.Fcp?.NumericValue,
         //        LCP: lighthouse.Audits?.Lcp?.NumericValue,
         //        CLS: lighthouse.Audits?.Cls?.NumericValue,
@@ -205,8 +207,8 @@ namespace SEOBoostAI.Service.Services
         //        TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
         //    );
 
-        //    // 2. Map dữ liệu từ DTO sang Model (Performance)
-        //    var performanceModel = new Performance
+        //    // 2. Map dữ liệu từ DTO sang Model (AnalysisCache)
+        //    var analysisCacheModel = new AnalysisCache
         //    {
         //        UserID = userId,
         //        Url = url,
@@ -223,10 +225,10 @@ namespace SEOBoostAI.Service.Services
         //    await _unitOfWork.BeginTransactionAsync();
         //    try
         //    {
-        //        await _performanceRepository.CreateAsync(performanceModel);
+        //        await _analysisCacheRepository.CreateAsync(analysisCacheModel);
         //        await _unitOfWork.SaveChangesAsync();
 
-        //        _logger.LogInformation("Đã lưu Performance ID: {PerformanceID}", performanceModel.PerformanceID);
+        //        _logger.LogInformation("Đã lưu AnalysisCache ID: {AnalysisCacheID}", analysisCacheModel.AnalysisCacheID);
 
         //        allSuggestions.AddRange(GenerateGeneralSuggestions(metrics)); // Cách đơn giản
         //        allSuggestions.AddRange(GenerateAdvancedSuggestions(metrics, htmlDoc));     // Cách nâng cao
@@ -235,10 +237,10 @@ namespace SEOBoostAI.Service.Services
 
         //        if (allSuggestions.Any())
         //        {
-        //            // 6. Gán PerformanceID cho tất cả gợi ý
+        //            // 6. Gán AnalysisCacheID cho tất cả gợi ý
         //            foreach (var suggestion in allSuggestions)
         //            {
-        //                suggestion.PerformanceID = performanceModel.PerformanceID;
+        //                suggestion.AnalysisCacheID = analysisCacheModel.AnalysisCacheID;
         //                suggestion.IsDeleted = false;
         //                suggestion.Status = "Gợi ý"; // Hoặc "Pending"
         //            }
@@ -252,14 +254,14 @@ namespace SEOBoostAI.Service.Services
 
         //        await _unitOfWork.CommitTransactionAsync();
 
-        //        performanceModel.Elements = allSuggestions;
-        //        return performanceModel;
+        //        analysisCacheModel.Elements = allSuggestions;
+        //        return analysisCacheModel;
         //    }
         //    catch (Exception ex)
         //    {
         //        await _unitOfWork.RollbackTransactionAsync();
-        //        _logger.LogError(ex, "Lỗi trong transaction AnalyzeAndSavePerformance");
-        //        throw new Exception("Lỗi khi lưu kết quả Performance và Element vào DB.", ex);
+        //        _logger.LogError(ex, "Lỗi trong transaction AnalyzeAndSaveAnalysisCache");
+        //        throw new Exception("Lỗi khi lưu kết quả AnalysisCache và Element vào DB.", ex);
         //    }
         //}
 

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Index("TrendSearchId", Name = "IX_RelatedQueries_TrendSearchId")]
 public partial class RelatedQuery
 {
     [Key]

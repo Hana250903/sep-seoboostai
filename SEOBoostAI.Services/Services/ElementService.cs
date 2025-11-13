@@ -18,17 +18,17 @@ namespace SEOBoostAI.Service.Services
         private readonly IElementRepository _elementRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICrawlingService _crawlingService;
-        private readonly IPerformanceRepository _performanceRepository;
+        private readonly IAnalysisCacheRepository _analysisCacheRepository;
         private readonly IGeminiAIService _geminiAIService;
 
         public ElementService(IElementRepository elementRepository, IUnitOfWork unitOfWork, 
-            ICrawlingService crawlingService, IPerformanceRepository performanceRepository,
+            ICrawlingService crawlingService, IAnalysisCacheRepository analysisCacheRepository,
             IGeminiAIService geminiAIService)
         {
             _elementRepository = elementRepository;
             _unitOfWork = unitOfWork;
             _crawlingService = crawlingService;
-            _performanceRepository = performanceRepository;
+            _analysisCacheRepository = analysisCacheRepository;
             _geminiAIService = geminiAIService;
         }
 
@@ -157,7 +157,7 @@ namespace SEOBoostAI.Service.Services
             return lists;
         }
 
-        public async Task<List<Element>> GetElement(int performanceId, string url)
+        public async Task<List<Element>> GetElement(int analysisCacheId, string url)
         {
             var htmlDoc = await _crawlingService.GetHtmlDocumentAsync(url);
             
@@ -169,7 +169,7 @@ namespace SEOBoostAI.Service.Services
             {
                 elements.Add(new Element
                 {
-                    PerformanceID = performanceId,
+                    AnalysisCacheID = analysisCacheId,
                     TagName = item.TagName,
                     InnerText = item.InnerHtml,
                     OuterHTML = item.OuterHtml,
@@ -184,11 +184,11 @@ namespace SEOBoostAI.Service.Services
             return elements;
         }
 
-        public async Task<List<Element>> Suggestion(int performanceID)
+        public async Task<List<Element>> Suggestion(int analysisCacheID)
         {
-            var performance = await _performanceRepository.GetPerformanceAsync(performanceID);
+            var analysisCache = await _analysisCacheRepository.GetAnalysisCacheAsync(analysisCacheID);
 
-            List<Element> elements = (List<Element>)performance.Elements;
+            List<Element> elements = (List<Element>)analysisCache.Elements;
             List<ElementRequest> requests = new List<ElementRequest>();
 
             foreach (var item in elements)
@@ -219,7 +219,7 @@ namespace SEOBoostAI.Service.Services
                     InnerText = original.InnerText,
                     IsDeleted = original.IsDeleted,
                     OuterHTML = original.OuterHTML,
-                    PerformanceID = original.PerformanceID,
+                    AnalysisCacheID = original.AnalysisCacheID,
                     UpdatedAt = original.UpdatedAt,
                 }).ToList();
             try

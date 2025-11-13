@@ -9,10 +9,9 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
-    public interface IPerformanceRepository : IGenericRepository<Performance>
+    public interface IAnalysisCacheRepository : IGenericRepository<AnalysisCache>
     {
-        Task<PaginationResult<List<Performance>>> GetPerformancesWithPaginateAsync(int currentPage, int pageSize);
-        Task<List<Performance>> GetPerformancesByMemberID(int id);
-        Task<Performance> GetPerformanceAsync(int id);
+        Task<PaginationResult<List<AnalysisCache>>> GetAnalysisCachesWithPaginateAsync(int currentPage, int pageSize);
+        Task<AnalysisCache> GetAnalysisCacheAsync(int id);
     }
 }

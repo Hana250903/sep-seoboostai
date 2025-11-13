@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SEOBoostAI.Repository.Models;
 
 [Table("InterestOverTime")]
+[Index("TrendSearchId", Name = "IX_InterestOverTime_TrendSearchId")]
 public partial class InterestOverTime
 {
     [Key]

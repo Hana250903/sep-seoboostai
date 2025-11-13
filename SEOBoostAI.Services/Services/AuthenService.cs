@@ -76,7 +76,7 @@ namespace SEOBoostAI.Service.Services
                     throw new Exception("Failed to update user refresh token.");
                 }
 
-                await _userMonthlyFreeQuotaService.UpdateQuotaAsync(existUser.UserID);
+                await _userMonthlyFreeQuotaService.UpdateMonthQuotaAsync(existUser.UserID);
 
                 return new ResultModel()
                 {

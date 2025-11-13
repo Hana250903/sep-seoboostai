@@ -18,20 +18,22 @@ namespace SEOBoostAI.API
         {
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IElementRepository, ElementRepository>();
-            services.AddScoped<IPerformanceRepository, PerformanceRepository>();
+            services.AddScoped<IAnalysisCacheRepository, AnalysisCacheRepository>();
             services.AddScoped<IContentOptimizationRepository, ContentOptimizationRepository>();
             services.AddScoped<IFeedbackRepository, FeedbackRepository>();
             services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();  
-            
+            services.AddScoped<IPerformanceHistoryRepository, PerformanceHistoryRepository>();
+
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
-            services.AddScoped<IPerformanceService, PerformanceService>();
+            services.AddScoped<IAnalysisCacheService, AnalysisCacheService>();
             services.AddScoped<IContentOptimizationService, ContentOptimizationService>();
             services.AddScoped<IFeedbackService, FeedbackService>();
             services.AddScoped<IPageSpeedService, PageSpeedService>();
             services.AddScoped<ICrawlingService, CrawlingService>();
             services.AddSingleton<ISystemConfigService, SystemConfigService>();
             services.AddScoped<IGeminiAIService, GeminiAIService>();
+            services.AddScoped<IPerformanceHistoryService, PerformanceHistoryService>();
 
             // test xong xóa ( 2 dòng dưới )
             services.AddScoped<IGeminiAiKeywordService, GeminiAiKeywordService>();

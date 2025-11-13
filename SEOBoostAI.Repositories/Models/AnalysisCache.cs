@@ -8,16 +8,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-public partial class Performance
+[Table("AnalysisCache")]
+[Index("Url", "Strategy", Name = "UQ_AnalysisCache_Url_Strategy", IsUnique = true)]
+public partial class AnalysisCache
 {
     [Key]
-    public int PerformanceID { get; set; }
-
-    public int UserID { get; set; }
+    public int AnalysisCacheID { get; set; }
 
     [Required]
     [StringLength(255)]
     public string Url { get; set; }
+
+    [Required]
+    [StringLength(50)]
+    public string Strategy { get; set; }
 
     [Required]
     public string PageSpeedResponse { get; set; }
@@ -26,21 +30,12 @@ public partial class Performance
 
     public string Suggestion { get; set; }
 
-    [StringLength(50)]
-    public string Strategy { get; set; }
-
     [Column(TypeName = "datetime")]
-    public DateTime? FetchTime { get; set; }
+    public DateTime LastAnalyzedAt { get; set; }
 
-    [Column(TypeName = "datetime")]
-    public DateTime? CompletedTime { get; set; }
-
-    public bool IsDeleted { get; set; }
-
-    [InverseProperty("Performance")]
+    [InverseProperty("AnalysisCache")]
     public virtual ICollection<Element> Elements { get; set; } = new List<Element>();
 
-    [ForeignKey("UserID")]
-    [InverseProperty("Performances")]
-    public virtual User User { get; set; }
+    [InverseProperty("AnalysisCache")]
+    public virtual ICollection<PerformanceHistory> PerformanceHistories { get; set; } = new List<PerformanceHistory>();
 }

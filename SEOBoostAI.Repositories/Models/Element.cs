@@ -13,7 +13,7 @@ public partial class Element
     [Key]
     public int ElementID { get; set; }
 
-    public int PerformanceID { get; set; }
+    public int AnalysisCacheID { get; set; }
 
     [StringLength(50)]
     public string TagName { get; set; }
@@ -39,7 +39,7 @@ public partial class Element
 
     public bool IsDeleted { get; set; }
 
-    [ForeignKey("PerformanceID")]
+    [ForeignKey("AnalysisCacheID")]
     [InverseProperty("Elements")]
-    public virtual Performance Performance { get; set; }
+    public virtual AnalysisCache AnalysisCache { get; set; }
 }

@@ -13,4 +13,10 @@ namespace SEOBoostAI.Repository.ModelExtensions
         public string AccessToken { get; set; }
         public string RefreshToken { get; set; }
     }
+
+    public class ResultModel<T>
+    {
+        public int ResultCode { get; set; }
+        public T Data { get; set; }
+    }
 }
