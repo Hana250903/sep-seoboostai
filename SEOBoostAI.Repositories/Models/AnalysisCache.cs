@@ -9,7 +9,8 @@ using Microsoft.EntityFrameworkCore;
 namespace SEOBoostAI.Repository.Models;
 
 [Table("AnalysisCache")]
-[Index("Url", "Strategy", Name = "UQ_AnalysisCache_Url_Strategy", IsUnique = true)]
+[Index("NormalizedUrl", Name = "IX_AnalysisCache_NormalizedUrl")]
+[Index("NormalizedUrl", "Strategy", Name = "UQ_AnalysisCache_NormalizedUrl_Strategy", IsUnique = true)]
 public partial class AnalysisCache
 {
     [Key]
@@ -18,6 +19,10 @@ public partial class AnalysisCache
     [Required]
     [StringLength(255)]
     public string Url { get; set; }
+
+    [Required]
+    [StringLength(255)]
+    public string NormalizedUrl { get; set; }
 
     [Required]
     [StringLength(50)]

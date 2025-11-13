@@ -1,4 +1,5 @@
 ﻿using SEOBoostAI.Repository.GenericRepository;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
     public interface IPerformanceHistoryRepository : IGenericRepository<PerformanceHistory>
     {
-
+        Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize);
     }
 }

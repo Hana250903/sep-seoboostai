@@ -17,5 +17,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task UpdateAsync(AnalysisCache analysisCache);
         Task DeleteAsync(int id);
         Task<AnalysisCache> AnalyzeAndSaveAnalysisCacheAsync(string url, string strategy);
+        Task<bool> CheckDuplicateUrl(string url);
     }
 }

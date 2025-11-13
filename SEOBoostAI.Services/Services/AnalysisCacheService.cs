@@ -6,6 +6,7 @@ using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
+using SEOBoostAI.Service.Ultils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,10 +26,12 @@ namespace SEOBoostAI.Service.Services
         private readonly ILogger<AnalysisCacheService> _logger;
         private readonly ICrawlingService _crawlingService;
         private readonly IGeminiAIService _geminiAIService;
+        private readonly ICompareUrlString _compareUrlString;
 
         public AnalysisCacheService(IAnalysisCacheRepository analysisCacheRepository, IUserRepository userRepository,
             IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementService elementService,
-            ILogger<AnalysisCacheService> logger, ICrawlingService crawlingService, IGeminiAIService geminiAIService)
+            ILogger<AnalysisCacheService> logger, ICrawlingService crawlingService, IGeminiAIService geminiAIService,
+            ICompareUrlString compareUrlString)
         {
             _analysisCacheRepository = analysisCacheRepository;
             _userRepository = userRepository;
@@ -38,6 +41,7 @@ namespace SEOBoostAI.Service.Services
             _logger = logger;
             _crawlingService = crawlingService;
             _geminiAIService = geminiAIService;
+            _compareUrlString = compareUrlString;
         }
 
         public async Task CreateAsync(AnalysisCache analysisCache)
@@ -100,6 +104,7 @@ namespace SEOBoostAI.Service.Services
             var analysisCacheModel = new AnalysisCache
             {
                 Url = url,
+                NormalizedUrl = _compareUrlString.NormalizeUrlForComparison(url),
                 Strategy = strategy,
                 LastAnalyzedAt = DateTime.UtcNow.AddHours(7)
             };
@@ -157,9 +162,17 @@ namespace SEOBoostAI.Service.Services
             }
         }
 
-        private void CheckDuplicateUrl(string url)
-        {
 
+        public async Task<bool> CheckDuplicateUrl(string url)
+        {
+            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
+
+            if (string.IsNullOrEmpty(normalizedUrl))
+            {
+                return false;
+            }
+
+            return await _analysisCacheRepository.IsDuplicateAsync(normalizedUrl);
         }
 
         //public async Task Suggestion()

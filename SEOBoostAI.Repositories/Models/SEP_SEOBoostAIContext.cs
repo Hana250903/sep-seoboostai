@@ -78,14 +78,14 @@ public partial class SEP_SEOBoostAIContext : DbContext
     {
         modelBuilder.Entity<AnalysisCache>(entity =>
         {
-            entity.HasKey(e => e.AnalysisCacheID).HasName("PK__Analysis__64960DCD67BCE309");
+            entity.HasKey(e => e.AnalysisCacheID).HasName("PK__Analysis__64960DCD987565BA");
 
             entity.Property(e => e.LastAnalyzedAt).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<ContentOptimization>(entity =>
         {
-            entity.HasKey(e => e.ContentOptimizationID).HasName("PK__ContentO__27E3172DF0EE0DC8");
+            entity.HasKey(e => e.ContentOptimizationID).HasName("PK__ContentO__27E3172DA928431C");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
@@ -94,7 +94,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Element>(entity =>
         {
-            entity.HasKey(e => e.ElementID).HasName("PK__Elements__A429723A69AE476E");
+            entity.HasKey(e => e.ElementID).HasName("PK__Elements__A429723A2769C642");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
@@ -103,12 +103,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Feature>(entity =>
         {
-            entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A296456BBCD");
+            entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A29550637FF");
         });
 
         modelBuilder.Entity<Feedback>(entity =>
         {
-            entity.HasKey(e => e.FeedbackID).HasName("PK__Feedback__6A4BEDF658986BAE");
+            entity.HasKey(e => e.FeedbackID).HasName("PK__Feedback__6A4BEDF683F51149");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
@@ -116,21 +116,21 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<InterestByRegion>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07144D22B2");
+            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07DB7AB306");
 
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestByRegions).HasConstraintName("FK__InterestB__Trend__0C85DE4D");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestByRegions).HasConstraintName("FK__InterestB__Trend__7A672E12");
         });
 
         modelBuilder.Entity<InterestOverTime>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07647F3B1C");
+            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07ADD5B3AB");
 
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestOverTimes).HasConstraintName("FK__InterestO__Trend__05D8E0BE");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestOverTimes).HasConstraintName("FK__InterestO__Trend__73BA3083");
         });
 
         modelBuilder.Entity<PerformanceHistory>(entity =>
         {
-            entity.HasKey(e => e.ScanHistoryID).HasName("PK__Performa__3AC3D4573B45920A");
+            entity.HasKey(e => e.ScanHistoryID).HasName("PK__Performa__3AC3D457BFD7070E");
 
             entity.Property(e => e.ScanTime).HasDefaultValueSql("(getdate())");
 
@@ -141,53 +141,53 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<PurchasedFeature>(entity =>
         {
-            entity.HasKey(e => e.PurchasedFeatureID).HasName("PK__Purchase__2DD96E534E50DA52");
+            entity.HasKey(e => e.PurchasedFeatureID).HasName("PK__Purchase__2DD96E5346F1FBC8");
 
             entity.Property(e => e.PurchaseDate).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<QueryHistory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__QueryHis__3214EC070906263B");
+            entity.HasKey(e => e.Id).HasName("PK__QueryHis__3214EC07F309A1E5");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
             entity.HasOne(d => d.Member).WithMany(p => p.QueryHistories)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__QueryHist__Membe__17036CC0");
+                .HasConstraintName("FK__QueryHist__Membe__04E4BC85");
         });
 
         modelBuilder.Entity<RegionComparison>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RegionCo__3214EC07D2BBDEA1");
+            entity.HasKey(e => e.Id).HasName("PK__RegionCo__3214EC079E881035");
 
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RegionComparisons).HasConstraintName("FK__RegionCom__Trend__1332DBDC");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RegionComparisons).HasConstraintName("FK__RegionCom__Trend__01142BA1");
         });
 
         modelBuilder.Entity<RelatedQuery>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RelatedQ__3214EC073A911B2B");
+            entity.HasKey(e => e.Id).HasName("PK__RelatedQ__3214EC07A0DD2BD6");
 
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedQueries).HasConstraintName("FK__RelatedQu__Trend__0F624AF8");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedQueries).HasConstraintName("FK__RelatedQu__Trend__7D439ABD");
         });
 
         modelBuilder.Entity<RelatedTopic>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RelatedT__3214EC07E6B37E82");
+            entity.HasKey(e => e.Id).HasName("PK__RelatedT__3214EC079041BCA3");
 
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedTopics).HasConstraintName("FK__RelatedTo__Trend__08B54D69");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedTopics).HasConstraintName("FK__RelatedTo__Trend__76969D2E");
         });
 
         modelBuilder.Entity<SystemSetting>(entity =>
         {
-            entity.HasKey(e => e.SettingKey).HasName("PK__SystemSe__01E719AC3CCC0B7C");
+            entity.HasKey(e => e.SettingKey).HasName("PK__SystemSe__01E719AC3204330A");
 
             entity.Property(e => e.LastUpdatedDate).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<Transaction>(entity =>
         {
-            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4B6FDA6581");
+            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4B993679C2");
 
             entity.Property(e => e.RequestTime).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Status).HasDefaultValue("PENDING");
@@ -195,21 +195,21 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<TrendSearch>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TrendSea__3214EC07FA43BBFA");
+            entity.HasKey(e => e.Id).HasName("PK__TrendSea__3214EC071F6417D2");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserID).HasName("PK__Users__1788CCACA60AFB42");
+            entity.HasKey(e => e.UserID).HasName("PK__Users__1788CCACF38CE183");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<UserMonthlyFreeQuota>(entity =>
         {
-            entity.HasKey(e => e.UserMonthlyFreeQuotaID).HasName("PK__UserMont__3A7DB1E0DF510E7D");
+            entity.HasKey(e => e.UserMonthlyFreeQuotaID).HasName("PK__UserMont__3A7DB1E073E6B6D5");
 
             entity.Property(e => e.MonthYear).IsFixedLength();
             entity.Property(e => e.MonthlyLimit).HasDefaultValue(3);
@@ -221,7 +221,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Wallet>(entity =>
         {
-            entity.HasKey(e => e.WalletID).HasName("PK__Wallets__84D4F92EFD2D086D");
+            entity.HasKey(e => e.WalletID).HasName("PK__Wallets__84D4F92ED4EECF78");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(NULL)");
