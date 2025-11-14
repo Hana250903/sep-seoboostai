@@ -45,6 +45,7 @@ namespace SEOBoostAI.API
             services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<ICompareUrlString, CompareUrlString>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddDbContext<SEP_SEOBoostAIContext>(options =>
             {
