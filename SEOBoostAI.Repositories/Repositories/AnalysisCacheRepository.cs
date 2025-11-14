@@ -48,5 +48,10 @@ namespace SEOBoostAI.Repository.Repositories
             return await _context.Set<AnalysisCache>()
                 .AnyAsync(cache => cache.NormalizedUrl == normalizedUrlToCheck);
         }
-    }
+
+		public Task<List<string>> GetAllUrlsAsync()
+		{
+			throw new NotImplementedException();
+		}
+	}
 }

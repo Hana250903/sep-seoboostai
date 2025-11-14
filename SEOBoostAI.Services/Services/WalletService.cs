@@ -76,5 +76,43 @@ namespace SEOBoostAI.Service.Services
 				throw;
 			}
 		}
+
+		// HÀM MỚI (Lấy ví bằng UserID)
+		public async Task<Wallet> GetWalletByUserIdAsync(int userId)
+		{
+			// LƯU Ý: Bạn cần thêm phương thức GetWalletByUserIdAsync
+			// vào IWalletRepository và triển khai nó ở lớp Repository
+			// (Nó sẽ dùng LINQ: _context.Wallets.FirstOrDefaultAsync(w => w.UserID == userId))
+			var wallet = await _walletRepositoriy.GetByIdAsync(userId);
+			if (wallet == null)
+			{
+				throw new Exception("Wallet not found for this user.");
+			}
+			return wallet;
+		}
+
+		// HÀM MỚI CHO PAYOS (Nạp tiền)
+		public async Task<bool> TopUp(int walletId, decimal amount)
+		{
+			try
+			{
+				// 1. Lấy ví
+				var wallet = await _walletRepositoriy.GetByIdAsync(walletId);
+				if (wallet == null) return false;
+
+				// 2. Cập nhật số dư
+				wallet.Currency += amount;
+				wallet.UpdatedAt = DateTime.UtcNow;
+
+				// 3. Dùng hàm UpdateAsync đã có của bạn (vì nó tự SaveChanges)
+				await UpdateAsync(wallet);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				// Ghi log lỗi ở đây
+				throw;
+			}
+		}
 	}
 }

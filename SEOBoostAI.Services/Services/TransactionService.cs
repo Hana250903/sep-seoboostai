@@ -72,5 +72,29 @@ namespace SEOBoostAI.Service.Services
 				throw;
 			}
 		}
+
+		// HÀM MỚI CHO PAYOS
+		public async Task<Transaction> CreatePendingDeposit(int walletId, decimal amount, string paymentMethod)
+		{
+			var newTransaction = new Transaction
+			{
+				WalletID = walletId,
+				Money = amount,
+				PaymentMethod = paymentMethod,
+				Type = "DEPOSIT",
+				Description = "Nạp tiền vào ví qua PayOS",
+				Status = "PENDING", // Trạng thái quan trọng
+				RequestTime = DateTime.UtcNow,
+				IsDeleted = false
+				// GatewayTransactionId, BankTransId, CompletedTime sẽ được cập nhật bởi Webhook
+			};
+
+			// Dùng hàm CreateAsync đã có của bạn (vì nó tự SaveChanges)
+			// Điều này tốt vì chúng ta cần ID ngay lập tức
+			await CreateAsync(newTransaction);
+
+			// Sau khi CreateAsync, newTransaction đã có TransactionID từ CSDL
+			return newTransaction;
+		}
 	}
 }
