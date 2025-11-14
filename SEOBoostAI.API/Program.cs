@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -9,6 +9,13 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
+
+string clientId = configuration["PayOS:ClientId"]!;
+string apiKey = configuration["PayOS:ApiKey"]!;
+string checksumKey = configuration["PayOS:ChecksumKey"]!;
+
+// Đăng ký PayOS client
+builder.Services.AddSingleton(new Net.payOS.PayOS(clientId, apiKey, checksumKey));
 
 // Add services to the container.
 
@@ -64,6 +71,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("AllowAll", policy =>
+		policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
+
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -83,10 +96,13 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();
+
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "SEO BOOST AI API v.01");
 });
+
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 

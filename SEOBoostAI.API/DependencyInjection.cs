@@ -23,8 +23,10 @@ namespace SEOBoostAI.API
             services.AddScoped<IFeedbackRepository, FeedbackRepository>();
             services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();  
             services.AddScoped<IPerformanceHistoryRepository, PerformanceHistoryRepository>();
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
+            services.AddScoped<IWalletRepository, WalletRepositoriy>();
 
-            services.AddScoped<IUserService, UserService>();
+			services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
             services.AddScoped<IAnalysisCacheService, AnalysisCacheService>();
             services.AddScoped<IContentOptimizationService, ContentOptimizationService>();
@@ -34,15 +36,18 @@ namespace SEOBoostAI.API
             services.AddSingleton<ISystemConfigService, SystemConfigService>();
             services.AddScoped<IGeminiAIService, GeminiAIService>();
             services.AddScoped<IPerformanceHistoryService, PerformanceHistoryService>();
+            services.AddScoped<ITransactionService, TransactionService>();
+            services.AddScoped<IWalletService, WalletService>();
 
-            // test xong xóa ( 2 dòng dưới )
-            services.AddScoped<IGeminiAiKeywordService, GeminiAiKeywordService>();
+			// test xong xóa ( 2 dòng dưới )
+			services.AddScoped<IGeminiAiKeywordService, GeminiAiKeywordService>();
             services.AddScoped<IGeminiAiAnalysisService, GeminiAiAnalysisService>();
             services.AddScoped<ISerpApiService, SerpApiService>();
             services.AddScoped<ITrendSearchService, TrendSearchService>(); 
             services.AddScoped<IQueryHistoryRepository, QueryHistoryRepository>();
             services.AddScoped<ITrendSearchesRepository, TrendSearchesRepository>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+			services.AddScoped<ICompareUrlString, CompareUrlString>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICompareUrlString, CompareUrlString>();

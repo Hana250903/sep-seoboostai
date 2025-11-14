@@ -16,5 +16,9 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task CreateAsync(Wallet wallet);
 		Task UpdateAsync(Wallet wallet);
 		Task DeleteAsync(int id);
+
+		// HÀM MỚI CHO PAYOS
+		Task<Wallet> GetWalletByUserIdAsync(int userId);
+		Task<bool> TopUp(int walletId, decimal amount);
 	}
 }
