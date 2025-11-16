@@ -18,7 +18,7 @@ namespace SEOBoostAI.Service.Services
         public GeminiAiAnalysisService(ISystemConfigService systemConfigService)
         {
             _systemConfigService = systemConfigService;
-            _apikey = _systemConfigService.GetValue<string>("gia", "");
+            _apikey = _systemConfigService.GetValue<string>("giaapi", "");
             _url = _systemConfigService.GetValue<string>("giaurl", "");
         }
 
