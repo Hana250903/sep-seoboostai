@@ -70,13 +70,14 @@ namespace SEOBoostAI.Service.Services
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await client.PostAsync(fullUrl, content);
+            response.EnsureSuccessStatusCode();
+
             string result = await response.Content.ReadAsStringAsync();
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
 
-            var assessmentResult = DeserializeResponse<AiAssessment>(geminiResponse)
-;
+            var assessmentResult = DeserializeResponse<AiAssessment>(geminiResponse);
             return assessmentResult;
         }
 
@@ -138,6 +139,8 @@ namespace SEOBoostAI.Service.Services
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await client.PostAsync(fullUrl, content);
+            response.EnsureSuccessStatusCode();
+
             string result = await response.Content.ReadAsStringAsync();
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -228,7 +231,12 @@ namespace SEOBoostAI.Service.Services
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-            string dirtyJsonString = geminiResponse.Candidates.First().Content.Parts.First().Text;
+            string dirtyJsonString = geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
+
+            if (string.IsNullOrEmpty(dirtyJsonString))
+            {
+                throw new InvalidOperationException("Không thể trích xuất nội dung text từ phản hồi của Gemini. Cấu trúc response có thể đã thay đổi hoặc bị chặn.");
+            }
 
             string cleanJsonString = dirtyJsonString
                     .Replace("```json", "")  // Xóa ```json ở đầu

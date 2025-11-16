@@ -101,15 +101,22 @@ namespace SEOBoostAI.Service.Services
 
         public async Task<AnalysisCache> AnalyzeAndSaveAnalysisCacheAsync(string url, string strategy)
         {
+            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
+
+            if (string.IsNullOrEmpty(normalizedUrl))
+            {
+                throw new Exception("URL không hợp lệ.");
+            }
+
             var analysisCacheModel = new AnalysisCache
             {
                 Url = url,
-                NormalizedUrl = _compareUrlString.NormalizeUrlForComparison(url),
+                NormalizedUrl = normalizedUrl,
                 Strategy = strategy,
                 LastAnalyzedAt = DateTime.UtcNow.AddHours(7)
             };
 
-            var apiResult = await _pageSpeedService.GetPageSpeedAsync(url, strategy);
+            var apiResult = await _pageSpeedService.GetPageSpeedAsync(normalizedUrl, strategy);
 
             if (apiResult == null || apiResult.LighthouseResult == null)
             {
