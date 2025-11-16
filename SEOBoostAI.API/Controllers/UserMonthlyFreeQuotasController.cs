@@ -59,5 +59,12 @@ namespace SEOBoostAI.API.Controllers
 			await _userMonthlyFreeQuotaService.DeleteAsync(id);
 			return Ok();
         }
+
+		[HttpPost("create-range")]
+		public async Task<IActionResult> PostRange([FromBody] int userId)
+		{
+			var result = await _userMonthlyFreeQuotaService.CreateQuotaAsync(userId);
+			return Ok(result);
+        }
 	}
 }

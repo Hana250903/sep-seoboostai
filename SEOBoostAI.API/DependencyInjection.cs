@@ -25,6 +25,8 @@ namespace SEOBoostAI.API
             services.AddScoped<IPerformanceHistoryRepository, PerformanceHistoryRepository>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<IWalletRepository, WalletRepositoriy>();
+            services.AddScoped<IUserMonthlyFreeQuotaRepository, UserMonthlyFreeQuotaRepository>();
+            services.AddScoped<IFeatureRepository, FeatureRepository>();
 
 			services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
@@ -38,9 +40,12 @@ namespace SEOBoostAI.API
             services.AddScoped<IPerformanceHistoryService, PerformanceHistoryService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IWalletService, WalletService>();
+            services.AddScoped<IUserMonthlyFreeQuotaService, UserMonthlyFreeQuotaService>();
+            services.AddScoped<IFeatureService, FeatureService>();
+            services.AddScoped<IAuthenService, AuthenService>();
 
-			// test xong xóa ( 2 dòng dưới )
-			services.AddScoped<IGeminiAiKeywordService, GeminiAiKeywordService>();
+            // test xong xóa ( 2 dòng dưới )
+            services.AddScoped<IGeminiAiKeywordService, GeminiAiKeywordService>();
             services.AddScoped<IGeminiAiAnalysisService, GeminiAiAnalysisService>();
             services.AddScoped<ISerpApiService, SerpApiService>();
             services.AddScoped<ITrendSearchService, TrendSearchService>(); 

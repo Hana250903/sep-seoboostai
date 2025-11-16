@@ -75,7 +75,7 @@ namespace SEOBoostAI.API.Controllers
 
             if (string.IsNullOrEmpty(model.Strategy))
             {
-                model.Strategy = "desktop"; // Giá trị mặc định
+                model.Strategy = "DESKTOP"; // Giá trị mặc định
             }
 
             try

@@ -5,9 +5,11 @@ using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace SEOBoostAI.Service.Services
 {
@@ -22,19 +24,24 @@ namespace SEOBoostAI.Service.Services
             _systemConfigService = systemConfigService;
         }
 
-        public async Task<PageSpeedResponse> GetPageSpeedAsync(string url, string strategy = "desktop")
+        public async Task<PageSpeedResponse> GetPageSpeedAsync(string url, string strategy = "DESKTOP")
         {
             string endpoint = _systemConfigService.GetValue<string>("PageSpeedAPI", "link");
             var apiKey = _systemConfigService.GetValue<string>("ApiKey", "api");
 
             // Xây dựng URL với query parameters
-            var queryParams = new Dictionary<string, string>
-            {
-                { "url", url },
-                { "key", apiKey },
-                { "strategy", strategy }
-            };
-            var fullUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(endpoint, queryParams);
+            //var queryParams = new Dictionary<string, string>
+            //{
+            //    { "url", url },
+            //    { "key", apiKey },
+            //    { "strategy", strategy }
+            //};
+            //var fullUrl = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(endpoint, queryParams);
+
+            var encodedUrl = WebUtility.UrlEncode(url);
+            var encodedApiKey = WebUtility.UrlEncode(apiKey);
+
+            var fullUrl = $"{endpoint}?url={encodedUrl}&key={encodedApiKey}&strategy={strategy}";
 
             var httpClient = _httpClientFactory.CreateClient();
 

@@ -34,7 +34,7 @@ namespace SEOBoostAI.API.Controllers
         [HttpPost]
         public async Task<PerformanceHistory> Post([FromBody] PerformanceHistoryViewModel performanceHistoryViewModel)
         {
-            return await _performanceHistoryService.AnalysisPerformanceHistoryAsync(performanceHistoryViewModel.UserId, performanceHistoryViewModel.Url, performanceHistoryViewModel.Url);
+            return await _performanceHistoryService.AnalysisPerformanceHistoryAsync(performanceHistoryViewModel.UserId, performanceHistoryViewModel.Url, performanceHistoryViewModel.Strategy);
         }
 
         // PUT api/<PerformanceHistoriesController>/5
