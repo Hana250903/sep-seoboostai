@@ -79,9 +79,9 @@ namespace SEOBoostAI.Service.Services
 			return dtos;
 		}
 
-		public async Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(int currentPage, int pageSize)
+		public async Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(SearchTransactionRequest searchRequest)
 		{
-			var paginateResult = await _contentOptimizationRepository.GetContentOptimizationWithPaginateAsync(currentPage, pageSize);
+			var paginateResult = await _contentOptimizationRepository.GetContentOptimizationWithPaginateAsync(searchRequest);
 
 			var dtos = paginateResult.Items.Select(entity => MapToDto(entity))
 										   .Where(dto => dto != null)

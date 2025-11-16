@@ -11,7 +11,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 	public interface IContentOptimizationService
 	{
 		Task<List<ContentOptimizationDto>> GetContentOptimizationsAsync();
-		Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(int currentPage, int pageSize);
+		Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(SearchTransactionRequest searchRequest);
 		Task<ContentOptimizationDto> GetContentOptimizationByIdAsync(int id);
 		Task CreateAsync(ContentOptimization contentOptimization);
 		Task UpdateAsync(ContentOptimization contentOptimization);

@@ -24,10 +24,10 @@ namespace SEOBoostAI.API.Controllers
 			return await _contentOptimizationService.GetContentOptimizationsAsync();
 		}
 
-		[HttpGet("{currentPage}/{pageSize}")]
-		public async Task<PaginationResult<List<ContentOptimizationDto>>> Get(int currentPage, int pageSize)
+		[HttpPost("Search")]
+		public async Task<PaginationResult<List<ContentOptimizationDto>>> Get(SearchTransactionRequest searchRequest)
 		{
-			return await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(currentPage, pageSize);
+			return await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(searchRequest);
 		}
 
 		// GET api/<ContentOptimizationsController>/5

@@ -16,4 +16,14 @@ namespace SEOBoostAI.Repository.ModelExtensions
 		public AiOptimizationResponse AiData { get; set; }
 		public DateTime? CreatedAt { get; set; }
 	}
+
+	//public class UserRequestDto
+	//{
+	//	public string Keyword { get; set; }
+	//	public string Content { get; set; }
+	//	public string ContentLength { get; set; }
+	//	public int OptimizationLevel { get; set; }
+	//	public string ReadabilityLevel { get; set; }
+	//	public bool IncludeCitation { get; set; }
+	//}
 }

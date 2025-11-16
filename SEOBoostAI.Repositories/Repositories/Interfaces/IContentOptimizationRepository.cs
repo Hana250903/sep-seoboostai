@@ -11,6 +11,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
     public interface IContentOptimizationRepository : IGenericRepository<ContentOptimization>
     {
-        Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationWithPaginateAsync(int currentPage, int pageSize);
-    }
+        Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationWithPaginateAsync(SearchTransactionRequest searchRequest);
+	}
 }
