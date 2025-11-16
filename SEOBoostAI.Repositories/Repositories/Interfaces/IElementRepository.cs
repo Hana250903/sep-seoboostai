@@ -12,5 +12,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
     public interface IElementRepository : IGenericRepository<Element>
     {
         Task<PaginationResult<List<Element>>> GetElementWithPaginateAsync(int currentPage, int pageSize);
+        Task<List<Element>> GetElementsImportantByAnalysisCacheIdAsync(int analysisCacheId);
     }
 }

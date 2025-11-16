@@ -24,6 +24,8 @@ namespace SEOBoostAI.Repository.ModelExtensions
     public class AiElementAnalysis
     {
         public int ElementID { get; set; }
+        public bool HasSuggestion { get; set; }
+        public bool Important { get; set; }
         public string Description { get; set; }
         public string AIRecommendation { get; set; }
     }

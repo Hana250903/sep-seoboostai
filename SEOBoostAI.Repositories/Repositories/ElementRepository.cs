@@ -36,5 +36,11 @@ namespace SEOBoostAI.Repository.Repositories
             };
             return result;
         }
+
+        public async Task<List<Element>> GetElementsImportantByAnalysisCacheIdAsync(int analysisCacheId)
+        {
+            return await _context.Set<Element>().Where(e => e.AnalysisCacheID == analysisCacheId && e.Important == true)
+                .ToListAsync();
+        }
     }
 }
