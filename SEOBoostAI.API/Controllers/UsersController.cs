@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
@@ -27,10 +28,10 @@ namespace SEOBoostAI.API.Controllers
             return await _userService.GetUsersAsync();
         }
 
-        [HttpGet("{currentPage}/{pageSize}")]
-        public async Task<PaginationResult<List<User>>> Get(int currentPage, int pageSize)
+        [HttpGet("filter")]
+        public async Task<PaginationResult<List<User>>> Get([FromQuery]UserRequestModel userRequestModel)
         {
-            return await _userService.GetUsersWithPaginateAsync(currentPage, pageSize);
+            return await _userService.GetUsersWithPaginateAsync(userRequestModel.CurrentPage, userRequestModel.PageSize, userRequestModel.Role, userRequestModel.IsBanned, userRequestModel.IsDeleted);
         }
 
         // GET api/<UsersController>/5
@@ -46,6 +47,13 @@ namespace SEOBoostAI.API.Controllers
         {
             await _userService.CreateAsync(user);
             return Ok(user);
+        }
+
+        [HttpPost("update-role/{id}")]
+        public async Task<IActionResult> Post(int id)
+        {
+            var result = await _userService.UpdateUserToStaff(id);
+            return Ok(result);
         }
 
         // PUT api/<UsersController>

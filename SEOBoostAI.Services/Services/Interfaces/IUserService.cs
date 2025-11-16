@@ -11,10 +11,11 @@ namespace SEOBoostAI.Service.Services.Interfaces
     public interface IUserService
     {
         Task<List<User>> GetUsersAsync();
-        Task<PaginationResult<List<User>>> GetUsersWithPaginateAsync(int currentPage, int pageSize);
+        Task<PaginationResult<List<User>>> GetUsersWithPaginateAsync(int currentPage, int pageSize, string? role, bool? isBanned, bool? isDeleted);
         Task<User> GetUserByIdAsync(int id);
         Task CreateAsync(User user);
         Task UpdateAsync(User user);
         Task DeleteAsync(int id);
+        Task<User> UpdateUserToStaff(int userId);
     }
 }

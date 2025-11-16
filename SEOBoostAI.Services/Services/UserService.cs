@@ -72,9 +72,23 @@ namespace SEOBoostAI.Service.Services
             return await _userRepository.GetByIdAsync(id);
         }
 
-        public async Task<PaginationResult<List<User>>> GetUsersWithPaginateAsync(int currentPage, int pageSize)
+        public async Task<PaginationResult<List<User>>> GetUsersWithPaginateAsync(int currentPage, int pageSize, string? role, bool? isBanned, bool? isDeleted)
         {
-            return await _userRepository.GetUserWithPaginateAsync(currentPage, pageSize);
+            return await _userRepository.GetUserWithPaginateAsync(currentPage, pageSize, role, isBanned, isDeleted);
+        }
+
+        public async Task<User> UpdateUserToStaff(int userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+            user.Role = "Staff";
+            user.UpdatedAt = DateTime.UtcNow.AddHours(7);
+            await _userRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+            return user;
         }
     }
 }

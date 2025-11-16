@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using SEOBoostAI.Repository.GenericRepository;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
@@ -15,9 +16,22 @@ namespace SEOBoostAI.Repository.Repositories
     {
         public UserRepository(SEP_SEOBoostAIContext context) : base(context){ }
 
-        public async Task<PaginationResult<List<User>>> GetUserWithPaginateAsync(int currentPage, int pageSize)
+        public async Task<PaginationResult<List<User>>> GetUserWithPaginateAsync(int currentPage, int pageSize, string? role, bool? isbanned, bool? isDeleted)
         {
             var query = _context.Set<User>().AsQueryable();
+
+            if (role != null)
+            {
+                query = query.Where(u => u.Role == role);
+            }
+            if (isbanned != null)
+            {
+                query = query.Where(u => u.IsBanned == isbanned);
+            }
+            if (isDeleted != null)
+            {
+                query = query.Where(u => u.IsDeleted == isDeleted);
+            }
 
             var totalItems = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);

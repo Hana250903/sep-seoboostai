@@ -11,7 +11,7 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
     public interface IUserRepository : IGenericRepository<User>
     {
-        Task<PaginationResult<List<User>>> GetUserWithPaginateAsync(int currentPage, int pageSize);
+        Task<PaginationResult<List<User>>> GetUserWithPaginateAsync(int currentPage, int pageSize, string? role, bool? isbanned, bool? isDeleted);
         Task<User?> GetUserByEmailAsync(string email);
     }
 }

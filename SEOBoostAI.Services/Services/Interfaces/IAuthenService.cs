@@ -14,7 +14,9 @@ namespace SEOBoostAI.Service.Services.Interfaces
         /// </summary>
         /// <param name="credential">The Google credential string obtained from the client.</param>
         /// <returns>A task that resolves to an authentication token or session identifier.</returns>
-        public Task<ResultModel> LoginWithGoogle(string credential);
+        public Task<ResultModel> LoginWithMember(string credential);
+        public Task<ResultModel> LoginWithStaff(string credential);
+        public Task<ResultModel> LoginWithAdmin(string credential);
         /// <summary>
         /// Asynchronously logs out a user by invalidating the specified refresh token.
         /// </summary>

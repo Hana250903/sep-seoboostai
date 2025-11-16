@@ -19,12 +19,48 @@ namespace SEOBoostAI.API.Controllers
             _currentUserService = currentUserService;
         }
 
-        [HttpPost("login-with-google")]
-        public async Task<IActionResult> LoginWithGoogle([FromBody] string credential)
+        [HttpPost("login-member")]
+        public async Task<IActionResult> LoginWithMember([FromBody] string credential)
         {
             try
             {
-                var result = await _authenService.LoginWithGoogle(credential);
+                var result = await _authenService.LoginWithMember(credential);
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
+
+        [HttpPost("login-staff")]
+        public async Task<IActionResult> LoginWithStaff([FromBody] string credential)
+        {
+            try
+            {
+                var result = await _authenService.LoginWithStaff(credential);
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex);
+            }
+        }
+
+        [HttpPost("login-admin")]
+        public async Task<IActionResult> LoginWithAdmin([FromBody] string credential)
+        {
+            try
+            {
+                var result = await _authenService.LoginWithAdmin(credential);
                 if (result.Success)
                 {
                     return Ok(result);

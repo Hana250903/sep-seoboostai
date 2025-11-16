@@ -38,7 +38,7 @@ namespace SEOBoostAI.Service.Services
             _userMonthlyFreeQuotaService = userMonthlyFreeQuotaService;
             _featureRepository = featureRepository;
         }
-        public async Task<ResultModel> LoginWithGoogle(string credential)
+        public async Task<ResultModel> LoginWithMember(string credential)
         {
             // Validate configuration
             string clientId = _configuration["GoogleCredential:ClientId"];
@@ -64,6 +64,21 @@ namespace SEOBoostAI.Service.Services
 
             if (existUser != null)
             {
+                if (existUser.IsBanned)
+                {
+                    throw new Exception("User is banned.");
+                }
+
+                if (existUser.IsDeleted)
+                {
+                    throw new Exception("User account has been deleted.");
+                }
+
+                if (existUser.Role == "Admin" || existUser.Role == "Staff")
+                {
+                    throw new Exception("Admin/Staff accounts cannot log in .");
+                }
+
                 var accessToken = await GenerateAccessToken(existUser);
                 var refreshToken = GenerateRefreshToken(existUser.Email);
 
@@ -96,7 +111,7 @@ namespace SEOBoostAI.Service.Services
                         UserName = payload.Email.Split('@')[0].Trim(),
                         FullName = payload.Name,
                         Email = payload.Email,
-                        Role = "User",
+                        Role = "Member",
                         Avatar = payload.Picture,
                         Password = "".Trim(),
                         CreatedAt = DateTime.UtcNow,
@@ -174,6 +189,146 @@ namespace SEOBoostAI.Service.Services
                     throw;
                 }
             }
+        }
+
+        public async Task<ResultModel> LoginWithStaff(string credential)
+        {
+            // Validate configuration
+            string clientId = _configuration["GoogleCredential:ClientId"];
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                throw new InvalidOperationException("Google client ID is not configured.");
+            }
+
+            // Validate Google credential
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new List<string> { clientId }
+            };
+            var payload = await GoogleJsonWebSignature.ValidateAsync(credential, settings);
+            if (payload == null || string.IsNullOrWhiteSpace(payload.Email))
+            {
+                throw new Exception("Credential không hợp lệ"); // keep original language if needed
+            }
+
+            var existUser = await _userRepository.GetUserByEmailAsync(payload.Email);
+
+            if (existUser != null)
+            {
+                if (existUser.IsBanned)
+                {
+                    throw new Exception("User is banned.");
+                }
+
+                if (existUser.IsDeleted)
+                {
+                    throw new Exception("User account has been deleted.");
+                }
+
+                if (existUser.Role == "Admin" || existUser.Role == "Member")
+                {
+                    throw new Exception("Admin/Member accounts cannot log in .");
+                }
+
+                var accessToken = await GenerateAccessToken(existUser);
+                var refreshToken = GenerateRefreshToken(existUser.Email);
+
+                existUser.RefreshToken = refreshToken;
+
+                await _userRepository.UpdateAsync(existUser);
+                var saveResult = await _unitOfWork.SaveChangesAsync();
+                if (saveResult <= 0)
+                {
+                    throw new Exception("Failed to update user refresh token.");
+                }
+
+                await _userMonthlyFreeQuotaService.UpdateMonthQuotaAsync(existUser.UserID);
+
+                return new ResultModel()
+                {
+                    Success = true,
+                    Message = "Login successfully",
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                };
+            }
+            return new ResultModel()
+            {
+                Success = false,
+                Message = "User not found",
+                AccessToken = null,
+                RefreshToken = null
+            };
+        }
+
+        public async Task<ResultModel> LoginWithAdmin(string credential)
+        {
+            // Validate configuration
+            string clientId = _configuration["GoogleCredential:ClientId"];
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                throw new InvalidOperationException("Google client ID is not configured.");
+            }
+
+            // Validate Google credential
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new List<string> { clientId }
+            };
+            var payload = await GoogleJsonWebSignature.ValidateAsync(credential, settings);
+            if (payload == null || string.IsNullOrWhiteSpace(payload.Email))
+            {
+                throw new Exception("Credential không hợp lệ"); // keep original language if needed
+            }
+
+            var existUser = await _userRepository.GetUserByEmailAsync(payload.Email);
+
+            if (existUser != null)
+            {
+                if (existUser.IsBanned)
+                {
+                    throw new Exception("User is banned.");
+                }
+
+                if (existUser.IsDeleted)
+                {
+                    throw new Exception("User account has been deleted.");
+                }
+
+                if (existUser.Role == "Member" || existUser.Role == "Staff")
+                {
+                    throw new Exception("Member/Staff accounts cannot log in .");
+                }
+
+                var accessToken = await GenerateAccessToken(existUser);
+                var refreshToken = GenerateRefreshToken(existUser.Email);
+
+                existUser.RefreshToken = refreshToken;
+
+                await _userRepository.UpdateAsync(existUser);
+                var saveResult = await _unitOfWork.SaveChangesAsync();
+                if (saveResult <= 0)
+                {
+                    throw new Exception("Failed to update user refresh token.");
+                }
+
+                await _userMonthlyFreeQuotaService.UpdateMonthQuotaAsync(existUser.UserID);
+
+                return new ResultModel()
+                {
+                    Success = true,
+                    Message = "Login successfully",
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                };
+            }
+            return new ResultModel()
+            {
+                Success = false,
+                Message = "User not found",
+                AccessToken = null,
+                RefreshToken = null
+            };
         }
 
         public async Task<bool> LogOut(string refreshToken, int userId)
