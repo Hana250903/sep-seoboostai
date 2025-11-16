@@ -100,7 +100,9 @@ namespace SEOBoostAI.Service.Services
                         Avatar = payload.Picture,
                         Password = "".Trim(),
                         CreatedAt = DateTime.UtcNow,
-                        GoogleID = googleId
+                        GoogleID = googleId,
+                        IsBanned = false,
+                        IsDeleted = false
                     };
 
                     // Create user (first save to get the generated UserID)
