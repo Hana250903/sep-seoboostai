@@ -40,6 +40,12 @@ namespace SEOBoostAI.API.Controllers
             return await _elementService.GetElementByIdAsync(id);
         }
 
+        [HttpGet("analysis/{analysisCacheId}")]
+        public async Task<IEnumerable<Element>> GetElementsByAnalysisCacheId(int analysisCacheId)
+        {
+            return await _elementService.GetElementsByAnalysisCacheIdAsync(analysisCacheId);
+        }
+
         // POST api/<ElementsController>
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Element element)

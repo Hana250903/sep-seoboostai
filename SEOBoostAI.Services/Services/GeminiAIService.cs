@@ -98,20 +98,33 @@ namespace SEOBoostAI.Service.Services
 
                 **Quan trọng:** Mỗi đối tượng trong array trả về **PHẢI** chứa:
                 * `ElementID`: (Giữ nguyên `ElementID` từ đầu vào để map dữ liệu).
-                * `Description`: Mô tả ngắn gọn vấn đề (ví dụ: ""Thẻ <img> thiếu 'alt'"").
-                * `AIRecommendation`: Gợi ý cụ thể để sửa lỗi (ví dụ: ""Hãy bổ sung thuộc tính alt='mô tả ảnh'"").
+                * `HasSuggestion`: (bool) Đặt là `true` nếu bạn có gợi ý (`AIRecommendation`) hoặc mô tả vấn đề (`Description`). Đặt là `false` nếu element này ổn và không cần can thiệp.
+                * `Important`: (bool) Đặt là `true` nếu đây là vấn đề nghiêm trọng (ví dụ: Lỗi CLS, Lỗi SEO nghiêm trọng, Lỗi blocking rendering). Đặt là `false` nếu đây chỉ là một gợi ý tối ưu nhỏ hoặc không có vấn đề gì (`HasSuggestion` là `false`).
+                * `Description`: Mô tả ngắn gọn vấn đề. Nếu `HasSuggestion` là `false`, hãy để là ""Không tìm thấy vấn đề."" hoặc chuỗi rỗng.
+                * `AIRecommendation`: Gợi ý cụ thể để sửa lỗi. Nếu `HasSuggestion` là `false`, hãy để chuỗi rỗng.
 
                 Sử dụng cấu trúc JSON array bắt buộc sau (ví dụ cho 2 element):
                 [
                   {{
                     ""ElementID"": 1,
-                    ""AIRecommendation"": ""..."",
-                    ""Description"": ""...""
+                    ""HasSuggestion"": true,
+                    ""Important"": true,
+                    ""Description"": ""Thẻ <img> thiếu thuộc tính 'alt'"",
+                    ""AIRecommendation"": ""Bổ sung thuộc tính 'alt' để mô tả nội dung ảnh, cải thiện SEO và khả năng truy cập.""
                   }},
                   {{
                     ""ElementID"": 2,
-                    ""Attribute"": ""..."",
-                    ""Description"": ""...""
+                    ""HasSuggestion"": true,
+                    ""Important"": false,
+                    ""Description"": ""Thẻ <img> nên có thuộc tính 'loading=\""lazy\""'"",
+                    ""AIRecommendation"": ""Thêm 'loading=\""lazy\""' để trì hoãn tải ảnh cho đến khi nó gần vào khung nhìn, cải thiện LCP.""
+                  }},
+                  {{
+                    ""ElementID"": 3,
+                    ""HasSuggestion"": false,
+                    ""Important"": false,
+                    ""Description"": ""Không tìm thấy vấn đề."",
+                    ""AIRecommendation"": """"
                   }}
                 ]
 

@@ -211,10 +211,10 @@ namespace SEOBoostAI.Service.Services
                 {
                     ElementID = original.ElementID,
                     TagName = original.TagName,
-                    Important = original.Important,
+                    Important = suggestion.Important,
                     Description = suggestion.Description,
                     AIRecommendation = suggestion.AIRecommendation,
-                    HasSuggestion = original.HasSuggestion,
+                    HasSuggestion = suggestion.HasSuggestion,
                     CreatedAt = original.CreatedAt,
                     InnerText = original.InnerText,
                     IsDeleted = original.IsDeleted,
@@ -233,6 +233,11 @@ namespace SEOBoostAI.Service.Services
             {
                 throw new Exception("Lỗi khi update kết quả Element vào DB.", ex);
             }
+        }
+
+        public async Task<List<Element>> GetElementsByAnalysisCacheIdAsync(int analysisCacheId)
+        {
+            return await _elementRepository.GetElementsImportantByAnalysisCacheIdAsync(analysisCacheId);
         }
     }
 }
