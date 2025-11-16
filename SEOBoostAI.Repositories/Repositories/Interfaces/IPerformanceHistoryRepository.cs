@@ -11,6 +11,7 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
     public interface IPerformanceHistoryRepository : IGenericRepository<PerformanceHistory>
     {
-        Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize);
+        Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize, int? userId);
+        Task<PerformanceHistory> GetByIdAsync(int performanceHistoryId);
     }
 }

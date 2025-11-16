@@ -17,14 +17,19 @@ namespace SEOBoostAI.Repository.Repositories
         {
         }
 
-        public async Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize)
+        public async Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize, int? userId)
         {
             var query = _context.Set<PerformanceHistory>().AsQueryable();
+
+            if (userId.HasValue)
+            {
+                query = query.Where(ph => ph.UserID == userId.Value);
+            }
 
             var totalItems = query.Count();
             var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
-            var items = await query
+            var items = await query.Include(ph => ph.AnalysisCache).ThenInclude(ac => ac.Elements)
                 .OrderByDescending(ph => ph.ScanTime)
                 .Skip((currentPage - 1) * pageSize)
                 .Take(pageSize)
@@ -40,6 +45,11 @@ namespace SEOBoostAI.Repository.Repositories
             };
 
             return result;
+        }
+
+        public async Task<PerformanceHistory> GetByIdAsync(int performanceHistoryId)
+        {
+            return await _context.Set<PerformanceHistory>().Where(ph => ph.ScanHistoryID == performanceHistoryId).Include(ph => ph.AnalysisCache).ThenInclude(ac => ac.Elements).FirstOrDefaultAsync();
         }
     }
 }

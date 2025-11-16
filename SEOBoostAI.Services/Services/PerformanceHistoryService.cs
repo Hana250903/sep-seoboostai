@@ -29,9 +29,14 @@ namespace SEOBoostAI.Service.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize)
+        public async Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize, int? userId)
         {
-            return await _performanceHistoryRepository.GetPerformanceHistorysWithPagination(currentPage, pageSize);
+            return await _performanceHistoryRepository.GetPerformanceHistorysWithPagination(currentPage, pageSize, userId);
+        }
+
+        public async Task<PerformanceHistory> GetPerformanceHistoryByIdAsync(int performanceHistoryId)
+        {
+            return await _performanceHistoryRepository.GetByIdAsync(performanceHistoryId);
         }
 
         public async Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy)
