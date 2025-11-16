@@ -20,7 +20,7 @@ namespace SEOBoostAI.Service.Services
         {
             _systemConfigService = systemConfigService;
             // Dùng chung key và url với service Gemini cũ
-            _apikey = _systemConfigService.GetValue<string>("gia", "");
+            _apikey = _systemConfigService.GetValue<string>("giaapi", "");
             _url = _systemConfigService.GetValue<string>("giaurl", "");
         }
 
@@ -32,16 +32,17 @@ namespace SEOBoostAI.Service.Services
 
             // === PROMPT ĐÃ ĐƯỢC CẬP NHẬT (THÔNG MINH HƠN) ===
             string promptTemplate = $@"Bạn là một chuyên gia phân tích ý định (Intent) của người dùng.
-            Nhiệm vụ của bạn là trích xuất 1 CHỦ ĐỀ CHÍNH DUY NHẤT để tìm kiếm trên Google Trends.
+            Nhiệm vụ của bạn là trích xuất CHỦ ĐỀ SẢN PHẨM/THỊ TRƯỜNG (thứ mà khách hàng tìm kiếm) để phân tích.
 
+            **QUY TẮC QUAN TRỌNG:**
             1.  **Nếu ý định là 'So sánh'** (ví dụ: 'phở hay cháo', 'A với B'), trường Query sẽ là ""topic1,topic2"".
-            2.  **Nếu ý định là 'Phân tích'** (ví dụ: 'kinh doanh X', 'làm sao để Y', 'chi phí Z'), trường Query **CHỈ** được chứa chủ đề chính.
-                **TUYỆT ĐỐI KHÔNG** bao gồm các từ khóa phụ như 'vốn', 'chi phí', 'ở đâu', 'như thế nào' vào trường Query.
+            2.  **Nếu ý định là 'Phân tích'** (ví dụ: 'kinh doanh X', 'làm sao để Y'), trường Query **CHỈ** được chứa **CHỦ ĐỀ SẢN PHẨM** (ví dụ: 'cà phê', 'phở').
+                **TUYỆT ĐỐI KHÔNG** bao gồm các từ về *hoạt động kinh doanh* (như 'kinh doanh', 'vốn', 'chi phí', 'làm sao để', 'ở đâu') vào trường Query.
 
             Bạn PHẢI trả về CHỈ một đối tượng JSON hợp lệ, không dùng markdown.
             Cấu trúc JSON bắt buộc:
             {{
-              ""Query"": ""chủ đề chính,hoặc,chủ đề so sánh"",
+              ""Query"": ""chủ đề sản phẩm"",
               ""Geolocation"": ""VN"",
               ""Language"": ""vi"",
               ""Timeframe"": ""today 12-m""
@@ -49,7 +50,7 @@ namespace SEOBoostAI.Service.Services
 
             --- VÍ DỤ QUAN TRỌNG ---
             Câu hỏi: ""so sánh phở và cháo ở việt nam 12 tháng qua""
-            (Ý định: So sánh)
+            (Ý định: So sánh. Chủ đề: 'phở', 'cháo')
             Kết quả JSON:
             {{
               ""Query"": ""phở,cháo"",
@@ -59,13 +60,23 @@ namespace SEOBoostAI.Service.Services
             }}
             
             Câu hỏi: ""Tôi đang muốn kinh doanh cà phê tại Đak Lak thì nên làm thế nào, tôi cần bao nhiêu vốn""
-            (Ý định: Phân tích. Chủ đề chính: 'kinh doanh cà phê'. Câu hỏi phụ: 'cần bao nhiêu vốn')
+            (Ý định: Phân tích. Chủ đề sản phẩm: 'cà phê'. Câu hỏi phụ: 'cần bao nhiêu vốn')
             Kết quả JSON:
             {{
-              ""Query"": ""kinh doanh cà phê"",
+              ""Query"": ""cà phê"",
               ""Geolocation"": ""VN"",
               ""Language"": ""vi"",
               ""Timeframe"": ""today 12-m""
+            }}
+
+            Câu hỏi: ""tôi đang kinh doanh quán Phở ở sài gòn và muốn mọi người biết đến mình hơn""
+            (Ý định: Phân tích. Chủ đề sản phẩm: 'Phở'. Mục tiêu: 'tăng nhận diện')
+            Kết quả JSON:
+            {{
+              ""Query"": ""Phở"",
+              ""Geolocation"": ""VN"",
+              ""Language"": ""vi"",
+              ""TimefGFrame"": ""today 12-m""
             }}
 
             Câu hỏi của người dùng:

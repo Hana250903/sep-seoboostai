@@ -27,8 +27,8 @@ namespace SEOBoostAI.Service.Services
             _systemConfigService = systemConfigService;
             _logger = logger;
 
-            _apiKey = _systemConfigService.GetValue<string>("serpapigia", "");
-            _endpoint = _systemConfigService.GetValue<string>("serpapiurlgia", "https://serpapi.com/search.json");
+            _apiKey = _systemConfigService.GetValue<string>("giaserpapi", "");
+            _endpoint = _systemConfigService.GetValue<string>("giaserpurl", "");
         }
 
         // --- Hàm Helper (Không thay đổi) ---
