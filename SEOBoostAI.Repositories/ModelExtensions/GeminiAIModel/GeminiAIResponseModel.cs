@@ -45,19 +45,40 @@ namespace SEOBoostAI.Repository.ModelExtensions.GeminiAIModel
 
 	public class AiOptimizationResponse
 	{
+		[JsonPropertyName("comparison")]
+		public ComparisonData Comparison { get; set; }
+
 		[JsonPropertyName("optimized_content")]
 		public string OptimizedContent { get; set; }
+	}
 
+	public class ComparisonData
+	{
+		[JsonPropertyName("original")]
+		public ScoreData Original { get; set; }
+
+		[JsonPropertyName("optimized")]
+		public ScoreData Optimized { get; set; }
+	}
+
+	public class ScoreData
+	{
 		[JsonPropertyName("seo_score")]
 		public int SeoScore { get; set; }
 
-		[JsonPropertyName("readability")]
-		public int Readability { get; set; }
+		[JsonPropertyName("seo_justification")]
+		public string SeoJustification { get; set; }
 
-		[JsonPropertyName("engagement")]
-		public int Engagement { get; set; }
+		[JsonPropertyName("readability_score")]
+		public int ReadabilityScore { get; set; }
 
-		[JsonPropertyName("originality")]
-		public int Originality { get; set; }
+		[JsonPropertyName("readability_justification")]
+		public string ReadabilityJustification { get; set; }
+
+		[JsonPropertyName("engagement_score")]
+		public int EngagementScore { get; set; }
+
+		[JsonPropertyName("engagement_justification")]
+		public string EngagementJustification { get; set; }
 	}
 }
