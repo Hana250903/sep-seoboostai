@@ -4,18 +4,12 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SEOBoostAI.API;
 using SEOBoostAI.API.Mappers;
+using SEOBoostAI.Service.Services.Interfaces;
 using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
-
-string clientId = configuration["PayOS:ClientId"]!;
-string apiKey = configuration["PayOS:ApiKey"]!;
-string checksumKey = configuration["PayOS:ChecksumKey"]!;
-
-// Đăng ký PayOS client
-builder.Services.AddSingleton(new Net.payOS.PayOS(clientId, apiKey, checksumKey));
 
 // Add services to the container.
 
@@ -75,6 +69,28 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy("AllowAll", policy =>
 		policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
+
+builder.Services.AddSingleton(provider =>
+{
+	// 1. Bây giờ chúng ta có thể lấy ISystemConfigService
+	// vì nó đã được đăng ký ở trên (trong AddWebAPIServices)
+	var systemConfigService = provider.GetRequiredService<ISystemConfigService>();
+
+	// 2. Lấy 3 key từ CSDL của bạn
+	string clientId = systemConfigService.GetValue<string>("ClientId", "");
+	string apiKey = systemConfigService.GetValue<string>("ApiKey", "");
+	string checksumKey = systemConfigService.GetValue<string>("ChecksumKey", "");
+
+	// 3.Kiểm tra xem key có tồn tại không
+	if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(checksumKey))
+	{
+		// Ném lỗi này sẽ làm ứng dụng dừng lại và báo cho bạn biết là thiếu key trong DB
+		throw new InvalidOperationException("Không thể tìm thấy PayOS keys trong CSDL (SystemConfig).");
+	}
+
+	// 4. Trả về đối tượng PayOS đã được cấu hình đúng
+	return new Net.payOS.PayOS(clientId, apiKey, checksumKey);
 });
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
