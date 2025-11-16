@@ -160,32 +160,57 @@ namespace SEOBoostAI.Service.Services
 			string citationText = request.IncludeCitation ? "Có, hãy thêm các trích dẫn chất lượng cao để hỗ trợ luận điểm." : "Không, đừng thêm trích dẫn bên ngoài.";
 
 			string promptTemplate = $$"""
-				Bạn là một chuyên gia chiến lược nội dung SEO và một người viết nội dung tài ba.
-				Nhiệm vụ của bạn là tối ưu và viết lại nội dung được cung cấp dựa trên các tiêu chí cụ thể.
-				Mục tiêu là cải thiện thứ hạng trên công cụ tìm kiếm và sự tương tác của người dùng đối với từ khóa mục tiêu.
+                Bạn là một chuyên gia phân tích và tối ưu hóa nội dung SEO.
+                Nhiệm vụ của bạn:
+                1.  **PHÂN TÍCH GỐC:** Chấm điểm "Nội dung Gốc" (0-100).
+                2.  **TỐI ƯU HÓA:** Viết lại nội dung đó.
+                3.  **PHÂN TÍCH MỚI:** Chấm điểm "Nội dung đã Tối ưu" (0-100).
 
-				Đây là các chi tiết để tối ưu hóa nội dung:
-				- **Từ khóa Mục tiêu:** '{{request.Keyword}}'
-				- **Nội dung Gốc:**
-				```
-				{{request.Content}}
-				```
-				- **Độ dài Nội dung mong muốn:** {{request.ContentLength}} (Tùy chọn: Ngắn, Trung bình, Dài, Toàn diện, Chuyên sâu)
-				- **Mức độ Tối ưu:** {{request.OptimizationLevel}} (Cấp 1: Cơ bản, Cấp 2: Vừa phải, Cấp 3: Nâng cao, Cấp 4: Chuyên gia, Cấp 5: Tích cực)
-				- **Mức độ Dễ đọc mong muốn:** {{request.ReadabilityLevel}} (Tùy chọn: Dễ, Trung bình, Khó, Nâng cao, Chuyên gia)
-				- **Bao gồm Trích dẫn:** {{citationText}}
+                YÊU CẦU QUAN TRỌNG:
+                - Bạn BẮT BUỘC phải chấm điểm (KHÔNG được trả về 0) và cung cấp lý do.
+                - Bạn BẮT BUỘC phải trả về một đối tượng JSON DUY NHẤT.
 
-				Dựa trên các tiêu chí này, vui lòng cung cấp **nội dung đã được tối ưu và viết lại hoàn chỉnh** cùng với điểm số ước tính cho SEO, Độ dễ đọc, Tương tác và Tính độc đáo.
-				Tập trung vào ngôn ngữ tự nhiên, ý định của người dùng và các phương pháp SEO tốt nhất, không nhồi nhét từ khóa.
-				Đảm bảo nội dung logic, duy trì thông điệp cốt lõi ban đầu đồng thời nâng cao đáng kể chất lượng và hiệu suất SEO.
+                ---
+                **CHI TIẾT ĐẦU VÀO:**
 
-				**Phản hồi của bạn BẮT BUỘC phải ở định dạng JSON nghiêm ngặt**, là một đối tượng duy nhất, với các trường sau (vui lòng giữ nguyên tên các trường này bằng tiếng Anh):
-				- `optimized_content` (string): Nội dung đã được viết lại và tối ưu hóa hoàn toàn.
-				- `seo_score` (integer): Điểm SEO ước tính (0-100), phản ánh mức độ tối ưu của nội dung cho từ khóa.
-				- `readability` (integer): Điểm dễ đọc ước tính (0-100).
-				- `engagement` (integer): Điểm tương tác ước tính (0-100).
-				- `originality` (integer): Điểm độc đáo ước tính (0-100).
-				""";
+                **1. Từ khóa Mục tiêu:**
+                '{{request.Keyword}}'
+
+                **2. Nội dung Gốc (Cần Phân tích):**
+                {{request.Content}}
+
+
+                **3. Yêu cầu Tối ưu (Dùng để Viết lại):**
+                - **Độ dài:** {{request.ContentLength}}
+                - **Mức độ Tối ưu:** {{request.OptimizationLevel}}
+                - **Mức độ Dễ đọc:** {{request.ReadabilityLevel}}
+                - **Bao gồm Trích dẫn:** {{citationText}}
+
+                ---
+                **ĐỊNH DẠNG JSON BẮT BUỘC:**
+                ```json
+                {
+                  "comparison": {
+                    "original": {
+                      "seo_score": 0,
+                      "seo_justification": "Lý do ngắn gọn cho điểm SEO gốc...",
+                      "readability_score": 0,
+                      "readability_justification": "Lý do ngắn gọn cho điểm dễ đọc gốc...",
+                      "engagement_score": 0,
+                      "engagement_justification": "Lý do ngắn gọn cho điểm tương tác gốc..."
+                    },
+                    "optimized": {
+                      "seo_score": 0,
+                      "seo_justification": "Lý do ngắn gọn cho điểm SEO mới...",
+                      "readability_score": 0,
+                      "readability_justification": "Lý do ngắn gọn cho điểm dễ đọc mới...",
+                      "engagement_score": 0,
+                      "engagement_justification": "Lý do ngắn gọn cho điểm tương tác mới..."
+                    }
+                  },
+                  "optimized_content": "..."
+                }
+                """;
 
 			var requestData = new GeminiAIRequestModel
 			{
