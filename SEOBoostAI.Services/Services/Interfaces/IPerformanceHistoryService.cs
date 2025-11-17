@@ -13,5 +13,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize, int? userId);
         Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy);
         Task<PerformanceHistory> GetPerformanceHistoryByIdAsync(int performanceHistoryId);
+        Task<PerformanceHistory> ReAnalyzePerformanceHistoryAsync(int performanceHistoryId, int userId);
     }
 }

@@ -42,5 +42,11 @@ namespace SEOBoostAI.Repository.Repositories
             return await _context.Set<Element>().Where(e => e.AnalysisCacheID == analysisCacheId && e.Important == true)
                 .ToListAsync();
         }
+
+        public async Task DeleteElementsForCacheAsync(int analysisCacheId)
+        {
+            var elements = await _context.Set<Element>().Where(e => e.AnalysisCacheID == analysisCacheId).ToListAsync();
+            _context.Set<Element>().RemoveRange(elements);
+        }
     }
 }

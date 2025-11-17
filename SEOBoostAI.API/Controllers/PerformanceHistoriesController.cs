@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
 using SEOBoostAI.Service.Ultils;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -51,10 +53,34 @@ namespace SEOBoostAI.API.Controllers
         }
 
         // POST api/<PerformanceHistoriesController>
+        //[Authorize]
         [HttpPost]
-        public async Task<PerformanceHistory> Post([FromBody] PerformanceHistoryViewModel performanceHistoryViewModel)
+        public async Task<IActionResult> Post([FromBody] PerformanceHistoryViewModel performanceHistoryViewModel)
         {
-            return await _performanceHistoryService.AnalysisPerformanceHistoryAsync(performanceHistoryViewModel.UserId, performanceHistoryViewModel.Url, performanceHistoryViewModel.Strategy);
+            //var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            //if (!int.TryParse(userIdString, out int userId))
+            //{
+            //    return Unauthorized();
+            //}
+
+            var performanceHistory = await _performanceHistoryService.AnalysisPerformanceHistoryAsync(performanceHistoryViewModel.UserId, performanceHistoryViewModel.Url, performanceHistoryViewModel.Strategy);
+
+            return Ok(performanceHistory);
+        }
+
+        //[Authorize]
+        [HttpPut]
+        public async Task<IActionResult> Put([FromBody] PerformanceHistoryUpdateModel performanceHistoryUpdateModel)
+        {
+            //var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            //if (!int.TryParse(userIdString, out int userId))
+            //{
+            //    return Unauthorized();
+            //}
+
+            var existingPerformanceHistory = await _performanceHistoryService.ReAnalyzePerformanceHistoryAsync(performanceHistoryUpdateModel.PerformanceHistoryId, performanceHistoryUpdateModel.UserId);
+
+            return Ok(existingPerformanceHistory);
         }
     }
 }

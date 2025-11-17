@@ -126,6 +126,19 @@ namespace SEOBoostAI.Service.Services
             }
         }
 
+        public async Task DeleteElementsForCacheAsync(int analysisCacheId)
+        {
+            try
+            {
+                await _elementRepository.DeleteElementsForCacheAsync(analysisCacheId);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
         private List<ElementFinding> CheckElement(HtmlDocument htmlDoc, string url)
         {
             var lists = new List<ElementFinding>();

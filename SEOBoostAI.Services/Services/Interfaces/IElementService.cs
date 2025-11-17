@@ -19,6 +19,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task UpdateRangeAsync(List<Element> elements);
         Task DeleteAsync(int id);
         Task ShortDeleteRangeAsync(List<Element> ids);
+        Task DeleteElementsForCacheAsync(int analysisCacheId);
         Task<List<Element>> GetElement(int performanceId, string url);
         Task<List<Element>> Suggestion(int performanceID);
         Task<List<Element>> GetElementsByAnalysisCacheIdAsync(int analysisCacheId);

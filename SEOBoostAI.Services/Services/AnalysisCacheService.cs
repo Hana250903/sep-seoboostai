@@ -27,6 +27,7 @@ namespace SEOBoostAI.Service.Services
         private readonly ICrawlingService _crawlingService;
         private readonly IGeminiAIService _geminiAIService;
         private readonly ICompareUrlString _compareUrlString;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromDays(7);
 
         public AnalysisCacheService(IAnalysisCacheRepository analysisCacheRepository, IUserRepository userRepository,
             IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementService elementService,
@@ -169,17 +170,106 @@ namespace SEOBoostAI.Service.Services
             }
         }
 
-
-        public async Task<bool> CheckDuplicateUrl(string url)
+        public async Task<AnalysisCache> ReAnalyzeAndSaveAnalysisCacheAsync(string url, string strategy)
         {
             string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
 
             if (string.IsNullOrEmpty(normalizedUrl))
             {
-                return false;
+                throw new Exception("URL không hợp lệ.");
             }
 
-            return await _analysisCacheRepository.IsDuplicateAsync(normalizedUrl);
+            var analysisCacheModel = await _analysisCacheRepository.GetByUrlAndStrategyAsync(normalizedUrl, strategy);
+
+            if (analysisCacheModel == null)
+            {
+                // Nếu không tìm thấy (ví dụ: đã bị xóa), thì không thể "Re-Analyze".
+                // Hoặc bạn có thể chọn gọi hàm CreateAsync tại đây nếu muốn.
+                throw new Exception($"Không tìm thấy AnalysisCache để cập nhật cho URL: {url} và Strategy: {strategy}");
+            }
+
+            var apiResult = await _pageSpeedService.GetPageSpeedAsync(normalizedUrl, strategy);
+
+            if (apiResult == null || apiResult.LighthouseResult == null)
+            {
+                throw new Exception("Không nhận được kết quả từ PageSpeed API.");
+            }
+
+            var lighthouse = apiResult.LighthouseResult;
+
+            try
+            {
+                string lighthouseJson = JsonSerializer.Serialize(lighthouse, new JsonSerializerOptions { WriteIndented = true });
+                _logger.LogInformation("--- START DESERIALIZED LIGHTHOUSE OBJECT (RE-ANALYZE) ---");
+                _logger.LogInformation(lighthouseJson);
+                _logger.LogInformation("--- END DESERIALIZED LIGHTHOUSE OBJECT (RE-ANALYZE) ---");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không thể serialize đối tượng lighthouse để debug (Re-Analyze).");
+            }
+
+            var metrics = new PageSpeedMetrics(
+                PerformanceScore: (int)((lighthouse.Categories?.Performance?.Score ?? 0) * 100),
+                FCP: lighthouse.Audits?.Fcp?.NumericValue,
+                LCP: lighthouse.Audits?.Lcp?.NumericValue,
+                CLS: lighthouse.Audits?.Cls?.NumericValue,
+                TBT: lighthouse.Audits?.Tbt?.NumericValue,
+                SpeedIndex: lighthouse.Audits?.Si?.NumericValue,
+                TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
+            );
+
+            var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(metrics));
+
+            analysisCacheModel.LastAnalyzedAt = DateTime.UtcNow.AddHours(7);
+            analysisCacheModel.PageSpeedResponse = JsonSerializer.Serialize(metrics);
+            analysisCacheModel.Suggestion = geminiResponse.Suggestion;
+            analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
+
+            try
+            {
+                await _analysisCacheRepository.UpdateAsync(analysisCacheModel);
+                await _unitOfWork.SaveChangesAsync();
+
+                await _elementService.DeleteElementsForCacheAsync(analysisCacheModel.AnalysisCacheID);
+
+                var elements = await _elementService.GetElement(analysisCacheModel.AnalysisCacheID, url);
+                analysisCacheModel.Elements = elements;
+
+                return analysisCacheModel;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Lỗi khi cập nhật AnalysisCache vào DB.", ex);
+            }
+        }
+
+        public async Task<AnalysisCache> GetOrCreateFreshAnalysisCacheAsync(string url, string strategy)
+        {
+            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
+            if (string.IsNullOrEmpty(normalizedUrl))
+            {
+                throw new Exception("URL không hợp lệ.");
+            }
+
+            var staleThreshold = DateTime.UtcNow.AddHours(7).Subtract(_cacheDuration);
+
+            var existingCache = await _analysisCacheRepository.GetByUrlAndStrategyAsync(normalizedUrl, strategy);
+
+            if (existingCache == null)
+            {
+                _logger.LogInformation($"Cache MISS. Tạo mới cache cho: {normalizedUrl}");
+                return await AnalyzeAndSaveAnalysisCacheAsync(url, strategy);
+            }
+
+            if (existingCache.LastAnalyzedAt < staleThreshold)
+            {
+                _logger.LogInformation($"Cache STALE. Chạy lại phân tích cho: {normalizedUrl}");
+                return await ReAnalyzeAndSaveAnalysisCacheAsync(url, strategy);
+            }
+
+            _logger.LogInformation($"Cache HIT. Trả về cache có sẵn cho: {normalizedUrl}");
+            return existingCache;
         }
 
         //public async Task Suggestion()
