@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -19,14 +21,17 @@ namespace SEOBoostAI.Service.Services
         private readonly IAnalysisCacheService _analysisCacheService;
         private readonly IElementService _elementService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<PerformanceHistoryService> _logger;
 
-        public PerformanceHistoryService(IPerformanceHistoryRepository performanceHistoryRepository, IUserRepository userRepository, IAnalysisCacheService analysisCacheService, IElementService elementService, IUnitOfWork unitOfWork)
+        public PerformanceHistoryService(IPerformanceHistoryRepository performanceHistoryRepository, IUserRepository userRepository,
+            IAnalysisCacheService analysisCacheService, IElementService elementService, IUnitOfWork unitOfWork, ILogger<PerformanceHistoryService> logger)
         {
             _performanceHistoryRepository = performanceHistoryRepository;
             _userRepository = userRepository;
             _analysisCacheService = analysisCacheService;
             _elementService = elementService;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         public async Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize, int? userId)
@@ -41,18 +46,20 @@ namespace SEOBoostAI.Service.Services
 
         public async Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy)
         {
-            if (await _analysisCacheService.CheckDuplicateUrl(url))
+            if (await _performanceHistoryRepository.CheckUserHasUrl(userId, url, strategy))
             {
-                throw new Exception("URL already analyzed.");
+                // Thay vì báo lỗi, có thể bạn nên trả về history cũ?
+                // Hoặc báo lỗi là tùy logic của bạn.
+                throw new Exception("User has already analyzed this URL.");
             }
 
-            var analysisCache = await _analysisCacheService.AnalyzeAndSaveAnalysisCacheAsync(url, strategy);
+            var analysisCache = await _analysisCacheService.GetOrCreateFreshAnalysisCacheAsync(url, strategy);
 
             var performanceHistory = new PerformanceHistory
             {
                 UserID = userId,
-                AnalysisCacheID = analysisCache.AnalysisCacheID,
-                ScanTime = DateTime.UtcNow.AddHours(7)
+                ScanTime = DateTime.UtcNow.AddHours(7),
+                AnalysisCacheID = analysisCache.AnalysisCacheID // Liên kết với cache đã tìm/tạo
             };
 
             try
@@ -60,19 +67,43 @@ namespace SEOBoostAI.Service.Services
                 await _performanceHistoryRepository.CreateAsync(performanceHistory);
                 await _unitOfWork.SaveChangesAsync();
             }
-            catch (DbUpdateException ex)
-                when (ex.InnerException?.Message.Contains("UNIQUE constraint") == true ||
-                      ex.InnerException?.Message.Contains("duplicate key") == true)
+            catch (Exception ex)
             {
-                // Bắt lỗi nếu CSDL báo "trùng lặp" (do race condition)
-                throw new Exception($"URL already analyzed (race condition detected).");
-            }
-            catch (Exception)
-            {
-                throw;
+                // Có thể user bấm 2 lần rất nhanh
+                _logger.LogWarning(ex, $"Lỗi khi tạo PerformanceHistory cho User {userId} và URL {url}");
+                throw new Exception("Lỗi khi lưu lịch sử phân tích.");
             }
 
+            performanceHistory.AnalysisCache = analysisCache;
             return performanceHistory;
+        }
+
+        public async Task<PerformanceHistory> ReAnalyzePerformanceHistoryAsync(int performanceHistoryId, int userId)
+        {
+            var existingPerformanceHistory = await _performanceHistoryRepository.GetByIdAsync(performanceHistoryId) ?? throw new Exception("Performance history not found.");
+
+            if (existingPerformanceHistory.UserID != userId)
+            {
+                throw new UnauthorizedAccessException("User does not have permission for this item.");
+            }
+
+            if (existingPerformanceHistory.AnalysisCache == null)
+            {
+                // Điều này hiếm khi xảy ra nếu DB của bạn có Foreign Key constraint
+                _logger.LogWarning($"Dữ liệu mồ côi (Orphan data): PerformanceHistory {performanceHistoryId} tham chiếu đến AnalysisCacheID không tồn tại.");
+                throw new UnauthorizedAccessException("User does not have permission for this item.");
+            }
+
+            var updatedCache = await _analysisCacheService.ReAnalyzeAndSaveAnalysisCacheAsync(existingPerformanceHistory.AnalysisCache.Url,
+                existingPerformanceHistory.AnalysisCache.Strategy);
+
+            existingPerformanceHistory.ScanTime = DateTime.UtcNow.AddHours(7);
+            await _performanceHistoryRepository.UpdateAsync(existingPerformanceHistory);
+            await _unitOfWork.SaveChangesAsync();
+
+            existingPerformanceHistory.AnalysisCache = updatedCache;
+
+            return existingPerformanceHistory;
         }
     }
 }

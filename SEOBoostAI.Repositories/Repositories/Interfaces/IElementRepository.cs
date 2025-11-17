@@ -13,5 +13,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
     {
         Task<PaginationResult<List<Element>>> GetElementWithPaginateAsync(int currentPage, int pageSize);
         Task<List<Element>> GetElementsImportantByAnalysisCacheIdAsync(int analysisCacheId);
+        Task DeleteElementsForCacheAsync(int analysisCacheId);
     }
 }

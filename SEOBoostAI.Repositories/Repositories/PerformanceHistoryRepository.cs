@@ -51,5 +51,11 @@ namespace SEOBoostAI.Repository.Repositories
         {
             return await _context.Set<PerformanceHistory>().Where(ph => ph.ScanHistoryID == performanceHistoryId).Include(ph => ph.AnalysisCache).ThenInclude(ac => ac.Elements).FirstOrDefaultAsync();
         }
+
+        public async Task<bool> CheckUserHasUrl(int userId, string normalizedUrlToCheck, string strategy)
+        {
+            return await _context.Set<PerformanceHistory>()
+                .AnyAsync(ph => ph.UserID == userId && ph.AnalysisCache.NormalizedUrl == normalizedUrlToCheck && ph.AnalysisCache.Strategy == strategy);
+        }
     }
 }

@@ -43,15 +43,9 @@ namespace SEOBoostAI.Repository.Repositories
             return await _context.Set<AnalysisCache>().Include(p => p.Elements).FirstOrDefaultAsync(p => p.AnalysisCacheID == id);
         }
 
-        public async Task<bool> IsDuplicateAsync(string normalizedUrlToCheck)
-        {
-            return await _context.Set<AnalysisCache>()
-                .AnyAsync(cache => cache.NormalizedUrl == normalizedUrlToCheck);
-        }
-
-		public Task<List<string>> GetAllUrlsAsync()
+		public async Task<AnalysisCache> GetByUrlAndStrategyAsync(string normalizedUrl, string strategy)
 		{
-			throw new NotImplementedException();
+			return await _context.Set<AnalysisCache>().Include(e => e.Elements).FirstOrDefaultAsync(ac => ac.NormalizedUrl == normalizedUrl && ac.Strategy == strategy);
 		}
-	}
+    }
 }

@@ -13,6 +13,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
     {
         Task<PaginationResult<List<AnalysisCache>>> GetAnalysisCachesWithPaginateAsync(int currentPage, int pageSize);
         Task<AnalysisCache> GetAnalysisCacheAsync(int id);
-        Task<bool> IsDuplicateAsync(string normalizedUrlToCheck);
+        Task<AnalysisCache> GetByUrlAndStrategyAsync(string normalizedUrl, string strategy);
     }
 }
