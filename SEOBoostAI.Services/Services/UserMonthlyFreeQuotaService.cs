@@ -84,8 +84,7 @@ namespace SEOBoostAI.Service.Services
         {
 			try
 			{
-                var userMonthlyFreeQuotas = await _userMonthlyFreeQuotaRepository.CreateAsync(userId);
-                await _userMonthlyFreeQuotaRepository.CreateRangeAsync(userMonthlyFreeQuotas);
+                await _userMonthlyFreeQuotaRepository.CreateAsync(userId);
                 var result = await _unitOfWork.SaveChangesAsync();
                 return result;
             }
