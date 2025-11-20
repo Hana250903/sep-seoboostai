@@ -20,6 +20,8 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
     public virtual DbSet<AnalysisCache> AnalysisCaches { get; set; }
 
+    public virtual DbSet<AnalysisSnapshot> AnalysisSnapshots { get; set; }
+
     public virtual DbSet<ContentOptimization> ContentOptimizations { get; set; }
 
     public virtual DbSet<Element> Elements { get; set; }
@@ -81,6 +83,15 @@ public partial class SEP_SEOBoostAIContext : DbContext
             entity.HasKey(e => e.AnalysisCacheID).HasName("PK__Analysis__64960DCD987565BA");
 
             entity.Property(e => e.LastAnalyzedAt).HasDefaultValueSql("(getdate())");
+        });
+
+        modelBuilder.Entity<AnalysisSnapshot>(entity =>
+        {
+            entity.HasKey(e => e.SnapshotID).HasName("PK__Analysis__664F570B0713B35F");
+
+            entity.Property(e => e.ArchivedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.AnalysisSnapshots).HasConstraintName("FK_AnalysisSnapshot_AnalysisCache");
         });
 
         modelBuilder.Entity<ContentOptimization>(entity =>

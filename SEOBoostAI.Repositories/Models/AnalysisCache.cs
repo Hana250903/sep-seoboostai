@@ -39,6 +39,9 @@ public partial class AnalysisCache
     public DateTime LastAnalyzedAt { get; set; }
 
     [InverseProperty("AnalysisCache")]
+    public virtual ICollection<AnalysisSnapshot> AnalysisSnapshots { get; set; } = new List<AnalysisSnapshot>();
+
+    [InverseProperty("AnalysisCache")]
     public virtual ICollection<Element> Elements { get; set; } = new List<Element>();
 
     [InverseProperty("AnalysisCache")]

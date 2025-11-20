@@ -33,7 +33,7 @@ namespace SEOBoostAI.Repository.Repositories
 			return result;
 		}
 
-        public async Task<List<UserMonthlyFreeQuota>> CreateAsync(int userId)
+        public async Task CreateAsync(int userId)
 		{
 			var features = _context.Set<Feature>().ToList();
 
@@ -52,7 +52,7 @@ namespace SEOBoostAI.Repository.Repositories
                 });
             }
 
-			return userMonthlyFreeQuotas;
+			await _context.Set<UserMonthlyFreeQuota>().AddRangeAsync(userMonthlyFreeQuotas);
         }
 
 		public async Task<List<UserMonthlyFreeQuota>> GetQuotasByUserId(int userId)

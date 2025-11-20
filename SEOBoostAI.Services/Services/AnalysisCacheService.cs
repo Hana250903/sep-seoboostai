@@ -27,12 +27,13 @@ namespace SEOBoostAI.Service.Services
         private readonly ICrawlingService _crawlingService;
         private readonly IGeminiAIService _geminiAIService;
         private readonly ICompareUrlString _compareUrlString;
+        private readonly IAnalysisSnapshotRepository _analysisSnapshotRepository;
         private readonly TimeSpan _cacheDuration = TimeSpan.FromDays(7);
 
         public AnalysisCacheService(IAnalysisCacheRepository analysisCacheRepository, IUserRepository userRepository,
             IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementService elementService,
             ILogger<AnalysisCacheService> logger, ICrawlingService crawlingService, IGeminiAIService geminiAIService,
-            ICompareUrlString compareUrlString)
+            ICompareUrlString compareUrlString, IAnalysisSnapshotRepository analysisSnapshotRepository)
         {
             _analysisCacheRepository = analysisCacheRepository;
             _userRepository = userRepository;
@@ -43,6 +44,7 @@ namespace SEOBoostAI.Service.Services
             _crawlingService = crawlingService;
             _geminiAIService = geminiAIService;
             _compareUrlString = compareUrlString;
+            _analysisSnapshotRepository = analysisSnapshotRepository;
         }
 
         public async Task CreateAsync(AnalysisCache analysisCache)
@@ -148,7 +150,7 @@ namespace SEOBoostAI.Service.Services
                 TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
             );
 
-            var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(metrics));
+            var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(metrics), null);
 
             analysisCacheModel.PageSpeedResponse = JsonSerializer.Serialize(metrics);
             analysisCacheModel.Suggestion = geminiResponse.Suggestion;
@@ -188,6 +190,24 @@ namespace SEOBoostAI.Service.Services
                 throw new Exception($"Không tìm thấy AnalysisCache để cập nhật cho URL: {url} và Strategy: {strategy}");
             }
 
+            //Create AnalysisSnapshot from existing AnalysisCache
+            var analysisSnapshot = new AnalysisSnapshot
+            {
+                AnalysisCacheID = analysisCacheModel.AnalysisCacheID,
+                PageSpeedResponse = analysisCacheModel.PageSpeedResponse,
+                AnalyzedAt = analysisCacheModel.LastAnalyzedAt,
+                ArchivedAt = DateTime.UtcNow.AddHours(7)
+            };
+
+            try
+            {
+                await _analysisSnapshotRepository.CreateAsync(analysisSnapshot);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không thể tạo AnalysisSnapshot khi Re-Analyze cho AnalysisCacheID: {AnalysisCacheID}", analysisCacheModel.AnalysisCacheID);
+            }
+
             var apiResult = await _pageSpeedService.GetPageSpeedAsync(normalizedUrl, strategy);
 
             if (apiResult == null || apiResult.LighthouseResult == null)
@@ -209,7 +229,7 @@ namespace SEOBoostAI.Service.Services
                 _logger.LogWarning(ex, "Không thể serialize đối tượng lighthouse để debug (Re-Analyze).");
             }
 
-            var metrics = new PageSpeedMetrics(
+            var newMetrics = new PageSpeedMetrics(
                 PerformanceScore: (int)((lighthouse.Categories?.Performance?.Score ?? 0) * 100),
                 FCP: lighthouse.Audits?.Fcp?.NumericValue,
                 LCP: lighthouse.Audits?.Lcp?.NumericValue,
@@ -219,10 +239,10 @@ namespace SEOBoostAI.Service.Services
                 TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
             );
 
-            var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(metrics));
+            var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(newMetrics), analysisCacheModel.PageSpeedResponse);
 
             analysisCacheModel.LastAnalyzedAt = DateTime.UtcNow.AddHours(7);
-            analysisCacheModel.PageSpeedResponse = JsonSerializer.Serialize(metrics);
+            analysisCacheModel.PageSpeedResponse = JsonSerializer.Serialize(newMetrics);
             analysisCacheModel.Suggestion = geminiResponse.Suggestion;
             analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
 

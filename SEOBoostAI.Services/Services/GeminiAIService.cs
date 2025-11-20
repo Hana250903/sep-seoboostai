@@ -26,29 +26,57 @@ namespace SEOBoostAI.Service.Services
             _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
         }
 
-		public async Task<AiAssessment> SuggestionAnalysisPerformance(string metrics)
+		public async Task<AiAssessment> SuggestionAnalysisPerformance(string newMetrics, string oldMetrics)
         {
             string fullUrl = $"{_url}?key={_apikey}";
 
-            using HttpClient client = new HttpClient();
+            string dataInputSection;
+            string taskInstruction;
 
-            string promptTemplate = $@"Bạn là một chuyên gia phân tích và tối ưu hiệu suất website (Core Web Vitals). Tôi sẽ cung cấp cho bạn dữ liệu từ Google PageSpeed ở định dạng JSON.
+            if (string.IsNullOrEmpty(oldMetrics))
+            {
+                // TRƯỜNG HỢP 1: CHỈ CÓ DỮ LIỆU MỚI (Phân tích thông thường)
+                taskInstruction = @"
+                    1. Phân tích các chỉ số này và viết một **đánh giá chung** (GeneralAssessment) về tình trạng hiệu suất hiện tại (ví dụ: Tốt, Cần cải thiện, Chậm).
+                    2. Đưa ra các **gợi ý/đề xuất** (Suggestion) để cải thiện các chỉ số yếu kém nhất.";
 
+                        dataInputSection = $@"
+                    Dữ liệu PageSpeed:
+                    {newMetrics}";
+            }
+            else
+            {
+                // TRƯỜNG HỢP 2: CÓ DỮ LIỆU CŨ (So sánh sự thay đổi)
+                taskInstruction = @"
+                    1. **So sánh** dữ liệu 'MỚI' so với 'CŨ'. Trong phần **GeneralAssessment**, bạn PHẢI nhận xét xem hiệu suất đã **TĂNG** hay **GIẢM**, chỉ ra cụ thể chỉ số nào thay đổi đáng kể (ví dụ: 'Điểm hiệu suất tăng từ 50 lên 70, LCP cải thiện 0.5s').
+                    2. Trong phần **Suggestion**, đưa ra lời khuyên dựa trên sự thay đổi. Nếu hiệu suất giảm, hãy cảnh báo. Nếu tăng nhưng chưa tối ưu, hãy gợi ý bước tiếp theo.";
+
+                        dataInputSection = $@"
+                    Dữ liệu CŨ (Lần trước):
+                    {oldMetrics}
+
+                    Dữ liệu MỚI (Lần này - Cần đánh giá):
+                    {newMetrics}";
+            }
+
+            // 2. Ghép vào Prompt Template chính
+            string promptTemplate = $@"Bạn là một chuyên gia phân tích và tối ưu hiệu suất website (Core Web Vitals). 
+    
                 Nhiệm vụ của bạn là:
-                1.  Phân tích các chỉ số này và viết một **đánh giá chung** (GeneralAssessment) về tình trạng hiệu suất của trang web (ví dụ: Tốt, Cần cải thiện, Chậm).
-                2.  Đưa ra một vài **gợi ý/đề xuất** (Suggestion) quan trọng nhất, có tính hành động để cải thiện các chỉ số yếu kém.
+                {taskInstruction}
 
-                Bạn **PHẢI** trả về kết quả **CHỈ** bằng một đối tượng JSON hợp lệ, không có bất kỳ văn bản giải thích nào khác (không dùng markdown). Nội dung bên trong JSON phải bằng tiếng Việt.
+                Bạn **PHẢI** trả về kết quả **CHỈ** bằng một đối tượng JSON hợp lệ, không có bất kỳ văn bản giải thích nào khác, không dùng markdown code block (```json ... ```). Nội dung bên trong JSON phải bằng tiếng Việt.
 
-                Sử dụng cấu trúc sau:
+                Sử dụng đúng cấu trúc JSON sau:
                 {{
-                  ""GeneralAssessment"": ""Nội dung đánh giá của bạn..."",
-                  ""Suggestion"": ""Các gợi ý của bạn...""
+                    ""GeneralAssessment"": ""Nội dung đánh giá/so sánh..."",
+                    ""Suggestion"": ""Các gợi ý hành động...""
                 }}
 
-                Dữ liệu PageSpeed đầu vào:
-                {metrics}";
+                Dữ liệu đầu vào:
+                {dataInputSection}";
 
+            using HttpClient client = new HttpClient();
             var requestData = new GeminiAIRequestModel
             {
                 Contents = new[]
