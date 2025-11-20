@@ -97,9 +97,7 @@ namespace SEOBoostAI.Service.Services
             var updatedCache = await _analysisCacheService.ReAnalyzeAndSaveAnalysisCacheAsync(existingPerformanceHistory.AnalysisCache.Url,
                 existingPerformanceHistory.AnalysisCache.Strategy);
 
-            existingPerformanceHistory.ScanTime = DateTime.UtcNow.AddHours(7);
-            await _performanceHistoryRepository.UpdateAsync(existingPerformanceHistory);
-            await _unitOfWork.SaveChangesAsync();
+            await _performanceHistoryRepository.UpdateScanTimeAsync(performanceHistoryId);
 
             existingPerformanceHistory.AnalysisCache = updatedCache;
 

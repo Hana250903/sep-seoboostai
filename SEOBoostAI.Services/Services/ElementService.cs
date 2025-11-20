@@ -131,7 +131,7 @@ namespace SEOBoostAI.Service.Services
             try
             {
                 await _elementRepository.DeleteElementsForCacheAsync(analysisCacheId);
-                await _unitOfWork.SaveChangesAsync();
+                var result = await _unitOfWork.SaveChangesAsync();
             }
             catch (Exception ex)
             {

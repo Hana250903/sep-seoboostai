@@ -14,5 +14,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
         Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize, int? userId);
         Task<PerformanceHistory> GetByIdAsync(int performanceHistoryId);
         Task<bool> CheckUserHasUrl(int userId, string normalizedUrlToCheck, string strategy);
+        Task UpdateScanTimeAsync(int performanceHistoryId);
     }
 }

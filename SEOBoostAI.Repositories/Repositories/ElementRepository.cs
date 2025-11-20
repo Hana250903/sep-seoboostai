@@ -45,8 +45,14 @@ namespace SEOBoostAI.Repository.Repositories
 
         public async Task DeleteElementsForCacheAsync(int analysisCacheId)
         {
-            var elements = await _context.Set<Element>().Where(e => e.AnalysisCacheID == analysisCacheId).ToListAsync();
-            _context.Set<Element>().RemoveRange(elements);
+            //Cach 1: Xoa tung ban ghi(thêm asNoTracking vì nó xung đột với dòng thứ 2)
+            //var elements = await _context.Set<Element>().Where(e => e.AnalysisCacheID == analysisCacheId).AsNoTracking().ToListAsync();
+            //_context.Set<Element>().RemoveRange(elements);
+
+            //Cách 2: Xóa hàng loạt (hiệu quả hơn)
+            await _context.Set<Element>()
+                  .Where(e => e.AnalysisCacheID == analysisCacheId)
+                  .ExecuteDeleteAsync();
         }
     }
 }

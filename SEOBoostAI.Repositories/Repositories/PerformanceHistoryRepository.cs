@@ -57,5 +57,15 @@ namespace SEOBoostAI.Repository.Repositories
             return await _context.Set<PerformanceHistory>()
                 .AnyAsync(ph => ph.UserID == userId && ph.AnalysisCache.NormalizedUrl == normalizedUrlToCheck && ph.AnalysisCache.Strategy == strategy);
         }
+
+        public async Task UpdateScanTimeAsync(int performanceHistoryId)
+        {
+            // Update trực tiếp trong Database, KHÔNG load về RAM, KHÔNG bị lỗi tracking
+            await _context.Set<PerformanceHistory>()
+                .Where(ph => ph.ScanHistoryID == performanceHistoryId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(ph => ph.ScanTime, DateTime.UtcNow.AddHours(7))
+                );
+        }
     }
 }
