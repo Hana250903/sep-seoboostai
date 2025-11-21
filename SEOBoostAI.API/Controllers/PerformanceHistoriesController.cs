@@ -63,7 +63,7 @@ namespace SEOBoostAI.API.Controllers
             //    return Unauthorized();
             //}
 
-            var performanceHistory = await _performanceHistoryService.AnalysisPerformanceHistoryAsync(performanceHistoryViewModel.UserId, performanceHistoryViewModel.Url, performanceHistoryViewModel.Strategy);
+            var performanceHistory = await _performanceHistoryService.AnalysisPerformanceHistoryAsync(performanceHistoryViewModel.UserId, performanceHistoryViewModel.Url, performanceHistoryViewModel.Strategy, performanceHistoryViewModel.FeatureId);
 
             return Ok(performanceHistory);
         }
@@ -78,7 +78,7 @@ namespace SEOBoostAI.API.Controllers
             //    return Unauthorized();
             //}
 
-            var existingPerformanceHistory = await _performanceHistoryService.ReAnalyzePerformanceHistoryAsync(performanceHistoryUpdateModel.PerformanceHistoryId, performanceHistoryUpdateModel.UserId);
+            var existingPerformanceHistory = await _performanceHistoryService.ReAnalyzePerformanceHistoryAsync(performanceHistoryUpdateModel.PerformanceHistoryId, performanceHistoryUpdateModel.UserId, performanceHistoryUpdateModel.FeatureId);
 
             return Ok(existingPerformanceHistory);
         }

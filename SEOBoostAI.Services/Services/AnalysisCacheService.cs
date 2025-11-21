@@ -102,18 +102,11 @@ namespace SEOBoostAI.Service.Services
             }
         }
 
-        public async Task<AnalysisCache> AnalyzeAndSaveAnalysisCacheAsync(string url, string strategy)
+        public async Task<AnalysisCache> AnalyzeInternalAsync(string normalizedUrl, string strategy)
         {
-            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
-
-            if (string.IsNullOrEmpty(normalizedUrl))
-            {
-                throw new Exception("URL không hợp lệ.");
-            }
-
             var analysisCacheModel = new AnalysisCache
             {
-                Url = url,
+                Url = normalizedUrl,
                 NormalizedUrl = normalizedUrl,
                 Strategy = strategy,
                 LastAnalyzedAt = DateTime.UtcNow.AddHours(7)
@@ -156,23 +149,14 @@ namespace SEOBoostAI.Service.Services
             analysisCacheModel.Suggestion = geminiResponse.Suggestion;
             analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
 
-            try
-            {
-                await _analysisCacheRepository.CreateAsync(analysisCacheModel);
-                await _unitOfWork.SaveChangesAsync();
+            var elements = await _elementService.PrepareElementsAsync(normalizedUrl);
+            analysisCacheModel.Elements = elements;
 
-                var elements = await _elementService.GetElement(analysisCacheModel.AnalysisCacheID, url);
-                analysisCacheModel.Elements = elements;
-
-                return analysisCacheModel;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Lỗi khi lưu kết quả AnalysisCache vào DB.", ex);
-            }
+            await _analysisCacheRepository.CreateAsync(analysisCacheModel);
+            return analysisCacheModel;
         }
 
-        public async Task<AnalysisCache> ReAnalyzeAndSaveAnalysisCacheAsync(string url, string strategy)
+        public async Task<AnalysisCache> ReAnalyzeInternalAsync(string url, string strategy)
         {
             string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
 
@@ -245,33 +229,24 @@ namespace SEOBoostAI.Service.Services
             analysisCacheModel.PageSpeedResponse = JsonSerializer.Serialize(newMetrics);
             analysisCacheModel.Suggestion = geminiResponse.Suggestion;
             analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
+            analysisCacheModel.Elements.Clear();
 
-            try
+            //await _elementService.DeleteElementsForCacheAsync(analysisCacheModel.AnalysisCacheID);
+
+            var newElements = await _elementService.PrepareElementsAsync(url);
+
+            foreach (var item in newElements)
             {
-                await _analysisCacheRepository.UpdateAsync(analysisCacheModel);
-                await _unitOfWork.SaveChangesAsync();
-
-                await _elementService.DeleteElementsForCacheAsync(analysisCacheModel.AnalysisCacheID);
-
-                var elements = await _elementService.GetElement(analysisCacheModel.AnalysisCacheID, url);
-                analysisCacheModel.Elements = elements;
-
-                return analysisCacheModel;
+                analysisCacheModel.Elements.Add(item);
             }
-            catch (Exception ex)
-            {
-                throw new Exception("Lỗi khi cập nhật AnalysisCache vào DB.", ex);
-            }
+
+            await _analysisCacheRepository.UpdateAsync(analysisCacheModel);
+
+            return analysisCacheModel;
         }
 
-        public async Task<AnalysisCache> GetOrCreateFreshAnalysisCacheAsync(string url, string strategy)
+        public async Task<AnalysisCache> GetOrCreateFreshAnalysisCacheAsync(string normalizedUrl, string strategy)
         {
-            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
-            if (string.IsNullOrEmpty(normalizedUrl))
-            {
-                throw new Exception("URL không hợp lệ.");
-            }
-
             var staleThreshold = DateTime.UtcNow.AddHours(7).Subtract(_cacheDuration);
 
             var existingCache = await _analysisCacheRepository.GetByUrlAndStrategyAsync(normalizedUrl, strategy);
@@ -279,13 +254,13 @@ namespace SEOBoostAI.Service.Services
             if (existingCache == null)
             {
                 _logger.LogInformation($"Cache MISS. Tạo mới cache cho: {normalizedUrl}");
-                return await AnalyzeAndSaveAnalysisCacheAsync(url, strategy);
+                return await AnalyzeInternalAsync(normalizedUrl, strategy);
             }
 
             if (existingCache.LastAnalyzedAt < staleThreshold)
             {
                 _logger.LogInformation($"Cache STALE. Chạy lại phân tích cho: {normalizedUrl}");
-                return await ReAnalyzeAndSaveAnalysisCacheAsync(url, strategy);
+                return await ReAnalyzeInternalAsync(normalizedUrl, strategy);
             }
 
             _logger.LogInformation($"Cache HIT. Trả về cache có sẵn cho: {normalizedUrl}");

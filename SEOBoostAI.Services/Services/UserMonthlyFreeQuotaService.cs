@@ -158,20 +158,14 @@ namespace SEOBoostAI.Service.Services
 				return false;
             }
         }
-		public async Task<int> IncrementUsageCount(int userId, int featureId)
+		public async Task IncrementUsageCount(int userId, int featureId)
 		{
 			var userQuota = await _userMonthlyFreeQuotaRepository.GetQuotaByUserIdAndFeatureId(userId, featureId);
 			if (userQuota != null)
 			{
 				userQuota.UsageCount += 1;
 				await _userMonthlyFreeQuotaRepository.UpdateAsync(userQuota);
-				var result = await _unitOfWork.SaveChangesAsync();
-				return result;
 			}
-			else
-			{
-				return 0;
-            }
         }
     }
 }

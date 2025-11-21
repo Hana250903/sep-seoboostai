@@ -11,8 +11,8 @@ namespace SEOBoostAI.Service.Services.Interfaces
     public interface IPerformanceHistoryService
     {
         Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize, int? userId);
-        Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy);
+        Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy, int featureId);
         Task<PerformanceHistory> GetPerformanceHistoryByIdAsync(int performanceHistoryId);
-        Task<PerformanceHistory> ReAnalyzePerformanceHistoryAsync(int performanceHistoryId, int userId);
+        Task<PerformanceHistory> ReAnalyzePerformanceHistoryAsync(int performanceHistoryId, int userId, int featureId);
     }
 }

@@ -80,7 +80,7 @@ namespace SEOBoostAI.API.Controllers
 
             try
             {
-                var result = await _analysisCacheService.AnalyzeAndSaveAnalysisCacheAsync(
+                var result = await _analysisCacheService.AnalyzeInternalAsync(
                     model.Url,
                     model.Strategy
                 );

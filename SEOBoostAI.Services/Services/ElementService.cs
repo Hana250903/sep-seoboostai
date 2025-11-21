@@ -118,7 +118,6 @@ namespace SEOBoostAI.Service.Services
             try
             {
                 await _elementRepository.UpdateRangeAsync(elements);
-                await _unitOfWork.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -169,19 +168,16 @@ namespace SEOBoostAI.Service.Services
             return lists;
         }
 
-        public async Task<List<Element>> GetElement(int analysisCacheId, string url)
+        public async Task<List<Element>> PrepareElementsAsync(string url)
         {
             var htmlDoc = await _crawlingService.GetHtmlDocumentAsync(url);
-            
-            var elements = new List<Element>();
-
             var lists = CheckElement(htmlDoc, url);
 
+            var elements = new List<Element>();
             foreach (var item in lists)
             {
                 elements.Add(new Element
                 {
-                    AnalysisCacheID = analysisCacheId,
                     TagName = item.TagName,
                     InnerText = item.InnerHtml,
                     OuterHTML = item.OuterHtml,
@@ -189,10 +185,6 @@ namespace SEOBoostAI.Service.Services
                     Important = true
                 });
             }
-
-            await _elementRepository.CreateRangeAsync(elements);
-            await _unitOfWork.SaveChangesAsync();
-
             return elements;
         }
 

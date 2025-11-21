@@ -15,5 +15,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
         Task<PerformanceHistory> GetByIdAsync(int performanceHistoryId);
         Task<bool> CheckUserHasUrl(int userId, string normalizedUrlToCheck, string strategy);
         Task UpdateScanTimeAsync(int performanceHistoryId);
+        Task<PerformanceHistory> GetByUserIdAndUrlAsync(int userId, string normalizedUrlToCheck, string strategy);
     }
 }

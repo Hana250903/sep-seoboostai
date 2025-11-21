@@ -58,6 +58,15 @@ namespace SEOBoostAI.Repository.Repositories
                 .AnyAsync(ph => ph.UserID == userId && ph.AnalysisCache.NormalizedUrl == normalizedUrlToCheck && ph.AnalysisCache.Strategy == strategy);
         }
 
+        public async Task<PerformanceHistory> GetByUserIdAndUrlAsync(int userId, string normalizedUrlToCheck, string strategy)
+        {
+            return await _context.Set<PerformanceHistory>()
+                .Include(ph => ph.AnalysisCache)
+                .ThenInclude(ac => ac.Elements)
+                .Where(ph => ph.UserID == userId && ph.AnalysisCache.NormalizedUrl == normalizedUrlToCheck && ph.AnalysisCache.Strategy == strategy)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task UpdateScanTimeAsync(int performanceHistoryId)
         {
             // Update trực tiếp trong Database, KHÔNG load về RAM, KHÔNG bị lỗi tracking

@@ -18,5 +18,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task DeleteAsync(int id);
 		Task<int> CreateQuotaAsync(int userId);
 		Task<int> UpdateMonthQuotaAsync(int userId);
+		Task<bool> CheckLimit(int userId, int featureId);
+		Task IncrementUsageCount(int userId, int featureId);
     }
 }

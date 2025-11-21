@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Google.Apis.Discovery;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
@@ -6,6 +7,7 @@ using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
+using SEOBoostAI.Service.Ultils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,9 +24,12 @@ namespace SEOBoostAI.Service.Services
         private readonly IElementService _elementService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<PerformanceHistoryService> _logger;
+        private readonly ICompareUrlString _compareUrlString;
+        private readonly IUserMonthlyFreeQuotaService _userMonthlyFreeQuotaService;
 
         public PerformanceHistoryService(IPerformanceHistoryRepository performanceHistoryRepository, IUserRepository userRepository,
-            IAnalysisCacheService analysisCacheService, IElementService elementService, IUnitOfWork unitOfWork, ILogger<PerformanceHistoryService> logger)
+            IAnalysisCacheService analysisCacheService, IElementService elementService, IUnitOfWork unitOfWork, ILogger<PerformanceHistoryService> logger,
+            ICompareUrlString compareUrlString, IUserMonthlyFreeQuotaService userMonthlyFreeQuotaService)
         {
             _performanceHistoryRepository = performanceHistoryRepository;
             _userRepository = userRepository;
@@ -32,6 +37,8 @@ namespace SEOBoostAI.Service.Services
             _elementService = elementService;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _compareUrlString = compareUrlString;
+            _userMonthlyFreeQuotaService = userMonthlyFreeQuotaService;
         }
 
         public async Task<PaginationResult<List<PerformanceHistory>>> GetPerformanceHistorysWithPagination(int currentPage, int pageSize, int? userId)
@@ -44,41 +51,56 @@ namespace SEOBoostAI.Service.Services
             return await _performanceHistoryRepository.GetByIdAsync(performanceHistoryId);
         }
 
-        public async Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy)
+        public async Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy, int featureId)
         {
-            if (await _performanceHistoryRepository.CheckUserHasUrl(userId, url, strategy))
+
+
+            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
+            if (string.IsNullOrEmpty(normalizedUrl))
             {
-                // Thay vì báo lỗi, có thể bạn nên trả về history cũ?
-                // Hoặc báo lỗi là tùy logic của bạn.
-                throw new Exception("User has already analyzed this URL.");
+                throw new Exception("URL không hợp lệ.");
             }
 
-            var analysisCache = await _analysisCacheService.GetOrCreateFreshAnalysisCacheAsync(url, strategy);
+            if (await _performanceHistoryRepository.CheckUserHasUrl(userId, normalizedUrl, strategy))
+            {
+                return await _performanceHistoryRepository.GetByUserIdAndUrlAsync(userId, normalizedUrl, strategy);
+            }
+
+            bool canAnalyze = await _userMonthlyFreeQuotaService.CheckLimit(userId, featureId);
+            if (!canAnalyze)
+            {
+                throw new Exception("Bạn đã hết lượt sử dụng miễn phí cho tính năng này trong tháng.");
+            }
+
+            var analysisCache = await _analysisCacheService.GetOrCreateFreshAnalysisCacheAsync(normalizedUrl, strategy);
 
             var performanceHistory = new PerformanceHistory
             {
                 UserID = userId,
                 ScanTime = DateTime.UtcNow.AddHours(7),
-                AnalysisCacheID = analysisCache.AnalysisCacheID // Liên kết với cache đã tìm/tạo
+                //AnalysisCacheID = analysisCache.AnalysisCacheID // Liên kết với cache đã tìm/tạo
+                AnalysisCache = analysisCache
             };
 
+            await _unitOfWork.BeginTransactionAsync();
             try
             {
                 await _performanceHistoryRepository.CreateAsync(performanceHistory);
+                await _userMonthlyFreeQuotaService.IncrementUsageCount(userId, featureId);
                 await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
             }
             catch (Exception ex)
             {
                 // Có thể user bấm 2 lần rất nhanh
                 _logger.LogWarning(ex, $"Lỗi khi tạo PerformanceHistory cho User {userId} và URL {url}");
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new Exception("Lỗi khi lưu lịch sử phân tích.");
             }
-
-            performanceHistory.AnalysisCache = analysisCache;
             return performanceHistory;
         }
 
-        public async Task<PerformanceHistory> ReAnalyzePerformanceHistoryAsync(int performanceHistoryId, int userId)
+        public async Task<PerformanceHistory> ReAnalyzePerformanceHistoryAsync(int performanceHistoryId, int userId, int featureId)
         {
             var existingPerformanceHistory = await _performanceHistoryRepository.GetByIdAsync(performanceHistoryId) ?? throw new Exception("Performance history not found.");
 
@@ -94,14 +116,35 @@ namespace SEOBoostAI.Service.Services
                 throw new UnauthorizedAccessException("User does not have permission for this item.");
             }
 
-            var updatedCache = await _analysisCacheService.ReAnalyzeAndSaveAnalysisCacheAsync(existingPerformanceHistory.AnalysisCache.Url,
-                existingPerformanceHistory.AnalysisCache.Strategy);
+            bool canAnalyze = await _userMonthlyFreeQuotaService.CheckLimit(userId, featureId);
+            if (!canAnalyze)
+            {
+                throw new Exception("Bạn đã hết lượt sử dụng miễn phí cho tính năng này trong tháng.");
+            }
 
-            await _performanceHistoryRepository.UpdateScanTimeAsync(performanceHistoryId);
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var updatedCache = await _analysisCacheService.ReAnalyzeInternalAsync(
+                    existingPerformanceHistory.AnalysisCache.Url,
+                    existingPerformanceHistory.AnalysisCache.Strategy
+                );
 
-            existingPerformanceHistory.AnalysisCache = updatedCache;
+                await _performanceHistoryRepository.UpdateScanTimeAsync(performanceHistoryId);
 
-            return existingPerformanceHistory;
+                await _userMonthlyFreeQuotaService.IncrementUsageCount(userId, featureId);
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                existingPerformanceHistory.AnalysisCache = updatedCache;
+                return existingPerformanceHistory;
+            }
+            catch (Exception)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw; // Nếu lỗi bất kỳ đâu, Database không thay đổi gì cả -> An toàn tuyệt đối
+            }
         }
     }
 }
