@@ -37,20 +37,6 @@ namespace SEOBoostAI.API.Controllers
 			return await _contentOptimizationService.GetContentOptimizationByIdAsync(id);
 		}
 
-		// POST api/<ContentOptimizationsController>
-		//[HttpPost]
-		//public async Task<int> Post([FromBody] ContentOptimization contentOptimization)
-		//{
-		//	throw new NotImplementedException();
-		//}
-
-		// PUT api/<ContentOptimizationsController>/
-		[HttpPut]
-		public async Task<int> Put([FromBody] ContentOptimization contentOptimization)
-		{
-            throw new NotImplementedException();
-        }
-
 		// DELETE api/<ContentOptimizationsController>/5
 		[HttpDelete("{id}")]
 		public async Task<bool> Delete(int id)

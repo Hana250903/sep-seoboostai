@@ -130,5 +130,32 @@ namespace SEOBoostAI.Service.Services
 			}
 		}
 
+		public async Task<PaginationResult<List<PaymentHistoryDto>>> GetUserPaymentHistoryAsync(int userId, int currentPage, int pageSize)
+		{
+			// 1. Gọi Repository
+			var paginateResult = await _transactionRepository.GetSuccessfulDepositsByUserIdAsync(userId, currentPage, pageSize);
+
+			// 2. Map (Chuyển đổi) từ Entity sang DTO
+			var historyDtos = paginateResult.Items.Select(t => new PaymentHistoryDto
+			{
+				TransactionId = t.TransactionID,
+				Amount = t.Money,
+				Description = t.Description,
+				Status = t.Status,
+				PaymentDate = t.CompletedTime,
+				PaymentMethod = t.PaymentMethod,
+				GatewayTransactionId = t.GatewayTransactionId
+			}).ToList();
+
+			// 3. Trả về kết quả phân trang mới chứa DTO
+			return new PaginationResult<List<PaymentHistoryDto>>
+			{
+				TotalItems = paginateResult.TotalItems,
+				TotalPages = paginateResult.TotalPages,
+				CurrentPage = paginateResult.CurrentPage,
+				PageSize = paginateResult.PageSize,
+				Items = historyDtos
+			};
+		}
 	}
 }

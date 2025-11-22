@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PayOS;
 using Net.payOS.Types;
+using PayOS;
 using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Service.Services.Interfaces;
 using System.Security.Claims;
+using static OpenQA.Selenium.PrintOptions;
 
 namespace SEOBoostAI.API.Controllers
 {
@@ -25,7 +26,7 @@ namespace SEOBoostAI.API.Controllers
 			_userService = userService;
 		}
 
-		//[Authorize]
+		[Authorize]
 		[HttpPost("create-payment-link")]
 		public async Task<IActionResult> CreatePaymentLink([FromBody] PaymentLinkRequest request)
 		{
@@ -125,8 +126,6 @@ namespace SEOBoostAI.API.Controllers
 			}
 		}
 
-		// Thêm vào PaymentController.cs
-
 		[HttpGet("{orderCode}")]
 		public async Task<IActionResult> GetPaymentStatus(int orderCode)
 		{
@@ -175,6 +174,32 @@ namespace SEOBoostAI.API.Controllers
 
 				// Nếu vẫn chưa thanh toán
 				return Ok(new { status = "PENDING", message = "Đang chờ thanh toán" });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
+
+		//[Authorize] 
+		[HttpGet("history")]
+		public async Task<IActionResult> GetPaymentHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+		{
+			try
+			{
+				// 1. Lấy UserID từ Token
+				//var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				//if (string.IsNullOrEmpty(userIdString))
+				//{
+				//	return Unauthorized("User ID not found.");
+				//}
+				//var userId = int.Parse(userIdString);
+				var userId = 1;
+
+				// 2. Gọi Service lấy dữ liệu
+				var result = await _transactionService.GetUserPaymentHistoryAsync(userId, page, pageSize);
+
+				return Ok(new { data = result });
 			}
 			catch (Exception ex)
 			{

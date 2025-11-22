@@ -31,20 +31,6 @@ namespace SEOBoostAI.Service.Services
 			_geminiService = geminiService;
 		}
 
-		public async Task CreateAsync(ContentOptimization content)
-		{
-			try
-			{
-				await _contentOptimizationRepository.CreateAsync(content);
-				await _unitOfWork.SaveChangesAsync();
-			}
-			catch (Exception ex)
-			{
-				throw;
-			}
-
-		}
-
 		public async Task DeleteAsync(int id)
 		{
 			try

@@ -12,5 +12,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 	public interface ITransactionRepository : IGenericRepository<Transaction>
 	{
 		Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize);
+		Task<PaginationResult<List<Transaction>>> GetSuccessfulDepositsByUserIdAsync(int userId, int currentPage, int pageSize);
 	}
 }

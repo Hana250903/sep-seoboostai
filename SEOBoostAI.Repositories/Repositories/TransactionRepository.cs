@@ -3,6 +3,7 @@ using SEOBoostAI.Repository.GenericRepository;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,6 +33,37 @@ namespace SEOBoostAI.Repository.Repositories
 				Items = transactions
 			};
 			return result;
+		}
+
+		public async Task<PaginationResult<List<Transaction>>> GetSuccessfulDepositsByUserIdAsync(int userId, int currentPage, int pageSize)
+		{
+			// 1. Tạo Query cơ bản (Chưa chạy lệnh SQL)
+			var query = _context.Set<Transaction>() // Nhớ dùng .Set<Transaction>()
+				.Include(t => t.Wallet)
+				.Where(t => t.Wallet.UserID == userId
+							&& t.Status == "COMPLETED"  // Chỉ lấy thành công
+							&& t.Type == "DEPOSIT");    // Chỉ lấy nạp tiền
+
+			// 2. Đếm tổng số lượng (để tính số trang)
+			var totalItems = await query.CountAsync();
+			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+
+			// 3. Thực hiện phân trang và lấy dữ liệu
+			var transactions = await query
+				.OrderByDescending(t => t.CompletedTime) // Mới nhất lên đầu
+				.Skip((currentPage - 1) * pageSize)      // Bỏ qua các trang trước
+				.Take(pageSize)                          // Lấy số lượng cần thiết
+				.ToListAsync();
+
+			// 4. Đóng gói kết quả
+			return new PaginationResult<List<Transaction>>
+			{
+				TotalItems = totalItems,
+				TotalPages = totalPages,
+				CurrentPage = currentPage,
+				PageSize = pageSize,
+				Items = transactions
+			};
 		}
 	}
 }
