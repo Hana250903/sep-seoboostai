@@ -19,5 +19,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
 
 		// HÀM MỚI CHO PAYOS
 		Task<Transaction> CreatePendingDeposit(int walletId, decimal amount, string paymentMethod);
+		Task UpdateTransactionStatusAsync(int transactionId, string status, string gatewayTransId, string bankTransId);
 	}
 }
