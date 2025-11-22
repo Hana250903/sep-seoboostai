@@ -53,8 +53,6 @@ namespace SEOBoostAI.Service.Services
 
         public async Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy, int featureId)
         {
-
-
             string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
             if (string.IsNullOrEmpty(normalizedUrl))
             {
@@ -77,10 +75,17 @@ namespace SEOBoostAI.Service.Services
             var performanceHistory = new PerformanceHistory
             {
                 UserID = userId,
-                ScanTime = DateTime.UtcNow.AddHours(7),
-                //AnalysisCacheID = analysisCache.AnalysisCacheID // Liên kết với cache đã tìm/tạo
-                AnalysisCache = analysisCache
+                ScanTime = DateTime.UtcNow.AddHours(7)
             };
+
+            if (analysisCache.AnalysisCacheID > 0)
+            {
+                performanceHistory.AnalysisCacheID = analysisCache.AnalysisCacheID;
+            }   
+            else
+            {
+                performanceHistory.AnalysisCache = analysisCache;
+            }
 
             await _unitOfWork.BeginTransactionAsync();
             try
@@ -97,6 +102,8 @@ namespace SEOBoostAI.Service.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 throw new Exception("Lỗi khi lưu lịch sử phân tích.");
             }
+
+            performanceHistory.AnalysisCache ??= analysisCache;
             return performanceHistory;
         }
 

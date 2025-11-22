@@ -11,12 +11,24 @@ namespace SEOBoostAI.Repository.ModelExtensions.GeminiAIModel
     {
         [JsonPropertyName("contents")]
         public ContentRequest[] Contents { get; set; }
+        [JsonPropertyName("generationConfig")]
+        public GenerationConfig GenerationConfig { get; set; }
     }
 
     public class ContentRequest
     {
         [JsonPropertyName("parts")]
         public PartRequest[] Parts { get; set; }
+    }
+
+    public class GenerationConfig
+    {
+        //[JsonPropertyName("maxOutputTokens")]
+        //public int MaxOutputTokens { get; set; }
+        [JsonPropertyName("temperature")]
+        public double Temperature { get; set; }
+        [JsonPropertyName("responseMimeType")]
+        public string ResponseMimeType { get; set; }
     }
 
     public class PartRequest

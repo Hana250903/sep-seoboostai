@@ -115,54 +115,46 @@ namespace SEOBoostAI.Service.Services
 
             using HttpClient client = new HttpClient();
 
-            string jsonRequest = JsonSerializer.Serialize(elements);
+            var finalResults = new List<AiElementAnalysis>();
 
-            string promptTemplate = $@"Bạn là một chuyên gia phân tích HTML, tối ưu hiệu suất website (Core Web Vitals) và SEO. Tôi sẽ cung cấp cho bạn một **danh sách (JSON array)** các phần tử HTML. Mỗi phần tử sẽ có `ElementID`, `TagName`, và `OuterHTML`.
+            var batches = elements.Chunk(100).ToList();
 
-                Nhiệm vụ của bạn là:
-                1.  Phân tích **từng element** trong danh sách để tìm ra các vấn đề tiềm ẩn về hiệu suất (ví dụ: gây CLS, chặn hiển thị) hoặc SEO (ví dụ: thiếu alt text).
-                2.  Trả về **DUY NHẤT** một **JSON array** hợp lệ, không dùng markdown, không giải thích.
-                3.  Array này phải chứa một đối tượng cho **mỗi element** đã được phân tích.
-
-                **Quan trọng:** Mỗi đối tượng trong array trả về **PHẢI** chứa:
-                * `ElementID`: (Giữ nguyên `ElementID` từ đầu vào để map dữ liệu).
-                * `HasSuggestion`: (bool) Đặt là `true` nếu bạn có gợi ý (`AIRecommendation`) hoặc mô tả vấn đề (`Description`). Đặt là `false` nếu element này ổn và không cần can thiệp.
-                * `Important`: (bool) Đặt là `true` nếu đây là vấn đề nghiêm trọng (ví dụ: Lỗi CLS, Lỗi SEO nghiêm trọng, Lỗi blocking rendering). Đặt là `false` nếu đây chỉ là một gợi ý tối ưu nhỏ hoặc không có vấn đề gì (`HasSuggestion` là `false`).
-                * `Description`: Mô tả ngắn gọn vấn đề. Nếu `HasSuggestion` là `false`, hãy để là ""Không tìm thấy vấn đề."" hoặc chuỗi rỗng.
-                * `AIRecommendation`: Gợi ý cụ thể để sửa lỗi. Nếu `HasSuggestion` là `false`, hãy để chuỗi rỗng.
-
-                Sử dụng cấu trúc JSON array bắt buộc sau (ví dụ cho 2 element):
-                [
-                  {{
-                    ""ElementID"": 1,
-                    ""HasSuggestion"": true,
-                    ""Important"": true,
-                    ""Description"": ""Thẻ <img> thiếu thuộc tính 'alt'"",
-                    ""AIRecommendation"": ""Bổ sung thuộc tính 'alt' để mô tả nội dung ảnh, cải thiện SEO và khả năng truy cập.""
-                  }},
-                  {{
-                    ""ElementID"": 2,
-                    ""HasSuggestion"": true,
-                    ""Important"": false,
-                    ""Description"": ""Thẻ <img> nên có thuộc tính 'loading=\""lazy\""'"",
-                    ""AIRecommendation"": ""Thêm 'loading=\""lazy\""' để trì hoãn tải ảnh cho đến khi nó gần vào khung nhìn, cải thiện LCP.""
-                  }},
-                  {{
-                    ""ElementID"": 3,
-                    ""HasSuggestion"": false,
-                    ""Important"": false,
-                    ""Description"": ""Không tìm thấy vấn đề."",
-                    ""AIRecommendation"": """"
-                  }}
-                ]
-
-                Dữ liệu Elements đầu vào (dạng JSON array):
-                {jsonRequest}";
-
-            var requestData = new GeminiAIRequestModel
+            foreach (var batch in batches)
             {
-                Contents = new[]
+                try
                 {
+                    string jsonRequest = JsonSerializer.Serialize(batch);
+
+                    string promptTemplate = $@"Bạn là chuyên gia tối ưu hiệu suất Web (Core Web Vitals) & SEO.
+        
+                        Nhiệm vụ: Phân tích danh sách các phần tử HTML dưới đây. Lưu ý: Tôi đã lọc bỏ HTML thô và chỉ gửi cho bạn:
+                        - `TagName`: Tên thẻ.
+                        - `Attributes`: Các thuộc tính quan trọng (src, alt, width, height...).
+                        - `Context`: Nội dung text tóm tắt hoặc ngữ cảnh.
+
+                        Dữ liệu Input (JSON):
+                        {jsonRequest}
+
+                        Yêu cầu Output bắt buộc:
+                        1. Trả về ĐÚNG 1 JSON Array. KHÔNG giải thích, KHÔNG markdown (```json).
+                        2. Giữ nguyên `ElementID` để map dữ liệu.
+                        3. Phân tích dựa trên `Attributes`:
+                           - Ví dụ: Thẻ `img` có `Attributes['alt']` không? Có `Attributes['width']` và `Attributes['height']` không (để tránh CLS)?
+                           - Ví dụ: Thẻ `a` có `Attributes['href']` hợp lệ không?
+
+                        Cấu trúc Output mẫu cho mỗi item:
+                        {{
+                            ""ElementID"": 1,
+                            ""HasSuggestion"": true,
+                            ""Important"": true,
+                            ""Description"": ""Thiếu thẻ alt"",
+                            ""AIRecommendation"": ""Thêm thuộc tính alt để tối ưu SEO.""
+                        }}";
+
+                    var requestData = new GeminiAIRequestModel
+                    {
+                        Contents = new[]
+                        {
                     new ContentRequest
                     {
                         Parts = new[]
@@ -173,23 +165,83 @@ namespace SEOBoostAI.Service.Services
                             }
                         }
                     }
+                },
+                        GenerationConfig = new GenerationConfig
+                        {
+                            //MaxOutputTokens = 8192, // Tăng lên mức cao (Flash hỗ trợ tới 8k hoặc 1M tùy version)
+                            Temperature = 0.2,      // Giữ nhiệt độ thấp để JSON chuẩn
+                            ResponseMimeType = "application/json" // Bắt buộc Gemini trả về JSON chuẩn (không markdown)
+                        }
+                    };
+
+                    string json = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync(fullUrl, content);
+                    response.EnsureSuccessStatusCode();
+
+                    string result = await response.Content.ReadAsStringAsync();
+
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+
+                    var batchResult = DeserializeResponse<List<AiElementAnalysis>>(geminiResponse);
+
+                    if (batchResult != null)
+                    {
+                        finalResults.AddRange(batchResult);
+                    }
                 }
-            };
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Lỗi xử lý batch: {ex.Message}");
+                    // Có thể bỏ qua batch lỗi hoặc retry, nhưng không làm chết cả luồng
+                }
+            }
 
-            string json = JsonSerializer.Serialize(requestData);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            return finalResults;
 
-            var response = await client.PostAsync(fullUrl, content);
-            response.EnsureSuccessStatusCode();
+            //string promptTemplate = $@"Bạn là một chuyên gia phân tích HTML, tối ưu hiệu suất website (Core Web Vitals) và SEO. Tôi sẽ cung cấp cho bạn một **danh sách (JSON array)** các phần tử HTML. Mỗi phần tử sẽ có `ElementID`, `TagName`, và `OuterHTML`.
 
-            string result = await response.Content.ReadAsStringAsync();
+            //    Nhiệm vụ của bạn là:
+            //    1.  Phân tích **từng element** trong danh sách để tìm ra các vấn đề tiềm ẩn về hiệu suất (ví dụ: gây CLS, chặn hiển thị) hoặc SEO (ví dụ: thiếu alt text).
+            //    2.  Trả về **DUY NHẤT** một **JSON array** hợp lệ, không dùng markdown, không giải thích.
+            //    3.  Array này phải chứa một đối tượng cho **mỗi element** đã được phân tích.
 
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+            //    **Quan trọng:** Mỗi đối tượng trong array trả về **PHẢI** chứa:
+            //    * `ElementID`: (Giữ nguyên `ElementID` từ đầu vào để map dữ liệu).
+            //    * `HasSuggestion`: (bool) Đặt là `true` nếu bạn có gợi ý (`AIRecommendation`) hoặc mô tả vấn đề (`Description`). Đặt là `false` nếu element này ổn và không cần can thiệp.
+            //    * `Important`: (bool) Đặt là `true` nếu đây là vấn đề nghiêm trọng (ví dụ: Lỗi CLS, Lỗi SEO nghiêm trọng, Lỗi blocking rendering). Đặt là `false` nếu đây chỉ là một gợi ý tối ưu nhỏ hoặc không có vấn đề gì (`HasSuggestion` là `false`).
+            //    * `Description`: Mô tả ngắn gọn vấn đề. Nếu `HasSuggestion` là `false`, hãy để là ""Không tìm thấy vấn đề."" hoặc chuỗi rỗng.
+            //    * `AIRecommendation`: Gợi ý cụ thể để sửa lỗi. Nếu `HasSuggestion` là `false`, hãy để chuỗi rỗng.
 
-            var suggestResult = DeserializeResponse<List<AiElementAnalysis>>(geminiResponse);
+            //    Sử dụng cấu trúc JSON array bắt buộc sau (ví dụ cho 2 element):
+            //    [
+            //      {{
+            //        ""ElementID"": 1,
+            //        ""HasSuggestion"": true,
+            //        ""Important"": true,
+            //        ""Description"": ""Thẻ <img> thiếu thuộc tính 'alt'"",
+            //        ""AIRecommendation"": ""Bổ sung thuộc tính 'alt' để mô tả nội dung ảnh, cải thiện SEO và khả năng truy cập.""
+            //      }},
+            //      {{
+            //        ""ElementID"": 2,
+            //        ""HasSuggestion"": true,
+            //        ""Important"": false,
+            //        ""Description"": ""Thẻ <img> nên có thuộc tính 'loading=\""lazy\""'"",
+            //        ""AIRecommendation"": ""Thêm 'loading=\""lazy\""' để trì hoãn tải ảnh cho đến khi nó gần vào khung nhìn, cải thiện LCP.""
+            //      }},
+            //      {{
+            //        ""ElementID"": 3,
+            //        ""HasSuggestion"": false,
+            //        ""Important"": false,
+            //        ""Description"": ""Không tìm thấy vấn đề."",
+            //        ""AIRecommendation"": """"
+            //      }}
+            //    ]
 
-            return suggestResult;
+            //    Dữ liệu Elements đầu vào (dạng JSON array):
+            //    {jsonRequest}";
         }
 
 		public async Task<AiOptimizationResponse> OptimizeContentAsync(OptimizeRequestDto request)
