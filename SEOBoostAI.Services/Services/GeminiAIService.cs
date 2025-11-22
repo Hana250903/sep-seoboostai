@@ -91,6 +91,12 @@ namespace SEOBoostAI.Service.Services
                             }
                         }
                     }
+                },
+                GenerationConfig = new GenerationConfig
+                {
+                    //MaxOutputTokens = 8192, // Tăng lên mức cao (Flash hỗ trợ tới 8k hoặc 1M tùy version)
+                    Temperature = 0.2,      // Giữ nhiệt độ thấp để JSON chuẩn
+                    ResponseMimeType = "application/json" // Bắt buộc Gemini trả về JSON chuẩn (không markdown)
                 }
             };
 
@@ -155,17 +161,17 @@ namespace SEOBoostAI.Service.Services
                     {
                         Contents = new[]
                         {
-                    new ContentRequest
-                    {
-                        Parts = new[]
-                        {
-                            new PartRequest
+                            new ContentRequest
                             {
-                                Text = promptTemplate,
+                                Parts = new[]
+                                {
+                                    new PartRequest
+                                    {
+                                        Text = promptTemplate,
+                                    }
+                                }
                             }
-                        }
-                    }
-                },
+                        },
                         GenerationConfig = new GenerationConfig
                         {
                             //MaxOutputTokens = 8192, // Tăng lên mức cao (Flash hỗ trợ tới 8k hoặc 1M tùy version)
