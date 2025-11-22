@@ -84,7 +84,7 @@ namespace SEOBoostAI.Service.Services
 				Type = "DEPOSIT",
 				Description = "Nạp tiền vào ví qua PayOS",
 				Status = "PENDING", // Trạng thái quan trọng
-				RequestTime = DateTime.UtcNow,
+				RequestTime = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false
 				// GatewayTransactionId, BankTransId, CompletedTime sẽ được cập nhật bởi Webhook
 			};
@@ -95,6 +95,67 @@ namespace SEOBoostAI.Service.Services
 
 			// Sau khi CreateAsync, newTransaction đã có TransactionID từ CSDL
 			return newTransaction;
+		}
+
+		// HÀM MỚI: Xử lý cập nhật trạng thái thanh toán
+		public async Task UpdateTransactionStatusAsync(int transactionId, string status, string gatewayTransId, string bankTransId)
+		{
+			try
+			{
+				// 1. Tìm giao dịch
+				var transaction = await _transactionRepository.GetByIdAsync(transactionId);
+
+				if (transaction == null)
+				{
+					throw new Exception("Giao dịch không tồn tại.");
+				}
+
+				// 2. Chỉ cập nhật nếu trạng thái hiện tại là PENDING
+				// (Tránh việc webhook gọi nhiều lần làm sai dữ liệu)
+				if (transaction != null && transaction.Status == "PENDING")
+				{
+					transaction.Status = status; // Ví dụ: "COMPLETED" hoặc "FAILED"
+					transaction.GatewayTransactionId = gatewayTransId;
+					transaction.BankTransId = bankTransId;
+					transaction.CompletedTime = DateTime.UtcNow.AddHours(7);
+
+					// 3. Lưu vào CSDL
+					await UpdateAsync(transaction);
+				}
+			}
+			catch (Exception ex)
+			{
+				// Log lỗi nếu cần
+				throw;
+			}
+		}
+
+		public async Task<PaginationResult<List<PaymentHistoryDto>>> GetUserPaymentHistoryAsync(int userId, int currentPage, int pageSize)
+		{
+			// 1. Gọi Repository
+			var paginateResult = await _transactionRepository.GetSuccessfulDepositsByUserIdAsync(userId, currentPage, pageSize);
+
+			// 2. Map (Chuyển đổi) từ Entity sang DTO
+			var historyDtos = paginateResult.Items.Select(t => new PaymentHistoryDto
+			{
+				TransactionId = t.TransactionID,
+				Amount = t.Money,
+				Description = t.Description,
+				Status = t.Status,
+				PaymentDate = t.CompletedTime,
+				PaymentMethod = t.PaymentMethod,
+				GatewayTransactionId = t.GatewayTransactionId
+			}).ToList();
+
+			// 3. Trả về kết quả phân trang mới chứa DTO
+			return new PaginationResult<List<PaymentHistoryDto>>
+			{
+				TotalItems = paginateResult.TotalItems,
+				TotalPages = paginateResult.TotalPages,
+				CurrentPage = paginateResult.CurrentPage,
+				PageSize = paginateResult.PageSize,
+				Items = historyDtos
+			};
 		}
 	}
 }

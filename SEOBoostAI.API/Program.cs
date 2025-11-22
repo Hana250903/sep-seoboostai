@@ -78,8 +78,8 @@ builder.Services.AddSingleton(provider =>
 	var systemConfigService = provider.GetRequiredService<ISystemConfigService>();
 
 	// 2. Lấy 3 key từ CSDL của bạn
-	string clientId = systemConfigService.GetValue<string>("ClientId", "");
-	string apiKey = systemConfigService.GetValue<string>("ApiKey", "");
+	string clientId = systemConfigService.GetValue<string>("PayOSClientId", "");
+	string apiKey = systemConfigService.GetValue<string>("PayOSApiKey", "");
 	string checksumKey = systemConfigService.GetValue<string>("ChecksumKey", "");
 
 	// 3.Kiểm tra xem key có tồn tại không

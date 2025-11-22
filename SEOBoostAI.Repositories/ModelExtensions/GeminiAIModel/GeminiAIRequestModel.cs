@@ -11,11 +11,21 @@ namespace SEOBoostAI.Repository.ModelExtensions.GeminiAIModel
     {
         [JsonPropertyName("contents")]
         public ContentRequest[] Contents { get; set; }
-        [JsonPropertyName("generationConfig")]
-        public GenerationConfig GenerationConfig { get; set; }
-    }
 
-    public class ContentRequest
+		[JsonPropertyName("generationConfig")]
+		public GenerationConfig GenerationConfig { get; set; }
+
+		[JsonPropertyName("safetySettings")]
+		public List<SafetySetting> SafetySettings { get; set; }
+	}
+
+	public class GenerationConfig
+	{
+		[JsonPropertyName("response_mime_type")]
+		public string ResponseMimeType { get; set; }
+	}
+
+	public class ContentRequest
     {
         [JsonPropertyName("parts")]
         public PartRequest[] Parts { get; set; }
@@ -36,4 +46,13 @@ namespace SEOBoostAI.Repository.ModelExtensions.GeminiAIModel
         [JsonPropertyName("text")]
         public string Text { get; set; }
     }
+
+	public class SafetySetting
+	{
+		[JsonPropertyName("category")]
+		public string Category { get; set; }
+
+		[JsonPropertyName("threshold")]
+		public string Threshold { get; set; }
+	}
 }
