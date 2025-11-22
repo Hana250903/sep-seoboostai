@@ -123,12 +123,6 @@ namespace SEOBoostAI.Service.Services
                 throw new UnauthorizedAccessException("User does not have permission for this item.");
             }
 
-            bool canAnalyze = await _userMonthlyFreeQuotaService.CheckLimit(userId, featureId);
-            if (!canAnalyze)
-            {
-                throw new Exception("Bạn đã hết lượt sử dụng miễn phí cho tính năng này trong tháng.");
-            }
-
             await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -138,8 +132,6 @@ namespace SEOBoostAI.Service.Services
                 );
 
                 await _performanceHistoryRepository.UpdateScanTimeAsync(performanceHistoryId);
-
-                await _userMonthlyFreeQuotaService.IncrementUsageCount(userId, featureId);
 
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
