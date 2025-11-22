@@ -181,20 +181,19 @@ namespace SEOBoostAI.API.Controllers
 			}
 		}
 
-		//[Authorize] 
+		[Authorize] 
 		[HttpGet("history")]
 		public async Task<IActionResult> GetPaymentHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
 		{
 			try
 			{
 				// 1. Lấy UserID từ Token
-				//var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-				//if (string.IsNullOrEmpty(userIdString))
-				//{
-				//	return Unauthorized("User ID not found.");
-				//}
-				//var userId = int.Parse(userIdString);
-				var userId = 1;
+				var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (string.IsNullOrEmpty(userIdString))
+				{
+					return Unauthorized("User ID not found.");
+				}
+				var userId = int.Parse(userIdString);
 
 				// 2. Gọi Service lấy dữ liệu
 				var result = await _transactionService.GetUserPaymentHistoryAsync(userId, page, pageSize);
