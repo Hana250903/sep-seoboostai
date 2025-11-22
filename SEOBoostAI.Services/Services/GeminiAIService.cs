@@ -123,7 +123,7 @@ namespace SEOBoostAI.Service.Services
 
             var finalResults = new List<AiElementAnalysis>();
 
-            var batches = elements.Chunk(100).ToList();
+            var batches = elements.Chunk(50).ToList();
 
             foreach (var batch in batches)
             {
@@ -131,31 +131,44 @@ namespace SEOBoostAI.Service.Services
                 {
                     string jsonRequest = JsonSerializer.Serialize(batch);
 
-                    string promptTemplate = $@"Bạn là chuyên gia tối ưu hiệu suất Web (Core Web Vitals) & SEO.
-        
-                        Nhiệm vụ: Phân tích danh sách các phần tử HTML dưới đây. Lưu ý: Tôi đã lọc bỏ HTML thô và chỉ gửi cho bạn:
-                        - `TagName`: Tên thẻ.
-                        - `Attributes`: Các thuộc tính quan trọng (src, alt, width, height...).
-                        - `Context`: Nội dung text tóm tắt hoặc ngữ cảnh.
+                    string promptTemplate = $@"Bạn là chuyên gia Audit SEO & Core Web Vitals (LCP, CLS, INP).
+            
+                        Nhiệm vụ: Phân tích danh sách các elements HTML được cung cấp dưới dạng JSON.
+            
+                        Yêu cầu bắt buộc:
+                        1. Ngôn ngữ: TRẢ VỀ 100% TIẾNG VIỆT.
+                        2. Output format: Chỉ trả về JSON Array hợp lệ.
+                        3. Xử lý logic cho từng loại thẻ:
+                           - `img`: Kiểm tra `alt`, `width`, `height` (tránh CLS), `loading='lazy'`.
+                           - `a`: Kiểm tra `href` có hợp lệ, có `aria-label` hoặc text mô tả không.
+                           - `link`: 
+                             + Nếu là CSS/Font (`rel='stylesheet'`, `fonts.googleapis`...): Kiểm tra xem có gây chặn hiển thị (Render blocking) không. Đề xuất `preload` hoặc `preconnect`.
+                             + Kiểm tra tính bảo mật (https).
+                           - `script`: Kiểm tra `async` hoặc `defer` để tránh chặn main-thread.
+                        4. Quy định về nội dung trả về:
+                           - Nếu phát hiện lỗi/thiếu sót: Set `HasSuggestion` = true, `Important` = true (nếu lỗi nghiêm trọng như CLS/LCP), viết `Description` và `AIRecommendation`.
+                           - Nếu thẻ ĐÃ TỐI ƯU (Không lỗi): Set `HasSuggestion` = false. TRONG TRƯỜNG HỢP NÀY, `Description` phải ghi là ""Đã tối ưu chuẩn SEO/Performance"" (KHÔNG ĐƯỢC ĐỂ RỖNG HOẶC NULL).
 
-                        Dữ liệu Input (JSON):
+                        Dữ liệu Input:
                         {jsonRequest}
 
-                        Yêu cầu Output bắt buộc:
-                        1. Trả về ĐÚNG 1 JSON Array. KHÔNG giải thích, KHÔNG markdown (```json).
-                        2. Giữ nguyên `ElementID` để map dữ liệu.
-                        3. Phân tích dựa trên `Attributes`:
-                           - Ví dụ: Thẻ `img` có `Attributes['alt']` không? Có `Attributes['width']` và `Attributes['height']` không (để tránh CLS)?
-                           - Ví dụ: Thẻ `a` có `Attributes['href']` hợp lệ không?
-
-                        Cấu trúc Output mẫu cho mỗi item:
-                        {{
-                            ""ElementID"": 1,
-                            ""HasSuggestion"": true,
-                            ""Important"": true,
-                            ""Description"": ""Thiếu thẻ alt"",
-                            ""AIRecommendation"": ""Thêm thuộc tính alt để tối ưu SEO.""
-                        }}";
+                        Cấu trúc Output mẫu (JSON):
+                        [
+                            {{
+                                ""ElementID"": 1,
+                                ""HasSuggestion"": true,
+                                ""Important"": true,
+                                ""Description"": ""Thẻ link tải font Google gây chặn hiển thị."",
+                                ""AIRecommendation"": ""Thêm thuộc tính `preconnect` hoặc `display: swap` để tối ưu tải font.""
+                            }},
+                            {{
+                                ""ElementID"": 2,
+                                ""HasSuggestion"": false,
+                                ""Important"": false,
+                                ""Description"": ""Đã tối ưu chuẩn SEO."",
+                                ""AIRecommendation"": """"
+                            }}
+                        ]";
 
                     var requestData = new GeminiAIRequestModel
                     {
