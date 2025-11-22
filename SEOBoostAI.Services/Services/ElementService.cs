@@ -4,6 +4,7 @@ using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
+using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -192,48 +193,42 @@ namespace SEOBoostAI.Service.Services
         {
             var analysisCache = await _analysisCacheRepository.GetAnalysisCacheAsync(analysisCacheID);
 
-            List<Element> elements = (List<Element>)analysisCache.Elements;
-            List<ElementRequest> requests = new List<ElementRequest>();
+            var dbElements = analysisCache.Elements.ToList();
+            if (!dbElements.Any()) return dbElements;
 
-            foreach (var item in elements)
+            var requests = new List<ElementRequest>();
+
+            foreach (var item in dbElements)
             {
-                requests.Add(new ElementRequest
-                {
-                    ElementID = item.ElementID,
-                    TagName = item.TagName,
-                    InnerHtml = item.InnerText,
-                    OuterHtml = item.OuterHTML
-                });
+                // Gọi hàm Helper ở bước 2 để trích xuất dữ liệu gọn nhẹ
+                var req = HtmlOptimizerHelper.OptimizeForAi(item.ElementID, item.TagName, item.OuterHTML);
+                requests.Add(req);
             }
 
-            var geminiResponse = await _geminiAIService.SuggestionElement(requests);
+            var geminiResults = await _geminiAIService.SuggestionElement(requests);
 
-            elements = elements.Join(geminiResponse,
-                original => original.ElementID,
-                suggestion => suggestion.ElementID,
-                (original, suggestion) => new Element
+            foreach (var aiResult in geminiResults)
+            {
+                // Tìm phần tử tương ứng trong list đang track
+                var targetElement = dbElements.FirstOrDefault(e => e.ElementID == aiResult.ElementID);
+
+                if (targetElement != null)
                 {
-                    ElementID = original.ElementID,
-                    TagName = original.TagName,
-                    Important = suggestion.Important,
-                    Description = suggestion.Description,
-                    AIRecommendation = suggestion.AIRecommendation,
-                    HasSuggestion = suggestion.HasSuggestion,
-                    CreatedAt = original.CreatedAt,
-                    InnerText = original.InnerText,
-                    IsDeleted = original.IsDeleted,
-                    OuterHTML = original.OuterHTML,
-                    AnalysisCacheID = original.AnalysisCacheID,
-                    UpdatedAt = original.UpdatedAt,
-                }).ToList();
+                    targetElement.HasSuggestion = aiResult.HasSuggestion;
+                    targetElement.Important = aiResult.Important;
+                    targetElement.Description = aiResult.Description;
+                    targetElement.AIRecommendation = aiResult.AIRecommendation;
+                    targetElement.UpdatedAt = DateTime.UtcNow.AddHours(7);
+                }
+            }
             try
             {
-                await _elementRepository.UpdateRangeAsync(elements);
+                await _elementRepository.UpdateRangeAsync(dbElements);
                 await _unitOfWork.SaveChangesAsync();
 
-                return elements;
+                return dbElements;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new Exception("Lỗi khi update kết quả Element vào DB.", ex);
             }

@@ -19,16 +19,20 @@ namespace SEOBoostAI.Repository.ModelExtensions.GeminiAIModel
 		public List<SafetySetting> SafetySettings { get; set; }
 	}
 
-	public class GenerationConfig
-	{
-		[JsonPropertyName("response_mime_type")]
-		public string ResponseMimeType { get; set; }
-	}
-
 	public class ContentRequest
     {
         [JsonPropertyName("parts")]
         public PartRequest[] Parts { get; set; }
+    }
+
+    public class GenerationConfig
+    {
+        //[JsonPropertyName("maxOutputTokens")]
+        //public int MaxOutputTokens { get; set; }
+        [JsonPropertyName("temperature")]
+        public double Temperature { get; set; }
+        [JsonPropertyName("responseMimeType")]
+        public string ResponseMimeType { get; set; }
     }
 
     public class PartRequest

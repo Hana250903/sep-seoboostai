@@ -229,10 +229,10 @@ namespace SEOBoostAI.Service.Services
             analysisCacheModel.PageSpeedResponse = JsonSerializer.Serialize(newMetrics);
             analysisCacheModel.Suggestion = geminiResponse.Suggestion;
             analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
-            analysisCacheModel.Elements.Clear();
 
-            //await _elementService.DeleteElementsForCacheAsync(analysisCacheModel.AnalysisCacheID);
+            await _elementService.DeleteElementsForCacheAsync(analysisCacheModel.AnalysisCacheID);
 
+            analysisCacheModel.Elements = new List<Element>();
             var newElements = await _elementService.PrepareElementsAsync(url);
 
             foreach (var item in newElements)

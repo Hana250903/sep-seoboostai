@@ -70,8 +70,8 @@ namespace SEOBoostAI.API.Controllers
             return Ok();
         }
 
-        [HttpPost("suggestion")]
-        public async Task<IActionResult> Suggestion([FromBody] int id)
+        [HttpGet("suggestion/{analysisCacheID}")]
+        public async Task<IActionResult> Suggestion(int analysisCacheID)
         {
             if (!ModelState.IsValid)
             {
@@ -80,7 +80,7 @@ namespace SEOBoostAI.API.Controllers
 
             try
             {
-                var result = await _elementService.Suggestion(id);
+                var result = await _elementService.Suggestion(analysisCacheID);
                 return Ok(result);
             }
             catch (Exception ex)
