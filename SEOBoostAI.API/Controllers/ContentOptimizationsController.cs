@@ -26,9 +26,28 @@ namespace SEOBoostAI.API.Controllers
 		}
 
 		[HttpGet("Search")]
-		public async Task<PaginationResult<List<ContentOptimizationDto>>> Get([FromQuery] SearchTransactionRequest searchRequest)
+		public async Task<IActionResult> Get([FromQuery] SearchTransactionRequest searchRequest)
 		{
-			return await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(searchRequest);
+			try
+			{
+				if (searchRequest == null)
+				{
+					searchRequest = new SearchTransactionRequest();
+				}
+				var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (!string.IsNullOrEmpty(userIdString))
+				{
+					searchRequest.UserId = int.Parse(userIdString);
+				}
+
+				var result = await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(searchRequest);
+
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 
 		// GET api/<ContentOptimizationsController>/5
