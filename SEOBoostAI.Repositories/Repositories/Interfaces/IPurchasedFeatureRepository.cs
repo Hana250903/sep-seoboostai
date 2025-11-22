@@ -12,5 +12,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 	public interface IPurchasedFeatureRepository : IGenericRepository<PurchasedFeature>
 	{
 		Task<PaginationResult<List<PurchasedFeature>>> GetPurchasedFeaturesWithPaginateAsync(int currentPage, int pageSize);
+		Task<PurchasedFeature?> GetAvailablePackAsync(int userId, int featureId);
 	}
 }

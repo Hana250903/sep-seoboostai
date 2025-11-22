@@ -2,6 +2,7 @@
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 
@@ -24,8 +25,8 @@ namespace SEOBoostAI.API.Controllers
 			return await _contentOptimizationService.GetContentOptimizationsAsync();
 		}
 
-		[HttpPost("Search")]
-		public async Task<PaginationResult<List<ContentOptimizationDto>>> Get(SearchTransactionRequest searchRequest)
+		[HttpGet("Search")]
+		public async Task<PaginationResult<List<ContentOptimizationDto>>> Get([FromQuery] SearchTransactionRequest searchRequest)
 		{
 			return await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(searchRequest);
 		}
@@ -37,13 +38,6 @@ namespace SEOBoostAI.API.Controllers
 			return await _contentOptimizationService.GetContentOptimizationByIdAsync(id);
 		}
 
-		// DELETE api/<ContentOptimizationsController>/5
-		[HttpDelete("{id}")]
-		public async Task<bool> Delete(int id)
-		{
-            throw new NotImplementedException();
-        }
-
 		[HttpPost]
 		public async Task<IActionResult> Post([FromBody] OptimizeRequestDto requestDto)
 		{
@@ -54,16 +48,33 @@ namespace SEOBoostAI.API.Controllers
 
 			try
 			{
-				// Gọi phương thức service mới
+				// 1. Lấy UserID từ Token (Bảo mật hơn là tin vào requestDto)
+				// Nếu bạn muốn chắc chắn UserID là của người đang đăng nhập
+				var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (!string.IsNullOrEmpty(userIdString))
+				{
+					requestDto.UserId = int.Parse(userIdString);
+				}
+
+				// 2. Gọi Service
 				ContentOptimizationDto result = await _contentOptimizationService.OptimizeAndCreateAsync(requestDto);
 
-				// Trả về kết quả
+				// 3. Trả về kết quả 201 Created
+				// Lưu ý: Đảm bảo bạn có hàm "Get" hoặc "GetContentOptimizationById" để nameof() hoạt động đúng
 				return CreatedAtAction(nameof(Get), new { id = result.ContentOptimizationID }, result);
 			}
+			// --- BẮT LỖI NGHIỆP VỤ (QUAN TRỌNG) ---
+			catch (InvalidOperationException ex)
+			{
+				// Đây là lỗi do Hết Quota hoặc Từ khóa cấm (do Service ném ra)
+				// Trả về 400 Bad Request hoặc 403 Forbidden hoặc 402 Payment Required
+				return StatusCode(403, new { message = ex.Message, errorCode = "QUOTA_EXCEEDED" });
+			}
+			// --- BẮT LỖI KỸ THUẬT (SERVER CRASH) ---
 			catch (Exception ex)
 			{
-				// Báo lỗi nếu có
-				return StatusCode(500, $"Internal server error: {ex.Message}");
+				// Lỗi kết nối Database, lỗi Gemini API sập, v.v.
+				return StatusCode(500, new { message = $"Lỗi hệ thống: {ex.Message}" });
 			}
 		}
 	}

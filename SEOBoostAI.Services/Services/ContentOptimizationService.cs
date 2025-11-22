@@ -18,15 +18,21 @@ namespace SEOBoostAI.Service.Services
 	public class ContentOptimizationService : IContentOptimizationService
 	{
 		private readonly IContentOptimizationRepository _contentOptimizationRepository;
+		private readonly IUserRepository _userRepository;
+		private readonly IFeatureRepository _featureRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IGeminiAIService _geminiService;
+		private readonly IUserMonthlyFreeQuotaService _userMonthlyFreeQuotaService;
 
 		public ContentOptimizationService(
-			IContentOptimizationRepository contentOptimizationRepository, 
-			IUnitOfWork unitOfWork,
-			IGeminiAIService geminiService)
+			IContentOptimizationRepository contentOptimizationRepository, IUserRepository userRepository, IFeatureRepository featureRepository,
+			IUserMonthlyFreeQuotaService userMonthlyFreeQuotaService,
+			IUnitOfWork unitOfWork,IGeminiAIService geminiService)
 		{
 			_contentOptimizationRepository = contentOptimizationRepository;
+			_featureRepository = featureRepository;
+			_userRepository = userRepository;
+			_userMonthlyFreeQuotaService = userMonthlyFreeQuotaService;
 			_unitOfWork = unitOfWork;
 			_geminiService = geminiService;
 		}
@@ -99,10 +105,26 @@ namespace SEOBoostAI.Service.Services
 
 		public async Task<ContentOptimizationDto> OptimizeAndCreateAsync(OptimizeRequestDto request)
 		{
-			// 1. Gọi Service AI
+			// BƯỚC 1: Xác định Feature ID (Ví dụ: 1 là tính năng Optimize Content)
+			// Bạn nên lưu số 1 này vào Const hoặc Enum cho dễ quản lý
+			int featureId = 1;
+
+			// BƯỚC 2: Kiểm tra Quota (Check Limit)
+			// Gọi hàm CheckLimit từ QuotaService
+			bool canUse = await _userMonthlyFreeQuotaService.CheckLimit(request.UserId, featureId);
+
+			if (!canUse)
+			{
+				// Nếu hết lượt, ném lỗi để Controller bắt và trả về 402 hoặc 403
+				throw new InvalidOperationException("Bạn đã hết lượt sử dụng miễn phí trong tháng này.");
+			}
+
+			// --- NẾU CÒN LƯỢT THÌ CHẠY TIẾP ---
+
+			// 3. Gọi Service AI (Như cũ)
 			var aiResponse = await _geminiService.OptimizeContentAsync(request);
 
-			// 2. Create Entity
+			// 4. Create Entity (Như cũ)
 			var newOptimization = new ContentOptimization
 			{
 				UserID = request.UserId,
@@ -113,16 +135,21 @@ namespace SEOBoostAI.Service.Services
 				IsDeleted = false
 			};
 
-			// 3. Save to Database
+			// 5. Save to Database & TRỪ LƯỢT (Increment Usage)
 			try
 			{
 				await _contentOptimizationRepository.CreateAsync(newOptimization);
-				await _unitOfWork.SaveChangesAsync();
+
+				// QUAN TRỌNG: Tăng số lần sử dụng lên 1
+				await _userMonthlyFreeQuotaService.IncrementUsageCount(request.UserId, featureId);
+
+				await _unitOfWork.SaveChangesAsync(); // Lưu cả 2 việc (tạo bài viết + trừ lượt) cùng lúc
+
 				return MapToDto(newOptimization);
 			}
 			catch (Exception ex)
 			{
-				throw new InvalidOperationException("Failed to save optimization results to database.", ex);
+				throw new InvalidOperationException("Failed to save optimization results or update quota.", ex);
 			}
 		}
 
