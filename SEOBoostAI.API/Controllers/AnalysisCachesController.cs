@@ -93,5 +93,29 @@ namespace SEOBoostAI.API.Controllers
                 return StatusCode(500, new { Error = ex.Message });
             }
         }
+
+        [HttpGet("result/{analysisCacheId}")]
+        public async Task<IActionResult> GetAnalysisResult(int analysisCacheId)
+        {
+            try
+            {
+                var result = await _analysisCacheService.GetAnalysisResultAsync(analysisCacheId);
+                return Ok(new ResultModel<AnalysisResultModel>
+                {
+                    Data = result,
+                    Message = "Analysis result retrieved successfully",
+                    Success = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResultModel<AnalysisResultModel>
+                {
+                    Data = null,
+                    Message = ex.Message,
+                    Success = false
+                });
+            }
+        }
     }
 }
