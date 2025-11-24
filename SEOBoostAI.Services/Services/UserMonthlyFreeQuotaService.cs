@@ -15,15 +15,18 @@ namespace SEOBoostAI.Service.Services
 	public class UserMonthlyFreeQuotaService : IUserMonthlyFreeQuotaService
 	{
 		private readonly IUserMonthlyFreeQuotaRepository _userMonthlyFreeQuotaRepository;
+		private readonly IPurchasedFeatureRepository _purchasedFeatureRepository;
 		private readonly IUnitOfWork _unitOfWork;
         private readonly IFeatureRepository _featureRepository;
 
-        public UserMonthlyFreeQuotaService(IUserMonthlyFreeQuotaRepository userMonthlyFreeQuotaRepository, IUnitOfWork unitOfWork, IFeatureRepository featureRepository)
+        public UserMonthlyFreeQuotaService(IUserMonthlyFreeQuotaRepository userMonthlyFreeQuotaRepository, 
+			IUnitOfWork unitOfWork, IFeatureRepository featureRepository, IPurchasedFeatureRepository purchasedFeatureRepository)
 		{
 			_userMonthlyFreeQuotaRepository = userMonthlyFreeQuotaRepository;
 			_unitOfWork = unitOfWork;
             _featureRepository = featureRepository;
-        }
+			_purchasedFeatureRepository = purchasedFeatureRepository;
+		}
 
 		public async Task<PaginationResult<List<UserMonthlyFreeQuota>>> GetUserMonthlyFreeQuotasWithPaginateAsync(int currentPage, int pageSize)
 		{
@@ -139,33 +142,58 @@ namespace SEOBoostAI.Service.Services
 				return false;
             }
         }
+
 		public async Task<bool> CheckLimit(int userId, int featureId)
 		{
+			// 1. KIỂM TRA LƯỢT FREE TRƯỚC
 			var userQuota = await _userMonthlyFreeQuotaRepository.GetQuotaByUserIdAndFeatureId(userId, featureId);
-			if (userQuota != null)
+
+			// Nếu có quota free VÀ chưa dùng hết
+			if (userQuota != null && userQuota.UsageCount < userQuota.MonthlyLimit)
 			{
-				if (userQuota.UsageCount < userQuota.MonthlyLimit)
-				{
-					return true;
-				}
-				else
-				{
-					return false;
-				}
+				return true; // Được phép dùng (xài lượt free)
 			}
-			else
+
+			// 2. NẾU HẾT FREE -> KIỂM TRA GÓI ĐÃ MUA (PurchasedFeatures)
+			var availablePack = await _purchasedFeatureRepository.GetAvailablePackAsync(userId, featureId);
+
+			if (availablePack != null)
 			{
-				return false;
-            }
-        }
+				return true; // Được phép dùng (xài lượt mua)
+			}
+
+			// 3. Hết cả hai -> Chặn
+			return false;
+		}
+
 		public async Task IncrementUsageCount(int userId, int featureId)
 		{
+			// 1. ƯU TIÊN TRỪ LƯỢT FREE
 			var userQuota = await _userMonthlyFreeQuotaRepository.GetQuotaByUserIdAndFeatureId(userId, featureId);
-			if (userQuota != null)
+
+			if (userQuota != null && userQuota.UsageCount < userQuota.MonthlyLimit)
 			{
 				userQuota.UsageCount += 1;
+				userQuota.LastUsedAt = DateTime.UtcNow.AddHours(7);
 				await _userMonthlyFreeQuotaRepository.UpdateAsync(userQuota);
+				// Lưu ý: SaveChangesAsync sẽ được gọi ở ContentOptimizationService
+				return;
 			}
-        }
-    }
+
+			// 2. NẾU HẾT FREE -> TRỪ LƯỢT MUA
+			var availablePack = await _purchasedFeatureRepository.GetAvailablePackAsync(userId, featureId);
+
+			if (availablePack != null)
+			{
+				availablePack.RemainingQuantity -= 1;
+				// Nếu muốn track ngày dùng cuối của gói này, cần thêm cột LastUsedAt vào PurchasedFeature
+
+				await _purchasedFeatureRepository.UpdateAsync(availablePack);
+				return;
+			}
+
+			// Nếu chạy đến đây nghĩa là logic CheckLimit và Increment không đồng bộ
+			throw new InvalidOperationException("Không tìm thấy lượt sử dụng khả dụng (Lỗi hệ thống).");
+		}
+	}
 }

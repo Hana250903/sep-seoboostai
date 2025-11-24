@@ -32,5 +32,18 @@ namespace SEOBoostAI.Repository.Repositories
 			};
 			return result;
 		}
+
+		public async Task<PurchasedFeature?> GetAvailablePackAsync(int userId, int featureId)
+		{
+			// Tìm gói mua cũ nhất (FIFO) mà còn lượt sử dụng (RemainingQuantity > 0)
+			return await _context.Set<PurchasedFeature>()
+				.Include(p => p.Transaction)
+				.ThenInclude(t => t.Wallet)
+				.Where(p => p.Transaction.Wallet.UserID == userId
+							&& p.FeatureID == featureId
+							&& p.RemainingQuantity > 0)
+				.OrderBy(p => p.PurchaseDate) // Dùng gói cũ trước
+				.FirstOrDefaultAsync();
+		}
 	}
 }

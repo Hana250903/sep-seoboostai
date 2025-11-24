@@ -183,7 +183,7 @@ namespace SEOBoostAI.API.Controllers
 
 		[Authorize] 
 		[HttpGet("history")]
-		public async Task<IActionResult> GetPaymentHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+		public async Task<IActionResult> GetPaymentHistory([FromQuery] int page, [FromQuery] int pageSize)
 		{
 			try
 			{
@@ -203,6 +203,35 @@ namespace SEOBoostAI.API.Controllers
 			catch (Exception ex)
 			{
 				return BadRequest(new { message = ex.Message });
+			}
+		}
+
+		//[Authorize]
+		[HttpPost("buy-quota")]
+		public async Task<IActionResult> BuyQuota([FromBody] PurchaseRequest request)
+		{
+			try
+			{
+				// 1. Validate User (Lấy từ Token cho an toàn)
+				//var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				//if (!string.IsNullOrEmpty(userIdString))
+				//{
+				//	request.UserId = int.Parse(userIdString);
+				//}
+				var userId = 1;
+
+				// 2. Gọi Service xử lý mua
+				await _transactionService.PurchaseFeatureAsync(request.UserId, request.FeatureId, request.Quantity);
+
+				return Ok(new { message = "Mua gói thành công! Số lượt đã được cộng thêm." });
+			}
+			catch (InvalidOperationException ex) // Lỗi do không đủ tiền
+			{
+				return BadRequest(new { message = ex.Message, errorCode = "INSUFFICIENT_FUNDS" });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
 			}
 		}
 	}

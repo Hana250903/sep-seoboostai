@@ -1,5 +1,6 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -14,11 +15,21 @@ namespace SEOBoostAI.Service.Services
 	public class TransactionService : ITransactionService
 	{
 		private readonly ITransactionRepository _transactionRepository;
+		private readonly IFeatureRepository _featureRepository;
+		private readonly IWalletRepository _walletRepository;
+		private readonly IPurchasedFeatureRepository _purchasedFeatureRepository;
+		private readonly IUserMonthlyFreeQuotaRepository _userMonthlyFreeQuotaRepository;
 		private readonly IUnitOfWork _unitOfWork;
-		public TransactionService(ITransactionRepository transactionRepository, IUnitOfWork unitOfWork)
+		public TransactionService(ITransactionRepository transactionRepository, IUnitOfWork unitOfWork, 
+			IFeatureRepository featureRepository, IUserMonthlyFreeQuotaRepository userMonthlyFreeQuotaRepository, 
+			IWalletRepository walletRepository, IPurchasedFeatureRepository purchasedFeatureRepository)
 		{
 			_transactionRepository = transactionRepository;
 			_unitOfWork = unitOfWork;
+			_featureRepository = featureRepository;
+			_userMonthlyFreeQuotaRepository = userMonthlyFreeQuotaRepository;
+			_walletRepository = walletRepository;
+			_purchasedFeatureRepository = purchasedFeatureRepository;
 		}
 		public async Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize)
 		{
@@ -156,6 +167,69 @@ namespace SEOBoostAI.Service.Services
 				PageSize = paginateResult.PageSize,
 				Items = historyDtos
 			};
+		}
+
+		public async Task PurchaseFeatureAsync(int userId, int featureId, int quantity)
+		{
+			// 1. Lấy thông tin tính năng và giá tiền
+			var feature = await _featureRepository.GetByIdAsync(featureId);
+			if (feature == null) throw new Exception("Tính năng không tồn tại.");
+
+			decimal totalCost = feature.Price * quantity;
+
+			// 2. Lấy Ví người dùng
+			// (Giả sử bạn đã viết hàm GetWalletByUserId trong Repository)
+			var wallet = await _walletRepository.GetByIdAsync(userId);
+			if (wallet == null) throw new Exception("Ví không tồn tại.");
+
+			// 3. KIỂM TRA SỐ DƯ
+			if (wallet.Currency < totalCost)
+			{
+				throw new InvalidOperationException("Số dư trong ví không đủ để thực hiện giao dịch.");
+			}
+
+			// --- BẮT ĐẦU GIAO DỊCH (UnitOfWork sẽ đảm bảo tất cả cùng thành công hoặc cùng thất bại) ---
+
+			// 4. Trừ tiền trong Ví
+			wallet.Currency -= totalCost;
+			wallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
+			_walletRepository.UpdateAsync(wallet);
+
+			// 5. Tạo Transaction ghi nhận việc trừ tiền
+			var transaction = new Transaction
+			{
+				WalletID = wallet.WalletID,
+				Money = totalCost, // Số tiền bị trừ
+				GatewayTransactionId = null, // Không qua cổng thanh toán
+				BankTransId = null,
+				Type = "PURCHASE", // Loại giao dịch Mua hàng
+				Status = "COMPLETED", // Mua bằng ví nên thành công ngay
+				Description = $"Mua {quantity} lượt {feature.Name}",
+				PaymentMethod = "Wallet Balance",
+				RequestTime = DateTime.UtcNow.AddHours(7),
+				CompletedTime = DateTime.UtcNow.AddHours(7),
+				IsDeleted = false
+			};
+			await _transactionRepository.CreateAsync(transaction);
+			// Lưu ý: Phải SaveChanges 1 lần ở đây để lấy TransactionID cho bảng PurchasedFeatures
+			// Hoặc nếu EF Core thông minh, nó sẽ tự map. An toàn nhất là SaveChanges luôn.
+			await _unitOfWork.SaveChangesAsync();
+
+			// 6. Lưu vào bảng PurchasedFeatures (Lịch sử mua hàng chi tiết)
+			var purchasedFeature = new PurchasedFeature
+			{
+				FeatureID = featureId,
+				TransactionID = transaction.TransactionID, // Link với giao dịch vừa tạo
+				TotalQuantity = quantity,
+				RemainingQuantity = quantity, // (Nếu bạn muốn track riêng)
+				PurchaseDate = DateTime.UtcNow.AddHours(7),
+				IsDeleted = false
+			};
+			// Giả sử bạn có Repository cho bảng này
+			await _purchasedFeatureRepository.CreateAsync(purchasedFeature);
+
+			// 8. Lưu tất cả thay đổi cuối cùng
+			await _unitOfWork.SaveChangesAsync();
 		}
 	}
 }
