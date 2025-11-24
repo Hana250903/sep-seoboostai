@@ -26,6 +26,12 @@ public partial class QueryHistory
     [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
+    public int? AdsSearchRequestId { get; set; }
+
+    [ForeignKey("AdsSearchRequestId")]
+    [InverseProperty("QueryHistories")]
+    public virtual AdsSearchRequest AdsSearchRequest { get; set; }
+
     [ForeignKey("MemberId")]
     [InverseProperty("QueryHistories")]
     public virtual User Member { get; set; }

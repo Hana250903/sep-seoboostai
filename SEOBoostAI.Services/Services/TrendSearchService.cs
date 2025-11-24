@@ -19,16 +19,22 @@ namespace SEOBoostAI.Service.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<TrendSearchService> _logger;
 
-        // Repositories (Database)
-        private readonly ITrendSearchesRepository _trendSearchesRepo; // Cache (Bảng 1-6)
-        private readonly IQueryHistoryRepository _queryHistoryRepo; // Log (Bảng 7)
+        // Repositories
+        private readonly ITrendSearchesRepository _trendSearchesRepo;
+        private readonly IQueryHistoryRepository _queryHistoryRepo;
+        private readonly IAdsSearchRequestRepository _adsRequestRepo; // Repo cho bảng cha Ads
 
-        // Services (Nghiệp vụ)
-        private readonly IGeminiAiKeywordService _keywordService;     // AI Lần 1
-        private readonly IGeminiAiAnalysisService _analysisService;  // AI Lần 2
-        private readonly ISerpApiService _serpApiService;             // API Bên thứ 3
+        // Services
+        private readonly IGeminiAiKeywordService _keywordService;     // AI 1
+        private readonly IGeminiAiAnalysisService _analysisService;   // AI 2 (Tư vấn)
+        private readonly IGeminiAiGoogleAdsService _adsEvaluationService; // AI 3 (Đánh giá Ads)
+        private readonly ISerpApiService _serpApiService;
+        private readonly IAdsPlannerService _adsPlannerService;
 
-        // === 2. TIÊM PHỤ THUỘC (CONSTRUCTOR) ===
+        private readonly IAdsKeywordDatumRepository _adsKeywordDatumRepo;
+
+
+        // === 2. CONSTRUCTOR ===
         public TrendSearchService(
             IUnitOfWork unitOfWork,
             ILogger<TrendSearchService> logger,
@@ -36,7 +42,12 @@ namespace SEOBoostAI.Service.Services
             IQueryHistoryRepository queryHistoryRepo,
             IGeminiAiKeywordService keywordService,
             IGeminiAiAnalysisService analysisService,
-            ISerpApiService serpApiService)
+            ISerpApiService serpApiService,
+            IAdsPlannerService adsPlannerService,
+            IAdsSearchRequestRepository adsRequestRepo,
+            IGeminiAiGoogleAdsService adsEvaluationService,
+            IAdsKeywordDatumRepository adsKeywordDatumRepo
+            )
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
@@ -45,6 +56,10 @@ namespace SEOBoostAI.Service.Services
             _keywordService = keywordService;
             _analysisService = analysisService;
             _serpApiService = serpApiService;
+            _adsPlannerService = adsPlannerService;
+            _adsRequestRepo = adsRequestRepo;
+            _adsEvaluationService = adsEvaluationService;
+            _adsKeywordDatumRepo = adsKeywordDatumRepo;
         }
 
         // === 3. PHƯƠNG THỨC NGHIỆP VỤ CHÍNH ===
@@ -64,69 +79,182 @@ namespace SEOBoostAI.Service.Services
                 throw new Exception("AI không thể xác định từ khóa hợp lệ từ câu hỏi.");
             }
 
-            // BƯỚC 3: "CHECK NGƯỢC" (CACHE)
+            // BƯỚC 3: XỬ LÝ GOOGLE TRENDS (CHECK CACHE / GỌI API)
             var trendData = await CheckCacheAsync(parameters);
-
             if (trendData == null)
             {
-                // BƯỚC 4: CACHE MISS -> GỌI API BÊN THỨ 3 VÀ LƯU VÀO DB
-                _logger.LogInformation("Cache MISS. Đang gọi API bên thứ 3 cho: {query}", parameters.Query);
+                _logger.LogInformation("Trend Cache MISS. Đang gọi API bên thứ 3 cho: {query}", parameters.Query);
                 trendData = await FetchAndMapNewDataAsync(parameters);
             }
             else
             {
-                _logger.LogInformation("Cache HIT. Tái sử dụng dữ liệu từ DB cho: {query}", parameters.Query);
+                _logger.LogInformation("Trend Cache HIT. Tái sử dụng dữ liệu từ DB cho: {query}", parameters.Query);
             }
 
-            // BƯỚC 5: TÁI TẠO JSON TỪ MODEL ĐỂ GỬI CHO AI
-            string dataForAI = ReconstructJsonFromModel(trendData);
+            // BƯỚC 4: XỬ LÝ GOOGLE ADS (LẤY DỮ LIỆU + ID BẢN GHI)
+            // Lưu ý: Hàm này giờ trả về Tuple (Data, RequestId)
+            var adsResult = await ProcessAdsDataAsync(parameters.Query);
+            var adsData = adsResult.Data;           // Dữ liệu để gửi cho AI
+            var adsRequestId = adsResult.RequestId; // ID để update DB sau này
 
-            // BƯỚC 6: GỌI AI (LẦN 2) ĐỂ TỔNG HỢP KẾT QUẢ
-            var finalAiResponse = await _analysisService.GetTrendAnalysisSuggestionAsync(originalQuestion, dataForAI);
+            // BƯỚC 5: GỌI AI 1 (TƯ VẤN CHIẾN LƯỢC)
+            string dataForAI = ReconstructJsonForAi(trendData, adsData);
+            var finalAiResponseString = await _analysisService.GetTrendAnalysisSuggestionAsync(originalQuestion, dataForAI);
 
-            // BƯỚC 7: LƯU LỊCH SỬ (BẢNG 7)
+            // BƯỚC 6: GỌI AI 2 (ĐÁNH GIÁ ADS & UPDATE DB)
+            if (adsData != null && adsData.Any() && adsRequestId.HasValue)
+            {
+                try
+                {
+                    // Gọi AI đánh giá
+                    var evaluations = await _adsEvaluationService.EvaluateAdsKeywordsAsync(finalAiResponseString, adsData);
+
+                    // Cập nhật vào Database
+                    if (evaluations != null && evaluations.Any())
+                    {
+                        await UpdateAdsEvaluationsInDb(adsRequestId.Value, evaluations);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Lỗi ở bước phụ này không được làm sập luồng chính
+                    _logger.LogWarning("Lỗi khi gọi AI đánh giá Ads: " + ex.Message);
+                }
+            }
+
+            // BƯỚC 7: LƯU LỊCH SỬ
             var historyLog = new QueryHistory
             {
                 MemberId = memberId,
                 OriginalQuestion = originalQuestion,
-                FinalAiResponse = finalAiResponse,
-                CreatedAt = DateTime.UtcNow
+                FinalAiResponse = finalAiResponseString,
+                CreatedAt = DateTime.UtcNow,
+
+                AdsSearchRequestId = adsRequestId 
             };
 
             await _queryHistoryRepo.CreateAsync(historyLog);
-            await _unitOfWork.SaveChangesAsync(); // Lưu bảng QueryHistory
+            await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Hoàn tất quy trình cho MemberId: {memberId}", memberId);
-            return historyLog; // Trả về kết quả cuối cùng
+            return historyLog;
         }
 
         // === 4. CÁC PHƯƠNG THỨC HELPER ===
 
-        // Phương thức này thực hiện yêu cầu của thầy bạn
+        // --- XỬ LÝ GOOGLE ADS (ĐÃ SỬA TRẢ VỀ TUPLE) ---
+        private async Task<(List<AdsPlannerItemDto> Data, int? RequestId)> ProcessAdsDataAsync(string queryFromAi)
+        {
+            var keywords = queryFromAi.Split(',').Select(k => k.Trim()).Where(k => !string.IsNullOrEmpty(k)).ToList();
+            if (!keywords.Any()) return (new List<AdsPlannerItemDto>(), null);
+
+            string queryListString = string.Join(",", keywords);
+
+            // 1. Check Cache
+            var cachedData = await _adsRequestRepo.GetValidCacheAsync(queryListString);
+            if (cachedData != null)
+            {
+                _logger.LogInformation("Ads Cache HIT: {query}", queryListString);
+                var dto = cachedData.AdsKeywordData.Select(x => new AdsPlannerItemDto
+                {
+                    Keyword = x.Keyword,
+                    AvgSearchVolume = x.AvgSearchVolume,
+                    Competition = x.Competition,
+                    LowBid = x.LowBid,
+                    HighBid = x.HighBid
+                }).ToList();
+
+                return (dto, cachedData.Id); // Trả về ID cũ
+            }
+
+            // 2. Cache Miss -> Gọi API
+            _logger.LogInformation("Ads Cache MISS: {query}", queryListString);
+            var apiDataRaw = await _adsPlannerService.GetAdsDataAsync(keywords);
+
+            // Xử lý dữ liệu thô
+            var apiDataProcessed = apiDataRaw
+                .Take(50) // Chỉ lấy 50 kết quả đầu tiên
+                .Select(x => new AdsPlannerItemDto
+            {
+                Keyword = x.Keyword,
+                AvgSearchVolume = x.AvgSearchVolume,
+                Competition = x.Competition,
+                LowBid = string.IsNullOrWhiteSpace(x.LowBid) || x.LowBid == "N/A" ? "Chưa có dữ liệu" : x.LowBid,
+                HighBid = string.IsNullOrWhiteSpace(x.HighBid) || x.HighBid == "N/A" ? "Chưa có dữ liệu" : x.HighBid
+            }).ToList();
+
+            int? newRequestId = null;
+
+            if (apiDataProcessed.Any())
+            {
+                // Lưu vào DB
+                var newRequest = new AdsSearchRequest
+                {
+                    QueryList = queryListString,
+                    CreatedAt = DateTime.UtcNow,
+                    AdsKeywordData = apiDataProcessed.Select(x => new AdsKeywordDatum
+                    {
+                        Keyword = x.Keyword,
+                        AvgSearchVolume = x.AvgSearchVolume,
+                        Competition = x.Competition,
+                        LowBid = x.LowBid,
+                        HighBid = x.HighBid,
+                        AiSuggestion = false, // Mặc định
+                        AiMessage = null      // Mặc định
+                    }).ToList()
+                };
+
+                await _adsRequestRepo.CreateAsync(newRequest);
+                await _unitOfWork.SaveChangesAsync();
+                newRequestId = newRequest.Id; // Lấy ID mới
+            }
+
+            return (apiDataProcessed, newRequestId);
+        }
+
+        // --- HÀM CẬP NHẬT DB SAU KHI AI ĐÁNH GIÁ ---
+        private async Task UpdateAdsEvaluationsInDb(int requestId, List<AdsEvaluationItem> evaluations)
+        {
+            _logger.LogInformation($"--- BẮT ĐẦU UPDATE (Repository Pattern) (RequestId: {requestId}) ---");
+
+            if (evaluations == null || !evaluations.Any()) return;
+
+            // Lặp qua từng đánh giá và gọi Repository để update
+            foreach (var eval in evaluations)
+            {
+                if (!string.IsNullOrEmpty(eval.Keyword))
+                {
+                    // Gọi hàm nghiệp vụ trong Repository
+                    // Hàm này chạy bất đồng bộ và update thẳng vào DB
+                    await _adsKeywordDatumRepo.UpdateAiEvaluationAsync(
+                        requestId,
+                        eval.Keyword,
+                        eval.IsPotential,
+                        eval.Message ?? ""
+                    );
+                }
+            }
+
+            _logger.LogInformation("Đã hoàn tất cập nhật đánh giá.");
+        }
+
+        // --- XỬ LÝ GOOGLE TRENDS (CACHE) ---
         private async Task<TrendSearch> CheckCacheAsync(TrendParameters parameters)
         {
-            var cacheExpiry = DateTime.UtcNow.AddHours(-6); // Tuổi thọ cache là 6 tiếng
-
-            // Tìm trong Bảng 1 (TrendSearches)
-            var cachedSearch = await _trendSearchesRepo.GetAsync(
+            var cacheExpiry = DateTime.UtcNow.AddHours(-6);
+            return await _trendSearchesRepo.GetAsync(
                 filter: t => t.Query == parameters.Query &&
                              t.Geolocation == parameters.Geolocation &&
                              t.Timeframe == parameters.Timeframe &&
                              t.Language == parameters.Language &&
-                             t.CreatedAt >= cacheExpiry, // Chỉ lấy dữ liệu còn mới
-
-                // Quan trọng: Phải Include tất cả các bảng con (Bảng 2-6)
+                             t.CreatedAt >= cacheExpiry,
                 includeProperties: "InterestOverTimes,RelatedTopics,InterestByRegions,RelatedQueries,RegionComparisons"
             );
-
-            return cachedSearch; // Sẽ là null nếu không tìm thấy
         }
 
-        // Phương thức này gọi 5-6 API và map chúng vào 1 object Entity
-        // Phương thức này gọi 5-6 API và map chúng vào 1 object Entity
+        // --- XỬ LÝ GOOGLE TRENDS (API & MAP) ---
         private async Task<TrendSearch> FetchAndMapNewDataAsync(TrendParameters parameters)
         {
-            // 1. Tạo đối tượng cha (Bảng 1)
             var newTrendSearch = new TrendSearch
             {
                 Query = parameters.Query,
@@ -136,45 +264,35 @@ namespace SEOBoostAI.Service.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            // 2. Quyết định logic gọi API (Phân tích 1 từ hay so sánh 2 từ)
             bool isComparison = parameters.Query.Contains(",");
-
-            // 3. Gọi các API song song để tiết kiệm thời gian
             var tasks = new List<Task>();
 
-            // Luôn gọi 3 API này
             tasks.Add(FetchInterestOverTimeAsync(newTrendSearch, parameters));
-            tasks.Add(FetchRelatedTopicsAsync(newTrendSearch, parameters));    // <-- Mở khóa dòng này
-            tasks.Add(FetchRelatedQueriesAsync(newTrendSearch, parameters));   // <-- Mở khóa dòng này
+            tasks.Add(FetchRelatedTopicsAsync(newTrendSearch, parameters));
+            tasks.Add(FetchRelatedQueriesAsync(newTrendSearch, parameters));
 
             if (isComparison)
             {
-                // Nếu so sánh (phở,cháo), gọi API So sánh khu vực
-                tasks.Add(FetchRegionComparisonAsync(newTrendSearch, parameters)); // <-- Mở khóa dòng này
+                tasks.Add(FetchRegionComparisonAsync(newTrendSearch, parameters));
             }
             else
             {
-                // Nếu 1 từ (phở), gọi API Khu vực đơn
-                tasks.Add(FetchInterestByRegionAsync(newTrendSearch, parameters)); // <-- Mở khóa dòng này
+                tasks.Add(FetchInterestByRegionAsync(newTrendSearch, parameters));
             }
 
-            // 4. Chờ tất cả API hoàn thành
             await Task.WhenAll(tasks);
 
-            // 5. Lưu vào DB (Bảng 1 và 5 bảng con cùng lúc)
             await _trendSearchesRepo.CreateAsync(newTrendSearch);
-            // Dòng SaveChangesAsync này RẤT QUAN TRỌNG
-            // Nó sẽ thực thi UnitOfWork, lưu Bảng 1 và TẤT CẢ các bảng con (2-6)
-            // mà bạn đã .Add() vào collections
             await _unitOfWork.SaveChangesAsync();
 
             return newTrendSearch;
         }
 
-        // Tái tạo JSON từ Entity để gửi cho AI (Lần 2)
-        private string ReconstructJsonFromModel(TrendSearch trendData)
+        // --- TẠO JSON CHO AI ---
+        private string ReconstructJsonForAi(TrendSearch trendData, List<AdsPlannerItemDto> adsData)
         {
-            // Chúng ta chỉ serialize những gì cần thiết cho AI
+            var topAdsData = adsData.Take(50).ToList(); // Lấy top 50 để AI đánh giá
+
             var dataForAI = new
             {
                 SearchParameters = new
@@ -183,19 +301,21 @@ namespace SEOBoostAI.Service.Services
                     trendData.Geolocation,
                     trendData.Timeframe
                 },
-                InterestOverTime = trendData.InterestOverTimes.Select(iot => new { iot.Query, iot.DateRange, iot.InterestValue }),
-                InterestByRegion = trendData.InterestByRegions.Select(ibr => new { ibr.LocationName, ibr.InterestValue }),
-                RegionComparison = trendData.RegionComparisons.Select(rc => new { rc.LocationName, rc.Query, rc.InterestPercentage }),
-                RelatedTopics = trendData.RelatedTopics.Select(rt => new { rt.Category, rt.TopicTitle, rt.ValueString }),
-                RelatedQueries = trendData.RelatedQueries.Select(rq => new { rq.Category, rq.Query, rq.Value })
+                GoogleTrendsData = new
+                {
+                    InterestOverTime = trendData.InterestOverTimes.Select(iot => new { iot.Query, iot.DateRange, iot.InterestValue }),
+                    InterestByRegion = trendData.InterestByRegions.Select(ibr => new { ibr.LocationName, ibr.InterestValue }),
+                    RegionComparison = trendData.RegionComparisons.Select(rc => new { rc.LocationName, rc.Query, rc.InterestPercentage }),
+                    RelatedTopics = trendData.RelatedTopics.Select(rt => new { rt.Category, rt.TopicTitle, rt.ValueString }),
+                    RelatedQueries = trendData.RelatedQueries.Select(rq => new { rq.Category, rq.Query, rq.Value })
+                },
+                GoogleAdsPlannerData = topAdsData
             };
 
             return JsonSerializer.Serialize(dataForAI, new JsonSerializerOptions { WriteIndented = true });
         }
 
-        // --- CÁC HÀM MAP DTO -> ENTITY (Bạn cần hoàn thiện nốt 4 hàm) ---
-        // Dưới đây là ví dụ cho 1 hàm
-
+        // --- CÁC HÀM FETCH CON (HELPER) ---
         private async Task FetchInterestOverTimeAsync(TrendSearch trendSearch, TrendParameters parameters)
         {
             try
@@ -207,30 +327,19 @@ namespace SEOBoostAI.Service.Services
                     {
                         foreach (var value in timeline.Values)
                         {
-                            var newRecord = new InterestOverTime
+                            trendSearch.InterestOverTimes.Add(new InterestOverTime
                             {
-                                // TrendSearchId sẽ được EF tự động gán
                                 Query = value.Query,
                                 DateRange = timeline.Date,
                                 TimestampVal = long.Parse(timeline.Timestamp),
                                 InterestValue = value.ExtractedValue
-                            };
-                            trendSearch.InterestOverTimes.Add(newRecord); // Thêm vào collection của cha
+                            });
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Lỗi khi fetch InterestOverTime cho: {query}", parameters.Query);
-                // Không ném lỗi, để các API khác tiếp tục chạy
-            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Lỗi FetchInterestOverTimeAsync"); }
         }
-
-        // ... (Hàm FetchInterestOverTimeAsync của bạn ở đây) ...
-
-
-        // --- CÁC HÀM MAP DTO -> ENTITY (4 HÀM CÒN LẠI) ---
 
         private async Task FetchRelatedTopicsAsync(TrendSearch trendSearch, TrendParameters parameters)
         {
@@ -239,44 +348,36 @@ namespace SEOBoostAI.Service.Services
                 var response = await _serpApiService.GetRelatedTopicsAsync(parameters);
                 if (response?.RelatedTopics == null) return;
 
-                // Xử lý "Top" Topics
                 if (response.RelatedTopics.Top != null)
                 {
                     foreach (var topic in response.RelatedTopics.Top)
                     {
-                        var newRecord = new RelatedTopic
+                        trendSearch.RelatedTopics.Add(new RelatedTopic
                         {
                             Category = "top",
                             TopicTitle = topic.Topic.Title,
                             TopicType = topic.Topic.Type,
                             ExtractedValue = topic.ExtractedValue,
-                            // ValueString và GoogleTrendsLink bạn có thể map tương tự nếu cần
-                        };
-                        trendSearch.RelatedTopics.Add(newRecord);
+                            ValueString = topic.ValueString
+                        });
                     }
                 }
-
-                // Xử lý "Rising" Topics
                 if (response.RelatedTopics.Rising != null)
                 {
                     foreach (var topic in response.RelatedTopics.Rising)
                     {
-                        var newRecord = new RelatedTopic
+                        trendSearch.RelatedTopics.Add(new RelatedTopic
                         {
                             Category = "rising",
                             TopicTitle = topic.Topic.Title,
                             TopicType = topic.Topic.Type,
                             ExtractedValue = topic.ExtractedValue,
-                            ValueString = topic.ValueString // (DTO cần cập nhật để có trường này)
-                        };
-                        trendSearch.RelatedTopics.Add(newRecord);
+                            ValueString = topic.ValueString
+                        });
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Lỗi khi fetch RelatedTopics cho: {query}", parameters.Query);
-            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Lỗi FetchRelatedTopicsAsync"); }
         }
 
         private async Task FetchRelatedQueriesAsync(TrendSearch trendSearch, TrendParameters parameters)
@@ -286,41 +387,32 @@ namespace SEOBoostAI.Service.Services
                 var response = await _serpApiService.GetRelatedQueriesAsync(parameters);
                 if (response?.RelatedQueries == null) return;
 
-                // Xử lý "Top" Queries
                 if (response.RelatedQueries.Top != null)
                 {
                     foreach (var query in response.RelatedQueries.Top)
                     {
-                        var newRecord = new RelatedQuery
+                        trendSearch.RelatedQueries.Add(new RelatedQuery
                         {
                             Category = "top",
                             Query = query.Query,
                             Value = query.ExtractedValue
-                        };
-                        trendSearch.RelatedQueries.Add(newRecord);
+                        });
                     }
                 }
-
-                // Xử lý "Rising" Queries
                 if (response.RelatedQueries.Rising != null)
                 {
                     foreach (var query in response.RelatedQueries.Rising)
                     {
-                        var newRecord = new RelatedQuery
+                        trendSearch.RelatedQueries.Add(new RelatedQuery
                         {
                             Category = "rising",
                             Query = query.Query,
                             Value = query.ExtractedValue
-                            // (Lưu ý: DTO của bạn cần có ValueString nếu bạn muốn map "Đột phá")
-                        };
-                        trendSearch.RelatedQueries.Add(newRecord);
+                        });
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Lỗi khi fetch RelatedQueries cho: {query}", parameters.Query);
-            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Lỗi FetchRelatedQueriesAsync"); }
         }
 
         private async Task FetchInterestByRegionAsync(TrendSearch trendSearch, TrendParameters parameters)
@@ -332,20 +424,15 @@ namespace SEOBoostAI.Service.Services
                 {
                     foreach (var region in response.InterestByRegion)
                     {
-                        var newRecord = new InterestByRegion
+                        trendSearch.InterestByRegions.Add(new InterestByRegion
                         {
                             LocationName = region.Location,
                             InterestValue = region.ExtractedValue
-                            // (Bạn có thể map Latitude/Longitude nếu DTO có)
-                        };
-                        trendSearch.InterestByRegions.Add(newRecord);
+                        });
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Lỗi khi fetch InterestByRegion cho: {query}", parameters.Query);
-            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Lỗi FetchInterestByRegionAsync"); }
         }
 
         private async Task FetchRegionComparisonAsync(TrendSearch trendSearch, TrendParameters parameters)
@@ -357,24 +444,59 @@ namespace SEOBoostAI.Service.Services
                 {
                     foreach (var region in response.ComparedBreakdownByRegion)
                     {
-                        // Vòng lặp bên trong để lấy từng giá trị (ví dụ: Phở: 52%, Cháo: 48%)
                         foreach (var value in region.Values)
                         {
-                            var newRecord = new RegionComparison
+                            trendSearch.RegionComparisons.Add(new RegionComparison
                             {
                                 LocationName = region.Location,
                                 Query = value.Query,
                                 InterestPercentage = value.ExtractedValue
-                            };
-                            trendSearch.RegionComparisons.Add(newRecord);
+                            });
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Lỗi khi fetch RegionComparison cho: {query}", parameters.Query);
-            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Lỗi FetchRegionComparisonAsync"); }
         }
+
+        public async Task<List<AdsPlannerItemDto>> GetAdsKeywordsDetailAsync(int queryHistoryId)
+        {
+            // 1. Tìm bản ghi lịch sử để lấy AdsSearchRequestId
+            var history = await _queryHistoryRepo.GetAsync(
+                filter: x => x.Id == queryHistoryId
+            );
+
+            if (history == null || history.AdsSearchRequestId == null)
+            {
+                return new List<AdsPlannerItemDto>(); // Không tìm thấy hoặc không có data Ads
+            }
+
+            // 2. Lấy dữ liệu từ BẢNG CHA và INCLUDE BẢNG CON
+            // Cách này tối ưu hơn nhiều so với việc GetAllAsync bảng con
+            var adsRequest = await _adsRequestRepo.GetAsync(
+                filter: x => x.Id == history.AdsSearchRequestId,
+                includeProperties: "AdsKeywordData" // Load luôn danh sách từ khóa
+            );
+
+            if (adsRequest == null || adsRequest.AdsKeywordData == null)
+            {
+                return new List<AdsPlannerItemDto>();
+            }
+
+            // 3. Map sang DTO (Bao gồm cả thông tin AI đánh giá)
+            return adsRequest.AdsKeywordData.Select(x => new AdsPlannerItemDto
+            {
+                Keyword = x.Keyword,
+                AvgSearchVolume = x.AvgSearchVolume,
+                Competition = x.Competition,
+                LowBid = x.LowBid,
+                HighBid = x.HighBid,
+
+                // Map dữ liệu AI (Giờ DTO đã có, code sẽ không báo lỗi)
+                AiSuggestion = x.AiSuggestion,
+                AiMessage = x.AiMessage
+            }).ToList();
+        }
+
     }
 }

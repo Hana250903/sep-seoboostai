@@ -58,5 +58,21 @@ namespace SEOBoostAI.API.Controllers
                 return StatusCode(500, new { message = $"Lỗi máy chủ: {ex.Message}" });
             }
         }
+
+        [HttpGet("show-keywords/{historyId}")]
+        public async Task<IActionResult> ShowAdsKeywords(int historyId)
+        {
+            try
+            {
+                var result = await _trendSearchService.GetAdsKeywordsDetailAsync(historyId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy chi tiết keywords");
+                return StatusCode(500, new { message = "Lỗi máy chủ" });
+            }
+        }
+
     }
 }

@@ -48,8 +48,14 @@ namespace SEOBoostAI.API
             services.AddScoped<IAnalysisSnapshotService, AnalysisSnapshotService>();
             services.AddScoped<IPurchasedFeatureService, PurchasedFeatureService>();
 
-			// test xong xóa ( 2 dòng dưới )
-			services.AddScoped<IGeminiAiKeywordService, GeminiAiKeywordService>();
+            // test xong xóa ( 3 dòng dưới )
+            services.AddScoped<IAdsPlannerService, AdsPlannerService>();
+            services.AddScoped<IAdsSearchRequestRepository, AdsSearchRequestRepository>();
+            services.AddScoped<IAdsKeywordDatumRepository, AdsKeywordDatumRepository>();
+            services.AddScoped<IGeminiAiGoogleAdsService, GeminiAiGoogleAdsService>();
+
+
+            services.AddScoped<IGeminiAiKeywordService, GeminiAiKeywordService>();
             services.AddScoped<IGeminiAiAnalysisService, GeminiAiAnalysisService>();
             services.AddScoped<ISerpApiService, SerpApiService>();
             services.AddScoped<ITrendSearchService, TrendSearchService>(); 
