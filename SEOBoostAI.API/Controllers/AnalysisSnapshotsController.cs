@@ -28,7 +28,8 @@ namespace SEOBoostAI.API.Controllers
 
             return Ok(new ResultModel<PaginationResult<List<AnalysisSnapshot>>>
             {
-                ResultCode = 200,
+                Success = true,
+                Message = "Analysis snapshots retrieved successfully.",
                 Data = result
             });
         }
@@ -40,7 +41,8 @@ namespace SEOBoostAI.API.Controllers
             var result = await _analysisSnapshotService.GetAnalysisSnapshotByIdAsync(id);
             return Ok(new ResultModel<AnalysisSnapshot>
             {
-                ResultCode = 200,
+                Success = true,
+                Message = "Analysis snapshot retrieved successfully.",
                 Data = result
             });
         }

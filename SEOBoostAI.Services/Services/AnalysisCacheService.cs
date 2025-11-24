@@ -267,6 +267,37 @@ namespace SEOBoostAI.Service.Services
             return existingCache;
         }
 
+        public async Task<AnalysisResultModel> GetAnalysisResultAsync(int analysisCacheId)
+        {
+            var current = await _analysisCacheRepository.GetByIdAsync(analysisCacheId) ?? throw new Exception($"Không tìm thấy AnalysisCache với ID: {analysisCacheId}");
+            var currentMetrics = JsonSerializer.Deserialize<PageSpeedMetrics>(current.PageSpeedResponse);
+
+            var previousSnapshot = await _analysisSnapshotRepository.GetAnalysisSnapshotByAnalysisCacheIdAsync(analysisCacheId);
+
+            var result = new AnalysisResultModel
+            {
+                PageSpeedMetrics = currentMetrics,
+                ComparisonModel = null
+            };
+
+            if (previousSnapshot != null)
+            {
+                var previousMetrics = JsonSerializer.Deserialize<PageSpeedMetrics>(previousSnapshot.PageSpeedResponse);
+
+                result.ComparisonModel = new ComparisonModel
+                {
+                    ScoreChange = currentMetrics.PerformanceScore - previousMetrics.PerformanceScore,
+                    FcpChange = Math.Round((currentMetrics.FCP ?? 0) - (previousMetrics.FCP ?? 0), 2),
+                    LcpChange = Math.Round((currentMetrics.LCP ?? 0) - (previousMetrics.LCP ?? 0), 2),
+                    ClsChange = Math.Round((currentMetrics.CLS ?? 0) - (previousMetrics.CLS ?? 0), 3), // CLS thường lấy 3 số
+                    TbtChange = Math.Round((currentMetrics.TBT ?? 0) - (previousMetrics.TBT ?? 0), 0), // TBT thường là số nguyên ms
+                    SiChange = Math.Round((currentMetrics.SpeedIndex ?? 0) - (previousMetrics.SpeedIndex ?? 0), 2),
+                    TtiChange = Math.Round((currentMetrics.TimeToInteractive ?? 0) - (previousMetrics.TimeToInteractive ?? 0), 2)
+                };
+            }
+            return result;
+        }
+
         //public async Task Suggestion()
         //{
 
