@@ -49,8 +49,8 @@ namespace SEOBoostAI.API.Controllers
             return Ok(user);
         }
 
-        [HttpPost("update-role/{id}")]
-        public async Task<IActionResult> Post(int id)
+        [HttpPut("update-role/{id}")]
+        public async Task<IActionResult> Put(int id)
         {
             var result = await _userService.UpdateUserToStaff(id);
             return Ok(result);

@@ -2,42 +2,26 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("TrendSearchId", Name = "IX_RelatedTopics_TrendSearchId")]
 public partial class RelatedTopic
 {
-    [Key]
     public int Id { get; set; }
 
     public int TrendSearchId { get; set; }
 
-    [Required]
-    [StringLength(10)]
-    [Unicode(false)]
     public string Category { get; set; }
 
-    [Required]
-    [StringLength(255)]
     public string TopicTitle { get; set; }
 
-    [StringLength(255)]
     public string TopicType { get; set; }
 
-    [StringLength(50)]
-    [Unicode(false)]
     public string ValueString { get; set; }
 
     public int ExtractedValue { get; set; }
 
-    [Column(TypeName = "text")]
     public string GoogleTrendsLink { get; set; }
 
-    [ForeignKey("TrendSearchId")]
-    [InverseProperty("RelatedTopics")]
     public virtual TrendSearch TrendSearch { get; set; }
 }

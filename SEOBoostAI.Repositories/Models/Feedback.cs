@@ -2,37 +2,28 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
 public partial class Feedback
 {
-    [Key]
     public int FeedbackID { get; set; }
 
     public int UserID { get; set; }
 
-    [StringLength(255)]
     public string Topic { get; set; }
 
-    [StringLength(255)]
     public string Status { get; set; }
 
-    [StringLength(255)]
     public string Description { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime CreatedAt { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime UpdatedAt { get; set; }
 
     public bool IsDeleted { get; set; }
 
-    [ForeignKey("UserID")]
-    [InverseProperty("Feedbacks")]
+    public virtual ICollection<FeedbackMessage> FeedbackMessages { get; set; } = new List<FeedbackMessage>();
+
     public virtual User User { get; set; }
 }

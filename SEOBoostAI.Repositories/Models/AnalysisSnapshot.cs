@@ -2,29 +2,20 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Table("AnalysisSnapshot")]
 public partial class AnalysisSnapshot
 {
-    [Key]
     public int SnapshotID { get; set; }
 
     public int AnalysisCacheID { get; set; }
 
     public string PageSpeedResponse { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime AnalyzedAt { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime ArchivedAt { get; set; }
 
-    [ForeignKey("AnalysisCacheID")]
-    [InverseProperty("AnalysisSnapshots")]
     public virtual AnalysisCache AnalysisCache { get; set; }
 }

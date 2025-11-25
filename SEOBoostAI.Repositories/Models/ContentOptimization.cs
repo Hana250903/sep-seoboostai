@@ -2,35 +2,26 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
 public partial class ContentOptimization
 {
-    [Key]
     public int ContentOptimizationID { get; set; }
 
     public int UserID { get; set; }
 
-    [StringLength(50)]
     public string Model { get; set; }
 
     public string UserRequest { get; set; }
 
     public string AIResponse { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? UpdatedAt { get; set; }
 
     public bool IsDeleted { get; set; }
 
-    [ForeignKey("UserID")]
-    [InverseProperty("ContentOptimizations")]
     public virtual User User { get; set; }
 }

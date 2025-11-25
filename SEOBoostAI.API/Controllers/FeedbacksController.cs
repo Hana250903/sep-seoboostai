@@ -10,11 +10,14 @@ namespace SEOBoostAI.API.Controllers
 	public class FeedbacksController : ControllerBase
 	{
 		private readonly IFeedbackService _feedbackService;
+        private readonly IFeedbackMessageService _feedbackMessageService;
 
-		public FeedbacksController(IFeedbackService feedbackService)
+        public FeedbacksController(IFeedbackService feedbackService, IFeedbackMessageService feedbackMessageService)
 		{
 			_feedbackService = feedbackService;
-		}
+            _feedbackMessageService = feedbackMessageService;
+
+        }
 
 		// GET: api/<FeedbacksController>
 		[HttpGet]
@@ -36,8 +39,15 @@ namespace SEOBoostAI.API.Controllers
 			return await _feedbackService.GetFeedbackByIdAsync(id);
 		}
 
-		// POST api/<FeedbacksController>
-		[HttpPost]
+		[HttpGet("history/{feedbackId}")]
+		public async Task<IActionResult> GetChatHistory(int feedbackId)
+		{
+			var history = await _feedbackMessageService.GetHistoryAsync(feedbackId);
+			return Ok(history);
+        }
+
+        // POST api/<FeedbacksController>
+        [HttpPost]
 		public async Task<IActionResult> Post([FromBody] Feedback feedback)
 		{
             await _feedbackService.CreateAsync(feedback);

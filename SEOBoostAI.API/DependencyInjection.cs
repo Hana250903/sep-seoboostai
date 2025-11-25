@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using SEOBoostAI.API.Infrastructure;
 using SEOBoostAI.Repository.GenericRepository;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
@@ -29,6 +30,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IFeatureRepository, FeatureRepository>();
             services.AddScoped<IAnalysisSnapshotRepository, AnalysisSnapshotRepository>();
             services.AddScoped<IPurchasedFeatureRepository, PurchasedFeatureRepository>();
+            services.AddScoped<IFeedbackMessageRepository, FeedbackMessageRepository>();
 
 			services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
@@ -47,6 +49,8 @@ namespace SEOBoostAI.API
             services.AddScoped<IAuthenService, AuthenService>();
             services.AddScoped<IAnalysisSnapshotService, AnalysisSnapshotService>();
             services.AddScoped<IPurchasedFeatureService, PurchasedFeatureService>();
+            services.AddScoped<IFeedbackMessageService, FeedbackMessageService>();
+            services.AddScoped<IChatNotifier, SignalRChatNotifier>();
 
             // test xong xóa ( 3 dòng dưới )
             services.AddScoped<IAdsPlannerService, AdsPlannerService>();

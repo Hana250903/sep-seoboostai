@@ -2,15 +2,11 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
 public partial class PurchasedFeature
 {
-    [Key]
     public int PurchasedFeatureID { get; set; }
 
     public int FeatureID { get; set; }
@@ -21,16 +17,11 @@ public partial class PurchasedFeature
 
     public int RemainingQuantity { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime PurchaseDate { get; set; }
 
     public bool IsDeleted { get; set; }
 
-    [ForeignKey("FeatureID")]
-    [InverseProperty("PurchasedFeatures")]
     public virtual Feature Feature { get; set; }
 
-    [ForeignKey("TransactionID")]
-    [InverseProperty("PurchasedFeatures")]
     public virtual Transaction Transaction { get; set; }
 }

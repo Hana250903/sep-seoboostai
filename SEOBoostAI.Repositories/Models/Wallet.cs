@@ -2,35 +2,24 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("UserID", Name = "UQ__Wallets__1788CCAD4A18C0AB", IsUnique = true)]
 public partial class Wallet
 {
-    [Key]
     public int WalletID { get; set; }
 
     public int UserID { get; set; }
 
-    [Column(TypeName = "money")]
     public decimal Currency { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime CreatedAt { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? UpdatedAt { get; set; }
 
     public bool IsDeleted { get; set; }
 
-    [InverseProperty("Wallet")]
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 
-    [ForeignKey("UserID")]
-    [InverseProperty("Wallet")]
     public virtual User User { get; set; }
 }

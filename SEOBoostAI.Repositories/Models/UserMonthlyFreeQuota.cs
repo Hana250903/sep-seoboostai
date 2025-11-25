@@ -2,41 +2,28 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("UserID", "FeatureID", "MonthYear", Name = "UQ_UserMonthlyQuota", IsUnique = true)]
 public partial class UserMonthlyFreeQuota
 {
-    [Key]
     public int UserMonthlyFreeQuotaID { get; set; }
 
     public int UserID { get; set; }
 
     public int FeatureID { get; set; }
 
-    [Required]
-    [StringLength(7)]
-    [Unicode(false)]
     public string MonthYear { get; set; }
 
     public int MonthlyLimit { get; set; }
 
     public int UsageCount { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? LastUsedAt { get; set; }
 
     public bool IsDeleted { get; set; }
 
-    [ForeignKey("FeatureID")]
-    [InverseProperty("UserMonthlyFreeQuota")]
     public virtual Feature Feature { get; set; }
 
-    [ForeignKey("UserID")]
-    [InverseProperty("UserMonthlyFreeQuota")]
     public virtual User User { get; set; }
 }

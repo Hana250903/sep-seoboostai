@@ -2,25 +2,16 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
 public partial class SystemSetting
 {
-    [Key]
-    [StringLength(100)]
     public string SettingKey { get; set; }
 
-    [Required]
-    [StringLength(255)]
     public string SettingValue { get; set; }
 
-    [StringLength(255)]
     public string Description { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? LastUpdatedDate { get; set; }
 }
