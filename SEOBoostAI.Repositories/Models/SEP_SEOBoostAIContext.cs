@@ -204,12 +204,14 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Feedbacks_CreatedAt")
                 .HasColumnType("datetime");
             entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.Status).HasMaxLength(255);
             entity.Property(e => e.Topic).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Feedbacks_UpdatedAt")
                 .HasColumnType("datetime");
 
             entity.HasOne(d => d.User).WithMany(p => p.Feedbacks).HasForeignKey(d => d.UserID);
