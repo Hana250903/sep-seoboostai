@@ -16,5 +16,12 @@ namespace SEOBoostAI.API.Infrastructure
         {
             await _hubContext.Clients.Group(roomId).SendAsync("ReceiveMessage", user, message, time);
         }
+
+        public async Task NotifyAdminNewTicket(int feedbackId)
+        {
+            // Giả sử Admin luôn join vào một group tên là "AdminGroup" khi đăng nhập
+            await _hubContext.Clients.Group("AdminGroup")
+                .SendAsync("ReceiveNewTicketNotification", new { id = feedbackId});
+        }
     }
 }

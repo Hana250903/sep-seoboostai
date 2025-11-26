@@ -5,18 +5,19 @@ using SEOBoostAI.Service.Services.Interfaces;
 
 namespace SEOBoostAI.API.Controllers
 {
-	[Route("api/feedback")]
+	[Route("api/feedbacks")]
 	[ApiController]
 	public class FeedbacksController : ControllerBase
 	{
 		private readonly IFeedbackService _feedbackService;
         private readonly IFeedbackMessageService _feedbackMessageService;
+        private readonly IChatNotifier _chatNotifier;
 
-        public FeedbacksController(IFeedbackService feedbackService, IFeedbackMessageService feedbackMessageService)
+        public FeedbacksController(IFeedbackService feedbackService, IFeedbackMessageService feedbackMessageService, IChatNotifier chatNotifier)
 		{
 			_feedbackService = feedbackService;
             _feedbackMessageService = feedbackMessageService;
-
+            _chatNotifier = chatNotifier;
         }
 
 		// GET: api/<FeedbacksController>
@@ -39,10 +40,17 @@ namespace SEOBoostAI.API.Controllers
 			return await _feedbackService.GetFeedbackByIdAsync(id);
 		}
 
-		[HttpGet("history/{feedbackId}")]
+		[HttpGet("message-histories/{userId}")]
+		public async Task<IActionResult> GetMessageHistory(int userId)
+		{
+			var history = await _feedbackService.GetFeedbacksByUserIdAsync(userId);
+			return Ok(history);
+        }
+
+		[HttpGet("chat-histories/{feedbackId}")]
 		public async Task<IActionResult> GetChatHistory(int feedbackId)
 		{
-			var history = await _feedbackMessageService.GetHistoryAsync(feedbackId);
+			var history = await _feedbackMessageService.GetChatHistoryAsync(feedbackId);
 			return Ok(history);
         }
 
@@ -51,7 +59,8 @@ namespace SEOBoostAI.API.Controllers
 		public async Task<IActionResult> Post([FromBody] Feedback feedback)
 		{
             await _feedbackService.CreateAsync(feedback);
-			return Ok(feedback);
+            await _chatNotifier.NotifyAdminNewTicket(feedback.FeedbackID);
+            return Ok(new { id = feedback.FeedbackID });
         }
 
 		// PUT api/<FeedbacksController>/

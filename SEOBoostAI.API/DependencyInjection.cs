@@ -51,6 +51,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IPurchasedFeatureService, PurchasedFeatureService>();
             services.AddScoped<IFeedbackMessageService, FeedbackMessageService>();
             services.AddScoped<IChatNotifier, SignalRChatNotifier>();
+            services.AddScoped<IChatService, ChatService>();
 
             // test xong xóa ( 3 dòng dưới )
             services.AddScoped<IAdsPlannerService, AdsPlannerService>();

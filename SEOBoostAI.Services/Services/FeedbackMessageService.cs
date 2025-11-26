@@ -19,9 +19,9 @@ namespace SEOBoostAI.Service.Services
             _feedbackMessageRepository = feedbackMessageRepository;
         }
 
-        public async Task<List<FeedbackMessage>> GetHistoryAsync(int feedbackId)
+        public async Task<List<FeedbackMessage>> GetChatHistoryAsync(int feedbackId)
         {
-            return await _feedbackMessageRepository.GetHistoryAsync(feedbackId);
+            return await _feedbackMessageRepository.GetChatHistoryAsync(feedbackId);
         }
     }
 }

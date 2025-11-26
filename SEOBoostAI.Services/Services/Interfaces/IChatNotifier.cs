@@ -9,5 +9,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
     public interface IChatNotifier
     {
         Task SendNewMessage(string roomId, string user, string message, DateTime time);
+        Task NotifyAdminNewTicket(int feedbackId);
     }
 }

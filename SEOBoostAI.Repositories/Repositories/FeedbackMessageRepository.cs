@@ -16,7 +16,7 @@ namespace SEOBoostAI.Repository.Repositories
         {
         }
 
-        public async Task<List<FeedbackMessage>> GetHistoryAsync(int feedbackId)
+        public async Task<List<FeedbackMessage>> GetChatHistoryAsync(int feedbackId)
         {
             return await _context.Set<FeedbackMessage>().Where(fm => fm.FeedbackID == feedbackId).OrderBy(fm => fm.CreatedAt).ToListAsync();
         }

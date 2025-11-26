@@ -48,7 +48,7 @@ namespace SEOBoostAI.Service.Services
         }
 		public async Task<Feedback> GetFeedbackByIdAsync(int id)
 		{
-			return await _feedbackRepository.GetByIdAsync(id);
+			return await _feedbackRepository.GetFeedbackByIdAsync(id);
 		}
 		public async Task<List<Feedback>> GetFeedbacksAsync()
 		{
@@ -70,5 +70,9 @@ namespace SEOBoostAI.Service.Services
 				throw;
 			}
         }
-	}
+		public async Task<List<Feedback>> GetFeedbacksByUserIdAsync(int userId)
+		{
+			return await _feedbackRepository.GetFeedbackByUserIdAsync(userId);
+        }
+    }
 }

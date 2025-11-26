@@ -10,6 +10,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
     public interface IFeedbackMessageRepository : IGenericRepository<FeedbackMessage>
     {
-        Task<List<FeedbackMessage>> GetHistoryAsync(int feedbackId);
+        Task<List<FeedbackMessage>> GetChatHistoryAsync(int feedbackId);
     }
 }

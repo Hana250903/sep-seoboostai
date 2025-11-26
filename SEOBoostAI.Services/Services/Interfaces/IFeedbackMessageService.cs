@@ -9,6 +9,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
 {
     public interface IFeedbackMessageService
     {
-        Task<List<FeedbackMessage>> GetHistoryAsync(int feedbackId);
+        Task<List<FeedbackMessage>> GetChatHistoryAsync(int feedbackId);
     }
 }
