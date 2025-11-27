@@ -1,4 +1,4 @@
-﻿using SEOBoostAI.Service.DTOs;
+﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Service.Services.Interfaces;
 using System.Net.Http.Json;
 using System.Text.Json;

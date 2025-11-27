@@ -1,5 +1,5 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
-using SEOBoostAI.Service.DTOs;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;

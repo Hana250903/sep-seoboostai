@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEOBoostAI.Service.DTOs
+namespace SEOBoostAI.Repository.ModelExtensions
 {
     public class TrendParameters
     {

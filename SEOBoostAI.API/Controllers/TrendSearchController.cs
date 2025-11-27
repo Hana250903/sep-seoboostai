@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SEOBoostAI.Service.DTOs;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Service.Services.Interfaces;
 using SEOBoostAI.Service.Ultils;
 
@@ -62,24 +62,28 @@ namespace SEOBoostAI.API.Controllers
 
 
         [HttpGet("show-keywords/{historyId}")]
-        public async Task<IActionResult> ShowAdsKeywords(int historyId)
+        public async Task<IActionResult> ShowAdsKeywords(
+            int historyId,
+            [FromQuery] bool onlySuggestions = false) // Nhận tham số từ URL
         {
             try
             {
-
-                var currentUserId = _currentUserService.GetUserId();
-
-                // Truyền thêm userId vào service
-                var result = await _trendSearchService.GetAdsKeywordsDetailAsync(historyId, currentUserId);
-
+                var userId = _currentUserService.GetUserId(); // Lấy ID thật
+                var result = await _trendSearchService.GetAdsKeywordsDetailAsync(
+                    historyId,
+                    userId,
+                    onlySuggestions
+                );
                 return Ok(result);
-
-
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy chi tiết keywords");
-                return StatusCode(500, new { message = "Lỗi máy chủ" });
+                _logger.LogError(ex, "Lỗi...");
+                return StatusCode(500, "Lỗi máy chủ");
             }
         }
         // 3. ĐÃ XÓA ENDPOINT 'show-keywords' 

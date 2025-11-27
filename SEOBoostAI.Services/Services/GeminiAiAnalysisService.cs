@@ -71,15 +71,37 @@ namespace SEOBoostAI.Service.Services
             string json = JsonSerializer.Serialize(requestData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
+            // ... (Gửi request như cũ) ...
+
             var response = await client.PostAsync(fullUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Lỗi gọi Gemini API: {response.StatusCode}");
+            }
+
             string result = await response.Content.ReadAsStringAsync();
-
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
 
-            // Lấy văn bản thô, vì đây là câu trả lời cuối cùng
-            string finalAnswer = geminiResponse.Candidates.First().Content.Parts.First().Text;
-            return finalAnswer.Trim();
+            try
+            {
+                var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+
+                if (geminiResponse?.Candidates == null || !geminiResponse.Candidates.Any())
+                {
+                    return "Hiện tại hệ thống đang bận, vui lòng thử lại sau."; // Trả về thông báo thay vì crash
+                }
+
+                // Lấy văn bản thô
+                string finalAnswer = geminiResponse.Candidates.First().Content.Parts.First().Text;
+                return finalAnswer.Trim();
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nếu cần
+                return "Đã xảy ra lỗi khi xử lý phản hồi từ AI.";
+            }
+
         }
     }
 }

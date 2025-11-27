@@ -3,7 +3,7 @@ using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
-using SEOBoostAI.Service.DTOs;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -64,7 +64,7 @@ namespace SEOBoostAI.Service.Services
         }
 
         // === 3. PHƯƠNG THỨC NGHIỆP VỤ CHÍNH ===
-        public async Task<QueryHistory> AnalyzeTrendQueryAsync(int memberId, string originalQuestion)
+        public async Task<TrendAnalysisResponseDto> AnalyzeTrendQueryAsync(int memberId, string originalQuestion)
         {
             _logger.LogInformation("Bắt đầu quy trình AnalyzeTrendQueryAsync cho MemberId: {memberId}", memberId);
 
@@ -138,7 +138,14 @@ namespace SEOBoostAI.Service.Services
             await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Hoàn tất quy trình cho MemberId: {memberId}", memberId);
-            return historyLog;
+
+            return new TrendAnalysisResponseDto
+            {
+                Id = historyLog.Id,
+                OriginalQuestion = historyLog.OriginalQuestion,
+                FinalAiResponse = historyLog.FinalAiResponse,
+                CreatedAt = historyLog.CreatedAt
+            };
         }
 
         // === 4. CÁC PHƯƠNG THỨC HELPER ===
@@ -464,7 +471,10 @@ namespace SEOBoostAI.Service.Services
 
         // === CẬP NHẬT HÀM NÀY TRONG TrendSearchService.cs ===
 
-        public async Task<List<AdsPlannerItemDto>> GetAdsKeywordsDetailAsync(int queryHistoryId, int currentUserId) // <-- Thêm currentUserId
+        public async Task<List<AdsPlannerItemDto>> GetAdsKeywordsDetailAsync(
+            int queryHistoryId,
+            int currentUserId,
+            bool onlySuggestions = false)
         {
             // 1. Tìm bản ghi lịch sử
             var history = await _queryHistoryRepo.GetAsync(
@@ -501,8 +511,16 @@ namespace SEOBoostAI.Service.Services
                 return new List<AdsPlannerItemDto>();
             }
 
-            // 3. Map sang DTO
-            return adsRequest.AdsKeywordData.Select(x => new AdsPlannerItemDto
+            var query = adsRequest.AdsKeywordData.AsQueryable();
+
+            if (onlySuggestions)
+            {
+                // Chỉ lấy cái nào AI khuyên dùng
+                query = query.Where(x => x.AiSuggestion == true);
+            }
+
+            // 4. Map sang DTO
+            return query.Select(x => new AdsPlannerItemDto
             {
                 Keyword = x.Keyword,
                 AvgSearchVolume = x.AvgSearchVolume,

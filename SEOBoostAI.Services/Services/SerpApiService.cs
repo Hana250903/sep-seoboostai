@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using SEOBoostAI.Service.DTOs; // Sửa lại using cho đúng
+using SEOBoostAI.Repository.ModelExtensions; // Sửa lại using cho đúng
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
