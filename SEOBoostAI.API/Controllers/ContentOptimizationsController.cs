@@ -60,25 +60,23 @@ namespace SEOBoostAI.API.Controllers
 		}
 
 		[HttpPost]
+		[Authorize]
 		public async Task<IActionResult> Post([FromBody] OptimizeRequestDto requestDto)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
 			try
 			{
 				// 1. Lấy UserID từ Token (Bảo mật hơn là tin vào requestDto)
 				// Nếu bạn muốn chắc chắn UserID là của người đang đăng nhập
-				var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-				if (!string.IsNullOrEmpty(userIdString))
+				var userIdString = User.FindFirst("user_ID")?.Value;
+				if (string.IsNullOrEmpty(userIdString))
 				{
-					requestDto.UserId = int.Parse(userIdString);
+					return Unauthorized(new { message = "Không tìm thấy UserID trong token." });
 				}
 
+				int userId = int.Parse(userIdString);
+
 				// 2. Gọi Service
-				ContentOptimizationDto result = await _contentOptimizationService.OptimizeAndCreateAsync(requestDto);
+				ContentOptimizationDto result = await _contentOptimizationService.OptimizeAndCreateAsync(requestDto, userId);
 
 				// 3. Trả về kết quả 201 Created
 				// Lưu ý: Đảm bảo bạn có hàm "Get" hoặc "GetContentOptimizationById" để nameof() hoạt động đúng

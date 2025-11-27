@@ -15,6 +15,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task<ContentOptimizationDto> GetContentOptimizationByIdAsync(int id);
 		Task UpdateAsync(ContentOptimization contentOptimization);
 		Task DeleteAsync(int id);
-		Task<ContentOptimizationDto> OptimizeAndCreateAsync(OptimizeRequestDto request);
+		Task<ContentOptimizationDto> OptimizeAndCreateAsync(OptimizeRequestDto request, int userId);
 	}
 }
