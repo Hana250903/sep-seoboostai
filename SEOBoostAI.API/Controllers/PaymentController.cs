@@ -33,8 +33,17 @@ namespace SEOBoostAI.API.Controllers
 		{
 			try
 			{
+				// 1. Validate User (Lấy từ Token cho an toàn)
+				var userIdString = User.FindFirst("user_ID")?.Value;
+				if (string.IsNullOrEmpty(userIdString))
+				{
+					return Unauthorized(new { message = "Không tìm thấy thông tin người dùng trong Token." });
+				}
+
+				var userId = int.Parse(userIdString);
+
 				// 2. Lấy WalletID từ UserID
-				var wallet = await _walletService.GetWalletByUserIdAsync(request.UserID);
+				var wallet = await _walletService.GetWalletByUserIdAsync(userId);
 
 				if (wallet == null)
 				{
