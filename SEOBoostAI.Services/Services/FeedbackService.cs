@@ -62,7 +62,7 @@ namespace SEOBoostAI.Service.Services
 		{
 			try
 			{
-                await _feedbackRepository.UpdateAsync(feedback);
+                await _feedbackRepository.UpdateFeedback(feedback);
                 await _unitOfWork.SaveChangesAsync();
             }
 			catch
