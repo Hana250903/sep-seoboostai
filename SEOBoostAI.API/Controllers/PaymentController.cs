@@ -206,7 +206,7 @@ namespace SEOBoostAI.API.Controllers
 			}
 		}
 
-		//[Authorize]
+		[Authorize]
 		[HttpPost("buy-quota")]
 		public async Task<IActionResult> BuyQuota([FromBody] PurchaseRequest request)
 		{
