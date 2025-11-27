@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace SEOBoostAI.Service.DTOs
+namespace SEOBoostAI.Repository.ModelExtensions
 {
     // === CÁC LỚP CHUNG ===
     public class SerpApiSearchMetadata

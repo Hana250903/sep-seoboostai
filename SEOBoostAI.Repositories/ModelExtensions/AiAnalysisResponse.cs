@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace SEOBoostAI.Service.DTOs
+namespace SEOBoostAI.Repository.ModelExtensions
 {
     // 1. DTO cho từng dòng đánh giá quảng cáo
     public class AdsEvaluationItem

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging; // Thêm Logger để debug
 using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
-using SEOBoostAI.Service.DTOs;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Service.Services.Interfaces;
 using System.Text;
 using System.Text.Json;

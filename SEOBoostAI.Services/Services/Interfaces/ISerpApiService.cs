@@ -1,4 +1,4 @@
-﻿using SEOBoostAI.Service.DTOs;
+﻿using SEOBoostAI.Repository.ModelExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;

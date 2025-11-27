@@ -1,4 +1,4 @@
-﻿using SEOBoostAI.Service.DTOs;
+﻿using SEOBoostAI.Repository.ModelExtensions;
 
 namespace SEOBoostAI.Service.Services.Interfaces
 {

@@ -215,7 +215,8 @@ namespace SEOBoostAI.Repository.GenericRepository
             }
 
             // 3. Trả về đối tượng đầu tiên tìm thấy
-            return await query.FirstOrDefaultAsync();
+
+            return await query.AsSplitQuery().FirstOrDefaultAsync();
         }
 
     }
