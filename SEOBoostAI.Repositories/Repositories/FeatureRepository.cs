@@ -33,5 +33,10 @@ namespace SEOBoostAI.Repository.Repositories
 			};
 			return result;
 		}
+
+		public async Task<Feature> GetFeatureByIdAsync(int id)
+		{
+			return await _context.Set<Feature>().FirstOrDefaultAsync(f => f.FeatureID == id);
+		}
 	}
 }

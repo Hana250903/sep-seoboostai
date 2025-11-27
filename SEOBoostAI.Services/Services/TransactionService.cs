@@ -172,14 +172,14 @@ namespace SEOBoostAI.Service.Services
 		public async Task PurchaseFeatureAsync(int userId, int featureId, int quantity)
 		{
 			// 1. Lấy thông tin tính năng và giá tiền
-			var feature = await _featureRepository.GetByIdAsync(featureId);
+			var feature = await _featureRepository.GetFeatureByIdAsync(featureId);
 			if (feature == null) throw new Exception("Tính năng không tồn tại.");
 
 			decimal totalCost = feature.Price * quantity;
 
 			// 2. Lấy Ví người dùng
 			// (Giả sử bạn đã viết hàm GetWalletByUserId trong Repository)
-			var wallet = await _walletRepository.GetByIdAsync(userId);
+			var wallet = await _walletRepository.GetWalletByUserIdAsync(userId);
 			if (wallet == null) throw new Exception("Ví không tồn tại.");
 
 			// 3. KIỂM TRA SỐ DƯ
