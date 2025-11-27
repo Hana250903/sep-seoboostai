@@ -24,5 +24,10 @@ namespace SEOBoostAI.API.Infrastructure
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
         }
+
+        public async Task NotifyTicketStatusChanged(string feedbackId, string newStatus)
+        {
+            await Clients.Group(feedbackId).SendAsync("ReceiveTicketStatusChange", newStatus);
+        }
     }
 }
