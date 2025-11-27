@@ -13,6 +13,7 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
     public interface IQueryHistoryRepository : IGenericRepository<QueryHistory>
     {
         Task<PaginationResult<List<QueryHistory>>> GetQueryHistorisWithPaginateAsync(int userId ,int currentPage, int pageSize);
+
     }
 
 }

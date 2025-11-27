@@ -6,13 +6,13 @@ using SEOBoostAI.Service.Ultils;
 
 namespace SEOBoostAI.API.Controllers
 {
-    //[Authorize]
+    [Authorize] // 1. BẬT LẠI BẢO MẬT
     [ApiController]
-    [Route("api/trends")] // Đặt tên route cho tính năng
+    [Route("api/trends")]
     public class TrendSearchController : ControllerBase
     {
         private readonly ITrendSearchService _trendSearchService;
-        private readonly ICurrentUserService _currentUserService; // Dùng để lấy ID user
+        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<TrendSearchController> _logger;
 
         public TrendSearchController(
@@ -33,39 +33,48 @@ namespace SEOBoostAI.API.Controllers
         {
             try
             {
-                // 1. TẠM THỜI HARDCODE ID ĐỂ TEST
-                var memberId = 1; // <-- Giả mạo ID người dùng là 1
+                // 2. SỬ DỤNG USER ID THẬT TỪ TOKEN
+                var memberId = _currentUserService.GetUserId(); 
+                
+                if (memberId == 0)
+                {
+                     return Unauthorized(new { message = "Token không hợp lệ hoặc không tìm thấy User ID." });
+                }
 
-                // (Tạm thời vô hiệu hóa 2 dòng check)
-                // var memberId = _currentUserService.GetUserId(); 
-                // if (memberId == 0)
-                // {
-                //     return Unauthorized("Token không hợp lệ hoặc không tìm thấy User ID.");
-                // }
-
-                _logger.LogInformation("Bắt đầu 'analyze' (TEST MODE) cho MemberId: {memberId}", memberId);
+                _logger.LogInformation("Bắt đầu 'analyze' cho MemberId: {memberId}", memberId);
+                
                 var result = await _trendSearchService.AnalyzeTrendQueryAsync(memberId, request.Question);
+                
                 return Ok(result);
             }
-            catch (ArgumentException ex) // Bắt lỗi "Câu hỏi không được rỗng"
+            catch (ArgumentException ex) // Bắt lỗi validation
             {
-                _logger.LogWarning(ex, "Yêu cầu không hợp lệ từ MemberId: {memberId}", _currentUserService.GetUserId());
+                _logger.LogWarning(ex, "Yêu cầu không hợp lệ.");
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi nghiêm trọng trong quá trình AnalyzeTrendQuery");
-                return StatusCode(500, new { message = $"Lỗi máy chủ: {ex.Message}" });
+                // Trả về lỗi 500 nhưng giấu chi tiết kỹ thuật với người dùng (chỉ log lại)
+                return StatusCode(500, new { message = "Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau." });
             }
         }
+
 
         [HttpGet("show-keywords/{historyId}")]
         public async Task<IActionResult> ShowAdsKeywords(int historyId)
         {
             try
             {
-                var result = await _trendSearchService.GetAdsKeywordsDetailAsync(historyId);
+
+                var currentUserId = _currentUserService.GetUserId();
+
+                // Truyền thêm userId vào service
+                var result = await _trendSearchService.GetAdsKeywordsDetailAsync(historyId, currentUserId);
+
                 return Ok(result);
+
+
             }
             catch (Exception ex)
             {
@@ -73,6 +82,7 @@ namespace SEOBoostAI.API.Controllers
                 return StatusCode(500, new { message = "Lỗi máy chủ" });
             }
         }
-
+        // 3. ĐÃ XÓA ENDPOINT 'show-keywords' 
+        // (Vì đã chuyển sang QueryHistoryController)
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
@@ -459,23 +460,40 @@ namespace SEOBoostAI.Service.Services
             catch (Exception ex) { _logger.LogWarning(ex, "Lỗi FetchRegionComparisonAsync"); }
         }
 
-        public async Task<List<AdsPlannerItemDto>> GetAdsKeywordsDetailAsync(int queryHistoryId)
+        // === HÀM BỊ THIẾU (DÁN VÀO CUỐI CLASS) ===
+
+        // === CẬP NHẬT HÀM NÀY TRONG TrendSearchService.cs ===
+
+        public async Task<List<AdsPlannerItemDto>> GetAdsKeywordsDetailAsync(int queryHistoryId, int currentUserId) // <-- Thêm currentUserId
         {
-            // 1. Tìm bản ghi lịch sử để lấy AdsSearchRequestId
+            // 1. Tìm bản ghi lịch sử
             var history = await _queryHistoryRepo.GetAsync(
                 filter: x => x.Id == queryHistoryId
             );
 
-            if (history == null || history.AdsSearchRequestId == null)
+            if (history == null)
             {
-                return new List<AdsPlannerItemDto>(); // Không tìm thấy hoặc không có data Ads
+                return new List<AdsPlannerItemDto>();
+            }
+
+            // --- KIỂM TRA BẢO MẬT (MỚI) ---
+            // Nếu người dùng đang đăng nhập (currentUserId) khác với người tạo lịch sử (MemberId)
+            // -> Chặn ngay lập tức (tránh trường hợp user 1 xem trộm data của user 2)
+            if (history.MemberId != currentUserId)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền xem dữ liệu này.");
+            }
+            // -----------------------------
+
+            if (history.AdsSearchRequestId == null)
+            {
+                return new List<AdsPlannerItemDto>();
             }
 
             // 2. Lấy dữ liệu từ BẢNG CHA và INCLUDE BẢNG CON
-            // Cách này tối ưu hơn nhiều so với việc GetAllAsync bảng con
             var adsRequest = await _adsRequestRepo.GetAsync(
                 filter: x => x.Id == history.AdsSearchRequestId,
-                includeProperties: "AdsKeywordData" // Load luôn danh sách từ khóa
+                includeProperties: "AdsKeywordData"
             );
 
             if (adsRequest == null || adsRequest.AdsKeywordData == null)
@@ -483,7 +501,7 @@ namespace SEOBoostAI.Service.Services
                 return new List<AdsPlannerItemDto>();
             }
 
-            // 3. Map sang DTO (Bao gồm cả thông tin AI đánh giá)
+            // 3. Map sang DTO
             return adsRequest.AdsKeywordData.Select(x => new AdsPlannerItemDto
             {
                 Keyword = x.Keyword,
@@ -491,11 +509,15 @@ namespace SEOBoostAI.Service.Services
                 Competition = x.Competition,
                 LowBid = x.LowBid,
                 HighBid = x.HighBid,
-
-                // Map dữ liệu AI (Giờ DTO đã có, code sẽ không báo lỗi)
                 AiSuggestion = x.AiSuggestion,
                 AiMessage = x.AiMessage
             }).ToList();
+        }
+
+        public async Task<PaginationResult<List<QueryHistory>>> GetQueryHistoriesAsync(int memberId, int currentPage, int pageSize)
+        {
+            // Gọi hàm có sẵn trong QueryHistoryRepository của bạn
+            return await _queryHistoryRepo.GetQueryHistorisWithPaginateAsync(memberId, currentPage, pageSize);
         }
 
     }
