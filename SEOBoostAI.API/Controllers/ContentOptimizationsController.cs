@@ -20,13 +20,6 @@ namespace SEOBoostAI.API.Controllers
 			_contentOptimizationService = contentOptimizationService;
 		}
 
-		// GET: api/<ContentOptimizationsController>
-		[HttpGet]
-		public async Task<IEnumerable<ContentOptimizationDto>> Get()
-		{
-			return await _contentOptimizationService.GetContentOptimizationsAsync();
-		}
-
 		[HttpGet("Search")]
 		public async Task<IActionResult> Get([FromQuery] SearchTransactionRequest searchRequest)
 		{
@@ -53,14 +46,21 @@ namespace SEOBoostAI.API.Controllers
 		}
 
 		// GET api/<ContentOptimizationsController>/5
-		[HttpGet("{id}")]
-		public async Task<ContentOptimizationDto> Get(int id)
+		[HttpGet]
+		public async Task<IActionResult> GetUserById()
 		{
-			return await _contentOptimizationService.GetContentOptimizationByIdAsync(id);
+			var userIdString = User.FindFirst("user_ID")?.Value;
+			if (string.IsNullOrEmpty(userIdString))
+			{
+				BadRequest(new { message = "Không tìm thấy UserID trong token." });
+			}
+			int userId = int.Parse(userIdString);
+
+			var result = await _contentOptimizationService.GetContentOptimizationsByUserIdAsync(userId);
+			return Ok(result);
 		}
 
 		[HttpPost]
-		[Authorize]
 		public async Task<IActionResult> Post([FromBody] OptimizeRequestDto requestDto)
 		{
 			try
@@ -94,6 +94,20 @@ namespace SEOBoostAI.API.Controllers
 			{
 				// Lỗi kết nối Database, lỗi Gemini API sập, v.v.
 				return StatusCode(500, new { message = $"Lỗi hệ thống: {ex.Message}" });
+			}
+		}
+
+		[HttpDelete("{id}")]
+		public async Task<IActionResult> Delete(int id)
+		{
+			try
+			{
+				await _contentOptimizationService.DeleteAsync(id);
+				return Ok(new { message = "Xóa bản ghi tối ưu nội dung thành công." });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
 			}
 		}
 	}

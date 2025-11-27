@@ -51,13 +51,20 @@ namespace SEOBoostAI.Service.Services
 			}
 		}
 
-		public async Task<ContentOptimizationDto> GetContentOptimizationByIdAsync(int id)
+		public async Task<List<ContentOptimizationDto>> GetContentOptimizationsByUserIdAsync(int userId)
 		{
-			var entity = await _contentOptimizationRepository.GetByIdAsync(id);
-			if (entity == null) return null;
+			// Gọi hàm Repository bạn vừa viết
+			var entities = await _contentOptimizationRepository.GetAllByUserIdAsync(userId);
 
-			// Gọi hàm helper (bước 4a) để "giải mã"
-			return MapToDto(entity);
+			if (entities == null || !entities.Any())
+			{
+				return new List<ContentOptimizationDto>();
+			}
+
+			// Map sang DTO
+			return entities.Select(entity => MapToDto(entity))
+						   .Where(dto => dto != null)
+						   .ToList();
 		}
 
 		public async Task<List<ContentOptimizationDto>> GetContentOptimizationsAsync()
@@ -67,6 +74,7 @@ namespace SEOBoostAI.Service.Services
 			// "Giải mã" và "Map" hàng loạt
 			var dtos = entities.Select(entity => MapToDto(entity))
 							   .Where(dto => dto != null) // Lọc bỏ lỗi (nếu có)
+							   .OrderByDescending(co => co.CreatedAt)
 							   .ToList();
 			return dtos;
 		}

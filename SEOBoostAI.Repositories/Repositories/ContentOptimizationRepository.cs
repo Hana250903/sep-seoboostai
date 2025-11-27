@@ -15,9 +15,9 @@ namespace SEOBoostAI.Repository.Repositories
 	public class ContentOptimizationRepository : GenericRepository<ContentOptimization>, IContentOptimizationRepository
 	{
 
-        public ContentOptimizationRepository(SEP_SEOBoostAIContext context): base(context) { }
+		public ContentOptimizationRepository(SEP_SEOBoostAIContext context) : base(context) { }
 
-        public async Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationWithPaginateAsync(SearchTransactionRequest searchRequest)
+		public async Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationWithPaginateAsync(SearchTransactionRequest searchRequest)
 		{
 			int currentPage = searchRequest.CurrentPage ?? 1;
 			int pageSize = searchRequest.PageSize ?? 10;
@@ -69,6 +69,14 @@ namespace SEOBoostAI.Repository.Repositories
 				Items = contents
 			};
 			return result;
+		}
+
+		public async Task<List<ContentOptimization>> GetAllByUserIdAsync(int userId)
+		{
+			return await _context.Set<ContentOptimization>()
+								 .Where(co => co.UserID == userId)
+								 .OrderByDescending(co => co.CreatedAt)
+								 .ToListAsync();
 		}
 	}
 }

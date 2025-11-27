@@ -12,7 +12,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 	{
 		Task<List<ContentOptimizationDto>> GetContentOptimizationsAsync();
 		Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(SearchTransactionRequest searchRequest);
-		Task<ContentOptimizationDto> GetContentOptimizationByIdAsync(int id);
+		Task<List<ContentOptimizationDto>> GetContentOptimizationsByUserIdAsync(int userId);
 		Task UpdateAsync(ContentOptimization contentOptimization);
 		Task DeleteAsync(int id);
 		Task<ContentOptimizationDto> OptimizeAndCreateAsync(OptimizeRequestDto request, int userId);
