@@ -213,12 +213,11 @@ namespace SEOBoostAI.API.Controllers
 			try
 			{
 				// 1. Validate User (Lấy từ Token cho an toàn)
-				//var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-				//if (!string.IsNullOrEmpty(userIdString))
-				//{
-				//	request.UserId = int.Parse(userIdString);
-				//}
-				var userId = 1;
+				var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				if (!string.IsNullOrEmpty(userIdString))
+				{
+					request.UserId = int.Parse(userIdString);
+				}
 
 				// 2. Gọi Service xử lý mua
 				await _transactionService.PurchaseFeatureAsync(request.UserId, request.FeatureId, request.Quantity);
