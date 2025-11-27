@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SEOBoostAI.Repository.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,5 +15,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task CreateAsync(Repository.Models.Feedback feedback);
 		Task UpdateAsync(Repository.Models.Feedback feedback);
 		Task DeleteAsync(int id);
-	}
+		Task<List<Feedback>> GetFeedbacksByUserIdAsync(int userId);
+
+    }
 }

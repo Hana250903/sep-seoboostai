@@ -15,6 +15,7 @@ namespace SEOBoostAI.API.Controllers
 {
     [Route("api/performance-histories")]
     [ApiController]
+    [Authorize]
     public class PerformanceHistoriesController : ControllerBase
     {
         private readonly IPerformanceHistoryService _performanceHistoryService;
@@ -28,10 +29,20 @@ namespace SEOBoostAI.API.Controllers
 
         // GET: api/<PerformanceHistoriesController>
         [HttpGet]
-        public async Task<PaginationResult<List<PerformanceHistory>>> Get([FromQuery] PerformanceHistoryRequestModel performanceHistoryRequestModel)
+        public async Task<IActionResult> Get([FromQuery] PerformanceHistoryRequestModel performanceHistoryRequestModel)
         {
-            //var userId = _currentUserService.GetUserId();
-            return await _performanceHistoryService.GetPerformanceHistorysWithPagination(performanceHistoryRequestModel.CurrentPage, performanceHistoryRequestModel.PageSize, performanceHistoryRequestModel.UserId);
+            var userIdString = User.FindFirstValue("user_ID");
+            if (!int.TryParse(userIdString, out int userId))
+            {
+                return Unauthorized();
+            }
+            var result = await _performanceHistoryService.GetPerformanceHistorysWithPagination(performanceHistoryRequestModel.CurrentPage, performanceHistoryRequestModel.PageSize, userId);
+            return Ok(new ResultModel<PaginationResult<List<PerformanceHistory>>>
+            {
+                Success = true,
+                Message = "Performance histories retrieved successfully.",
+                Data = result
+            });
         }
 
         [HttpGet("{id}")]
@@ -44,7 +55,12 @@ namespace SEOBoostAI.API.Controllers
                 {
                     return NotFound();
                 }
-                return Ok(result);
+                return Ok(new ResultModel<PerformanceHistory>
+                {
+                    Success = true,
+                    Message = "Performance history retrieved successfully.",
+                    Data = result
+                });
             }
             catch (Exception ex)
             {
@@ -53,34 +69,55 @@ namespace SEOBoostAI.API.Controllers
         }
 
         // POST api/<PerformanceHistoriesController>
-        //[Authorize]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] PerformanceHistoryViewModel performanceHistoryViewModel)
         {
-            //var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            //if (!int.TryParse(userIdString, out int userId))
-            //{
-            //    return Unauthorized();
-            //}
-
-            var performanceHistory = await _performanceHistoryService.AnalysisPerformanceHistoryAsync(performanceHistoryViewModel.UserId, performanceHistoryViewModel.Url, performanceHistoryViewModel.Strategy, performanceHistoryViewModel.FeatureId);
-
-            return Ok(performanceHistory);
+            var userIdString = User.FindFirstValue("user_ID");
+            if (!int.TryParse(userIdString, out int userId))
+            {
+                return Unauthorized();
+            }
+            try
+            {
+                var performanceHistory = await _performanceHistoryService.AnalysisPerformanceHistoryAsync(userId, performanceHistoryViewModel.Url, performanceHistoryViewModel.Strategy, performanceHistoryViewModel.FeatureId);
+                return Ok(new ResultModel<PerformanceHistory>
+                {
+                    Success = true,
+                    Message = "Performance history created successfully.",
+                    Data = performanceHistory
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+            
         }
 
-        //[Authorize]
         [HttpPut]
         public async Task<IActionResult> Put([FromBody] PerformanceHistoryUpdateModel performanceHistoryUpdateModel)
         {
-            //var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            //if (!int.TryParse(userIdString, out int userId))
-            //{
-            //    return Unauthorized();
-            //}
+            var userIdString = User.FindFirstValue("user_ID");
+            if (!int.TryParse(userIdString, out int userId))
+            {
+                return Unauthorized();
+            }
 
-            var existingPerformanceHistory = await _performanceHistoryService.ReAnalyzePerformanceHistoryAsync(performanceHistoryUpdateModel.PerformanceHistoryId, performanceHistoryUpdateModel.UserId, performanceHistoryUpdateModel.FeatureId);
+            try
+            {
+                var existingPerformanceHistory = await _performanceHistoryService.ReAnalyzePerformanceHistoryAsync(performanceHistoryUpdateModel.PerformanceHistoryId, userId, performanceHistoryUpdateModel.FeatureId);
 
-            return Ok(existingPerformanceHistory);
+                return Ok(new ResultModel<PerformanceHistory>
+                {
+                    Success = true,
+                    Message = "Performance history updated successfully.",
+                    Data = existingPerformanceHistory
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
     }
 }

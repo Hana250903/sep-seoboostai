@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
@@ -11,6 +12,7 @@ namespace SEOBoostAI.API.Controllers
 {
     [Route("api/analysis-snapshot")]
     [ApiController]
+    [Authorize]
     public class AnalysisSnapshotsController : ControllerBase
     {
         private readonly IAnalysisSnapshotService _analysisSnapshotService;
@@ -24,27 +26,51 @@ namespace SEOBoostAI.API.Controllers
         [HttpGet("{currentPage}/{pageSize}")]
         public async Task<IActionResult> Get(int currentPage, int pageSize)
         {
-            var result = await _analysisSnapshotService.GetAnalysisSnapshotsWithPagination(currentPage, pageSize);
-
-            return Ok(new ResultModel<PaginationResult<List<AnalysisSnapshot>>>
+            try
             {
-                Success = true,
-                Message = "Analysis snapshots retrieved successfully.",
-                Data = result
-            });
+                var result = await _analysisSnapshotService.GetAnalysisSnapshotsWithPagination(currentPage, pageSize);
+
+                return Ok(new ResultModel<PaginationResult<List<AnalysisSnapshot>>>
+                {
+                    Success = true,
+                    Message = "Analysis snapshots retrieved successfully.",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResultModel<PaginationResult<List<AnalysisSnapshot>>>
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    Data = null
+                });
+            }
         }
 
         // GET api/<AnalysisSnapshotsController>/5
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            var result = await _analysisSnapshotService.GetAnalysisSnapshotByIdAsync(id);
-            return Ok(new ResultModel<AnalysisSnapshot>
+            try
             {
-                Success = true,
-                Message = "Analysis snapshot retrieved successfully.",
-                Data = result
-            });
+                var result = await _analysisSnapshotService.GetAnalysisSnapshotByIdAsync(id);
+                return Ok(new ResultModel<AnalysisSnapshot>
+                {
+                    Success = true,
+                    Message = "Analysis snapshot retrieved successfully.",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResultModel<AnalysisSnapshot>
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    Data = null
+                });
+            }
         }
     }
 }

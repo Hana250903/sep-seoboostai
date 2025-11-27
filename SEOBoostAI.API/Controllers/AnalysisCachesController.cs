@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
@@ -10,8 +11,9 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.API.Controllers
 {
-    [Route("api/analysisCache")]
+    [Route("api/analysis-cache")]
     [ApiController]
+    [Authorize]
     public class AnalysisCachesController : ControllerBase
     {
         private readonly IAnalysisCacheService _analysisCacheService;

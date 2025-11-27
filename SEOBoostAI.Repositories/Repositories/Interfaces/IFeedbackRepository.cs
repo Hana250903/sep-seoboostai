@@ -12,5 +12,8 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
     public interface IFeedbackRepository : IGenericRepository<Feedback>
     {
         Task<PaginationResult<List<Feedback>>> GetFeedbackWithPaginateAsync(int currentPage, int pageSize);
+        Task<List<Feedback>> GetFeedbackByUserIdAsync(int userId);
+        Task<Feedback> GetFeedbackByIdAsync(int feedbackId);
+        Task UpdateFeedback(Feedback feedback);
     }
 }

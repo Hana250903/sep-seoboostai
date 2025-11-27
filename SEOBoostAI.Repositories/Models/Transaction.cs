@@ -2,55 +2,36 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Index("GatewayTransactionId", Name = "UQ__Transact__CAD5B8E65B3D00EC", IsUnique = true)]
 public partial class Transaction
 {
-    [Key]
     public int TransactionID { get; set; }
 
     public int WalletID { get; set; }
 
-    [Column(TypeName = "money")]
     public decimal Money { get; set; }
 
-    [StringLength(100)]
     public string GatewayTransactionId { get; set; }
 
-    [StringLength(100)]
     public string BankTransId { get; set; }
 
-    [StringLength(50)]
     public string PaymentMethod { get; set; }
 
-    [Required]
-    [StringLength(50)]
     public string Type { get; set; }
 
-    [StringLength(255)]
     public string Description { get; set; }
 
-    [Required]
-    [StringLength(20)]
     public string Status { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime RequestTime { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? CompletedTime { get; set; }
 
     public bool IsDeleted { get; set; }
 
-    [InverseProperty("Transaction")]
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
-    [ForeignKey("WalletID")]
-    [InverseProperty("Transactions")]
     public virtual Wallet Wallet { get; set; }
 }

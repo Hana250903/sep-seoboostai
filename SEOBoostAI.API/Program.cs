@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SEOBoostAI.API;
+using SEOBoostAI.API.Infrastructure;
 using SEOBoostAI.API.Mappers;
 using SEOBoostAI.Service.Services.Interfaces;
 using System.Text;
@@ -65,10 +66,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddSignalR();
+
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("AllowAll", policy =>
-		policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+		policy.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader().AllowCredentials());
 });
 
 builder.Services.AddSingleton(provider =>
@@ -119,6 +122,8 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseCors("AllowAll");
+
+app.MapHub<ChatHub>("/chatHub");
 
 app.UseHttpsRedirection();
 

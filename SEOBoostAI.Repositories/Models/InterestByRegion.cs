@@ -2,34 +2,22 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
-[Table("InterestByRegion")]
-[Index("TrendSearchId", Name = "IX_InterestByRegion_TrendSearchId")]
 public partial class InterestByRegion
 {
-    [Key]
     public int Id { get; set; }
 
     public int TrendSearchId { get; set; }
 
-    [Required]
-    [StringLength(255)]
     public string LocationName { get; set; }
 
     public int InterestValue { get; set; }
 
-    [Column(TypeName = "decimal(10, 8)")]
     public decimal? Latitude { get; set; }
 
-    [Column(TypeName = "decimal(11, 8)")]
     public decimal? Longitude { get; set; }
 
-    [ForeignKey("TrendSearchId")]
-    [InverseProperty("InterestByRegions")]
     public virtual TrendSearch TrendSearch { get; set; }
 }

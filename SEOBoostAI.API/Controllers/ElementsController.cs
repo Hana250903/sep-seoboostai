@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service;
@@ -9,8 +10,9 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.API.Controllers
 {
-    [Route("api/element")]
+    [Route("api/elements")]
     [ApiController]
+    [Authorize]
     public class ElementsController : ControllerBase
     {
         private readonly IElementService _elementService;
@@ -41,9 +43,27 @@ namespace SEOBoostAI.API.Controllers
         }
 
         [HttpGet("analysis/{analysisCacheId}")]
-        public async Task<IEnumerable<Element>> GetElementsByAnalysisCacheId(int analysisCacheId)
+        public async Task<IActionResult> GetElementsByAnalysisCacheId(int analysisCacheId)
         {
-            return await _elementService.GetElementsByAnalysisCacheIdAsync(analysisCacheId);
+            try
+            {
+                var elements = await _elementService.GetElementsByAnalysisCacheIdAsync(analysisCacheId);
+                return Ok(new ResultModel<List<Element>>
+                {
+                    Success = true,
+                    Message = "Elements retrieved successfully.",
+                    Data = elements
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResultModel<List<Element>>
+                {
+                    Success = false,
+                    Message = $"An error occurred while retrieving elements: {ex.Message}",
+                    Data = null
+                });
+            }
         }
 
         // POST api/<ElementsController>
@@ -81,11 +101,21 @@ namespace SEOBoostAI.API.Controllers
             try
             {
                 var result = await _elementService.Suggestion(analysisCacheID);
-                return Ok(result);
+                return Ok(new ResultModel<List<Element>>
+                {
+                    Success = true,
+                    Message = "Suggestions generated successfully.",
+                    Data = result
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Error = ex.Message });
+                return StatusCode(500, new ResultModel<List<Element>>
+                {
+                    Success = false,
+                    Message = $"An error occurred while generating suggestions: {ex.Message}",
+                    Data = null
+                });
             }
         }
     }

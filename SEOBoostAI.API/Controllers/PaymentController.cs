@@ -12,6 +12,7 @@ namespace SEOBoostAI.API.Controllers
 {
 	[Route("api/payment")]
 	[ApiController]
+	[Authorize]
 	public class PaymentController : ControllerBase
 	{
 		private readonly Net.payOS.PayOS _payOS;

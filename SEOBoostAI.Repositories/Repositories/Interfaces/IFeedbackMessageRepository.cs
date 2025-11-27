@@ -1,5 +1,4 @@
 ﻿using SEOBoostAI.Repository.GenericRepository;
-using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using System;
 using System.Collections.Generic;
@@ -9,11 +8,8 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
-
-    public interface IQueryHistoryRepository : IGenericRepository<QueryHistory>
+    public interface IFeedbackMessageRepository : IGenericRepository<FeedbackMessage>
     {
-        Task<PaginationResult<List<QueryHistory>>> GetQueryHistorisWithPaginateAsync(int userId ,int currentPage, int pageSize);
-
+        Task<List<FeedbackMessage>> GetChatHistoryAsync(int feedbackId);
     }
-
 }

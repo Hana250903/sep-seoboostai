@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
@@ -10,8 +11,9 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/users")]
     [ApiController]
+    [Authorize]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -29,9 +31,27 @@ namespace SEOBoostAI.API.Controllers
         }
 
         [HttpGet("filter")]
-        public async Task<PaginationResult<List<User>>> Get([FromQuery]UserRequestModel userRequestModel)
+        public async Task<IActionResult> Get([FromQuery]UserRequestModel userRequestModel)
         {
-            return await _userService.GetUsersWithPaginateAsync(userRequestModel.CurrentPage, userRequestModel.PageSize, userRequestModel.Role, userRequestModel.IsBanned, userRequestModel.IsDeleted);
+            try
+            {
+                var result = await _userService.GetUsersWithPaginateAsync(userRequestModel.CurrentPage, userRequestModel.PageSize, userRequestModel.Role, userRequestModel.IsBanned, userRequestModel.IsDeleted);
+                return Ok(new ResultModel<PaginationResult<List<User>>>
+                {
+                    Success = true,
+                    Message = "Users retrieved successfully.",
+                    Data = result
+                });
+            } 
+            catch (Exception ex)
+            {
+                return BadRequest(new ResultModel<PaginationResult<List<User>>>
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    Data = null
+                });
+            }
         }
 
         // GET api/<UsersController>/5
@@ -49,11 +69,28 @@ namespace SEOBoostAI.API.Controllers
             return Ok(user);
         }
 
-        [HttpPost("update-role/{id}")]
-        public async Task<IActionResult> Post(int id)
+        [HttpPut("update-role/{id}")]
+        public async Task<IActionResult> Put(int id)
         {
-            var result = await _userService.UpdateUserToStaff(id);
-            return Ok(result);
+            try
+            {
+                var result = await _userService.UpdateUserToStaff(id);
+                return Ok(new ResultModel<User>
+                {
+                    Success = true,
+                    Message = "User role updated to Staff successfully.",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ResultModel<User>
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    Data = null
+                });
+            }
         }
 
         // PUT api/<UsersController>

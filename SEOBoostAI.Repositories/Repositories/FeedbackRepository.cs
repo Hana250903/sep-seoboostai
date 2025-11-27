@@ -37,11 +37,19 @@ namespace SEOBoostAI.Repository.Repositories
 		public async Task<List<Feedback>> GetFeedbackByUserIdAsync(int userId)
 		{
 			return await _context.Set<Feedback>()
+				.Include(f => f.FeedbackMessages)
 				.Where(f => f.UserID == userId)
 				.ToListAsync();
         }
 
-		public async Task UpdateFeedback(Feedback feedback)
+        public async Task<Feedback> GetFeedbackByIdAsync(int feedbackId)
+		{
+			return await _context.Set<Feedback>()
+				.Include(f => f.FeedbackMessages)
+				.FirstOrDefaultAsync(f => f.FeedbackID == feedbackId);
+        }
+
+        public async Task UpdateFeedback(Feedback feedback)
 		{
 			feedback.UpdatedAt = DateTime.UtcNow.AddHours(7);
             _context.Set<Feedback>().Update(feedback);

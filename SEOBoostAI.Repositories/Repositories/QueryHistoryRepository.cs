@@ -17,14 +17,18 @@ namespace SEOBoostAI.Repository.Repositories
     {
         public QueryHistoryRepository(SEP_SEOBoostAIContext context) : base(context) { }
 
-        public async Task<PaginationResult<List<QueryHistory>>> GetQueryHistorisWithPaginateAsync(int userId,int currentPage, int pageSize)
+        public async Task<PaginationResult<List<QueryHistory>>> GetQueryHistorisWithPaginateAsync(int userId, int currentPage, int pageSize)
         {
-            var query = _context.Set<QueryHistory>().Where(q => q.MemberId == userId).AsQueryable();
+            // THÊM OrderByDescending Ở ĐÂY:
+            var query = _context.Set<QueryHistory>()
+                                .Where(q => q.MemberId == userId)
+                                .OrderByDescending(q => q.CreatedAt) // <-- Sắp xếp mới nhất lên đầu
+                                .AsQueryable();
 
             var totalItems = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 
-            var queryHistoris = await query
+            var queryHistories = await query // (Tôi sửa lại chính tả Historis -> Histories cho đẹp nhé)
                 .Skip((currentPage - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -35,7 +39,7 @@ namespace SEOBoostAI.Repository.Repositories
                 TotalPages = totalPages,
                 CurrentPage = currentPage,
                 PageSize = pageSize,
-                Items = queryHistoris
+                Items = queryHistories
             };
             return result;
         }
