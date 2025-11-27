@@ -83,7 +83,7 @@ namespace SEOBoostAI.Service.Services
 			// LƯU Ý: Bạn cần thêm phương thức GetWalletByUserIdAsync
 			// vào IWalletRepository và triển khai nó ở lớp Repository
 			// (Nó sẽ dùng LINQ: _context.Wallets.FirstOrDefaultAsync(w => w.UserID == userId))
-			var wallet = await _walletRepositoriy.GetByIdAsync(userId);
+			var wallet = await _walletRepositoriy.GetWalletByUserIdAsync(userId);
 			if (wallet == null)
 			{
 				throw new Exception("Wallet not found for this user.");
