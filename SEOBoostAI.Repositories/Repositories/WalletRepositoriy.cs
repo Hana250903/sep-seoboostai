@@ -32,5 +32,10 @@ namespace SEOBoostAI.Repository.Repositories
 			};
 			return result;
 		}
+
+		public async Task<Wallet> GetWalletByUserIdAsync(int userId)
+		{
+			return await _context.Set<Wallet>().FirstOrDefaultAsync(w => w.UserID == userId);
+		}
 	}
 }

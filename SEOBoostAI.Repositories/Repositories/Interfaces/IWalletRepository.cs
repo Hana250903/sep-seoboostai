@@ -12,5 +12,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 	public interface IWalletRepository : IGenericRepository<Wallet>
 	{
 		Task<PaginationResult<List<Wallet>>> GetWalletsWithPaginateAsync(int currentPage, int pageSize);
+		Task<Wallet> GetWalletByUserIdAsync(int userId);
 	}
 }
