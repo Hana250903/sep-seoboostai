@@ -24,7 +24,7 @@ namespace SEOBoostAI.Service.Services
             _systemConfigService = systemConfigService;
         }
 
-        public async Task<PageSpeedResponse> GetPageSpeedAsync(string url, string strategy = "DESKTOP")
+        public async Task<PageSpeedResponse> GetPageSpeedAsync(string url, string strategy)
         {
             string endpoint = _systemConfigService.GetValue<string>("PageSpeedAPI", "link");
             var apiKey = _systemConfigService.GetValue<string>("ApiKey", "api");

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -9,6 +10,7 @@ namespace SEOBoostAI.API.Controllers
 {
     [Route("api/admin-settings")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class AdminSettingsController : ControllerBase
     {
         private readonly ISystemConfigService _systemConfigService;

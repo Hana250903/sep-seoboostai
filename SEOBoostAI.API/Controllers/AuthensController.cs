@@ -6,7 +6,7 @@ using SEOBoostAI.Service.Ultils;
 
 namespace SEOBoostAI.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/authen")]
     [ApiController]
     public class AuthensController : ControllerBase
     {

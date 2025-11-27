@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -7,6 +8,7 @@ namespace SEOBoostAI.API.Controllers
 {
 	[Route("api/user-monthly-free-quotas")]
 	[ApiController]
+	[Authorize]
 	public class UserMonthlyFreeQuotasController : ControllerBase
 	{
 		private readonly IUserMonthlyFreeQuotaService _userMonthlyFreeQuotaService;
