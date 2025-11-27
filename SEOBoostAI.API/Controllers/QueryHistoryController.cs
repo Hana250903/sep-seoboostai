@@ -9,6 +9,7 @@ namespace SEOBoostAI.API.Controllers
     // [Authorize] // Bật lại khi cần
     [Route("api/query-histories")]
     [ApiController]
+    [Authorize]
     public class QueryHistoryController : ControllerBase
     {
         private readonly ITrendSearchService _trendSearchService;

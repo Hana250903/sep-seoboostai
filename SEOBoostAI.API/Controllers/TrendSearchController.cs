@@ -6,7 +6,7 @@ using SEOBoostAI.Service.Ultils;
 
 namespace SEOBoostAI.API.Controllers
 {
-    [Authorize] // 1. BẬT LẠI BẢO MẬT
+    [Authorize]
     [ApiController]
     [Route("api/trends")]
     public class TrendSearchController : ControllerBase
