@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Net.payOS.Types;
 using PayOS;
 using SEOBoostAI.API.ViewModels.RequestModels;
+using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
 using System.Security.Claims;
 using static OpenQA.Selenium.PrintOptions;
@@ -213,14 +214,16 @@ namespace SEOBoostAI.API.Controllers
 			try
 			{
 				// 1. Validate User (Lấy từ Token cho an toàn)
-				var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-				if (!string.IsNullOrEmpty(userIdString))
+				var userIdString = User.FindFirst("user_ID")?.Value;
+				if (string.IsNullOrEmpty(userIdString))
 				{
-					request.UserId = int.Parse(userIdString);
+					return Unauthorized(new { message = "Không tìm thấy thông tin người dùng trong Token." });
 				}
 
+				var userId = int.Parse(userIdString);
+
 				// 2. Gọi Service xử lý mua
-				await _transactionService.PurchaseFeatureAsync(request.UserId, request.FeatureId, request.Quantity);
+				await _transactionService.PurchaseFeatureAsync(userId, request.FeatureId, request.Quantity);
 
 				return Ok(new { message = "Mua gói thành công! Số lượt đã được cộng thêm." });
 			}
