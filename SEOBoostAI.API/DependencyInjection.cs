@@ -31,6 +31,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IAnalysisSnapshotRepository, AnalysisSnapshotRepository>();
             services.AddScoped<IPurchasedFeatureRepository, PurchasedFeatureRepository>();
             services.AddScoped<IFeedbackMessageRepository, FeedbackMessageRepository>();
+            services.AddScoped<ISpamCacheRepository, SpamCacheRepository>();
 
 			services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
@@ -52,6 +53,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IFeedbackMessageService, FeedbackMessageService>();
             services.AddScoped<IChatNotifier, SignalRChatNotifier>();
             services.AddScoped<IChatService, ChatService>();
+            services.AddScoped<ISpamProtectionService, SpamProtectionService>();
 
             // test xong xóa ( 3 dòng dưới )
             services.AddScoped<IAdsPlannerService, AdsPlannerService>();
@@ -78,6 +80,7 @@ namespace SEOBoostAI.API
             });
             services.AddHttpClient();
             services.AddLogging();
+            services.AddMemoryCache();
             return services;
         }
     }
