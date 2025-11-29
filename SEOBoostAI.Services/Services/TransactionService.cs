@@ -130,6 +130,12 @@ namespace SEOBoostAI.Service.Services
 					transaction.BankTransId = bankTransId;
 					transaction.CompletedTime = DateTime.UtcNow.AddHours(7);
 
+					if (status == "FAILED" || status == "CANCELED")
+					{
+						// Ví dụ: Ghi chú thêm vào Description lý do thất bại
+						transaction.Description += "Giao dịch thất bại";
+					}
+
 					// 3. Lưu vào CSDL
 					await UpdateAsync(transaction);
 				}

@@ -17,15 +17,21 @@ namespace SEOBoostAI.API.Controllers
 	{
 		private readonly Net.payOS.PayOS _payOS;
 		private readonly ITransactionService _transactionService;
+		private readonly ISystemConfigService _systemConfigService;
 		private readonly IWalletService _walletService;
 		private readonly IUserService _userService;
+		private readonly string _returnUrl;
+		private readonly string _cancelUrl;
 
-		public PaymentController(Net.payOS.PayOS payOS, ITransactionService transactionService, IWalletService walletService, IUserService userService)
+		public PaymentController(Net.payOS.PayOS payOS, ITransactionService transactionService, ISystemConfigService systemConfigService , IWalletService walletService, IUserService userService)
 		{
 			_payOS = payOS;
 			_transactionService = transactionService;
+			_systemConfigService = systemConfigService;
 			_walletService = walletService;
 			_userService = userService;
+			_returnUrl = _systemConfigService.GetValue<string>("Payment:ReturnUrl","");
+			_cancelUrl = _systemConfigService.GetValue<string>("Payment:CancelUrl","");
 		}
 
 		[Authorize]
@@ -61,13 +67,16 @@ namespace SEOBoostAI.API.Controllers
 				// 4. Dùng TransactionID làm Order Code
 				int orderCode = newTransaction.TransactionID;
 
+				var expiredAt = (int)DateTimeOffset.UtcNow.AddMinutes(10).ToUnixTimeSeconds();
+
 				var paymentData = new PaymentData(
 					orderCode: orderCode,
 					amount: request.Amount,
 					description: $"SEOBoostAI - Nap tien ",
 					items: new List<ItemData>(), // Provide an empty list or populate as needed
-					cancelUrl: "http://your-react-app-domain.com/payment/failed",
-					returnUrl: "http://your-react-app-domain.com/payment/success"
+					cancelUrl: _cancelUrl,
+					returnUrl: _returnUrl,
+					expiredAt: expiredAt
 				);
 
 				// SỬA LỖI 1: createPaymentLink -> CreatePaymentLink
@@ -98,9 +107,9 @@ namespace SEOBoostAI.API.Controllers
 			{
 				WebhookData verifiedData = _payOS.verifyPaymentWebhookData(webhookBody);
 
+				int transactionId = (int)verifiedData.orderCode;
 				if (verifiedData.code == "00") // Thanh toán thành công
 				{
-					int transactionId = (int)verifiedData.orderCode;
 					string gatewayTransId = verifiedData.reference;
 					decimal amountPaid = verifiedData.amount;
 					string bankTransInfo = "";
@@ -127,6 +136,16 @@ namespace SEOBoostAI.API.Controllers
 					{
 						await _walletService.TopUp(transaction.WalletID, transaction.Money);
 					}
+				}	
+				else
+				{
+					// Cập nhật trạng thái FAILED
+					await _transactionService.UpdateTransactionStatusAsync(
+						transactionId,
+						"FAILED", // Hoặc "CANCELED" tùy vào mã lỗi cụ thể nếu muốn chi tiết hơn
+						verifiedData.reference,
+						"Lỗi: " + verifiedData.desc // Lưu lý do lỗi vào BankTransId hoặc Description
+					);
 				}
 				return Ok();
 			}
@@ -149,11 +168,12 @@ namespace SEOBoostAI.API.Controllers
 					return NotFound("Không tìm thấy giao dịch");
 				}
 
-				// 2. Nếu Webhook đã chạy và cập nhật rồi -> Trả về luôn
+				// 2. Nếu DB đã chốt trạng thái (Xong hoặc Hủy) -> Trả về luôn
 				if (transaction.Status == "COMPLETED")
-				{
-					return Ok(new { status = "COMPLETED", message = "Giao dịch đã thành công" });
-				}
+					return Ok(new { status = "COMPLETED", message = "Giao dịch thành công" });
+
+				if (transaction.Status == "CANCELED" || transaction.Status == "FAILED")
+					return Ok(new { status = "CANCELED", message = "Giao dịch đã bị hủy hoặc thất bại" });
 
 				// 3. Nếu vẫn là PENDING -> Chủ động hỏi PayOS ngay lập tức
 				// (Phòng trường hợp Webhook đến chậm hoặc bị lỗi)
@@ -182,8 +202,21 @@ namespace SEOBoostAI.API.Controllers
 
 					return Ok(new { status = "COMPLETED", message = "Giao dịch thành công (đã cập nhật)" });
 				}
+				// --- TRƯỜNG HỢP 2: ĐÃ HỦY HOẶC HẾT HẠN (THÊM MỚI) ---
+				else if (paymentLinkInfo.status == "CANCELLED" || paymentLinkInfo.status == "EXPIRED")
+				{
+					// Cập nhật DB thành CANCELED để lần sau không phải hỏi PayOS nữa
+					await _transactionService.UpdateTransactionStatusAsync(
+						orderCode,
+						"CANCELED", // Hoặc "FAILED" tùy quy ước của bạn
+						paymentLinkInfo.id,
+						"Người dùng hủy hoặc link hết hạn"
+					);
 
-				// Nếu vẫn chưa thanh toán
+					return Ok(new { status = "CANCELED", message = "Giao dịch đã bị hủy" });
+				}
+
+				// --- TRƯỜNG HỢP 3: VẪN ĐANG TREO (PENDING) ---
 				return Ok(new { status = "PENDING", message = "Đang chờ thanh toán" });
 			}
 			catch (Exception ex)
