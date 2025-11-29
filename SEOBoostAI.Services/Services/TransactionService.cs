@@ -200,7 +200,7 @@ namespace SEOBoostAI.Service.Services
 			{
 				WalletID = wallet.WalletID,
 				Money = totalCost, // Số tiền bị trừ
-				GatewayTransactionId = null, // Không qua cổng thanh toán
+				GatewayTransactionId = "W_" + Guid.NewGuid().ToString("N"), 
 				BankTransId = null,
 				Type = "PURCHASE", // Loại giao dịch Mua hàng
 				Status = "COMPLETED", // Mua bằng ví nên thành công ngay

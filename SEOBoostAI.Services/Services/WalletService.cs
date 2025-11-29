@@ -27,10 +27,6 @@ namespace SEOBoostAI.Service.Services
 			return await _walletRepositoriy.GetWalletsWithPaginateAsync(currentPage, pageSize);
 		}
 
-		public async Task<Wallet> GetWalletByIdAsync(int id)
-		{
-			return await _walletRepositoriy.GetByIdAsync(id);
-		}
 
 		public async Task<List<Wallet>> GetWalletsAsync()
 		{
@@ -77,12 +73,8 @@ namespace SEOBoostAI.Service.Services
 			}
 		}
 
-		// HÀM MỚI (Lấy ví bằng UserID)
 		public async Task<Wallet> GetWalletByUserIdAsync(int userId)
 		{
-			// LƯU Ý: Bạn cần thêm phương thức GetWalletByUserIdAsync
-			// vào IWalletRepository và triển khai nó ở lớp Repository
-			// (Nó sẽ dùng LINQ: _context.Wallets.FirstOrDefaultAsync(w => w.UserID == userId))
 			var wallet = await _walletRepositoriy.GetWalletByUserIdAsync(userId);
 			if (wallet == null)
 			{

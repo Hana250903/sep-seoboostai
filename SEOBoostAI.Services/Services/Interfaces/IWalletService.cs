@@ -12,7 +12,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
 	{
 		Task<List<Wallet>> GetWalletsAsync();
 		Task<PaginationResult<List<Wallet>>> GetWalletsWithPaginateAsync(int currentPage, int pageSize);
-		Task<Wallet> GetWalletByIdAsync(int id);
 		Task CreateAsync(Wallet wallet);
 		Task UpdateAsync(Wallet wallet);
 		Task DeleteAsync(int id);

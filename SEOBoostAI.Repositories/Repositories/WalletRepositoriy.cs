@@ -16,7 +16,7 @@ namespace SEOBoostAI.Repository.Repositories
 		public WalletRepositoriy(SEP_SEOBoostAIContext context) : base(context) { }
 		public async Task<PaginationResult<List<Wallet>>> GetWalletsWithPaginateAsync(int currentPage, int pageSize)
 		{
-			var query = _context.Set<Wallet>().AsQueryable();
+			var query = _context.Set<Wallet>().Include(w => w.User).Include(w => w.Transactions).AsQueryable();
 			var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 			var wallets = await query.Skip((currentPage - 1) * pageSize)
@@ -35,7 +35,7 @@ namespace SEOBoostAI.Repository.Repositories
 
 		public async Task<Wallet> GetWalletByUserIdAsync(int userId)
 		{
-			return await _context.Set<Wallet>().FirstOrDefaultAsync(w => w.UserID == userId);
+			return await _context.Set<Wallet>().Include(w => w.Transactions).Include(w => w.User).FirstOrDefaultAsync(w => w.UserID == userId);
 		}
 	}
 }
