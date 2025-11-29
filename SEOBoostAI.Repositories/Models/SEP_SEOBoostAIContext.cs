@@ -36,6 +36,8 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
     public virtual DbSet<FeedbackMessage> FeedbackMessages { get; set; }
 
+    public virtual DbSet<GeminiKey> GeminiKeys { get; set; }
+
     public virtual DbSet<InterestByRegion> InterestByRegions { get; set; }
 
     public virtual DbSet<InterestOverTime> InterestOverTimes { get; set; }
@@ -80,13 +82,13 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
 //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//        => optionsBuilder.UseSqlServer("Data Source=LAPTOP-M0B2NAEA\\SQLEXPRESS;Initial Catalog=SEP_SEOBoostAI;Persist Security Info=True;User ID=sa;Password=12345;Encrypt=False");
+//        => optionsBuilder.UseSqlServer("Data Source=HANAYUKI;Initial Catalog=SEP_SEOBoostAI;Persist Security Info=True;User ID=sa;Password=12345;Encrypt=False");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AdsKeywordDatum>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__AdsKeywo__3214EC07D1E4D307");
+            entity.HasKey(e => e.Id).HasName("PK__AdsKeywo__3214EC07347CCCB7");
 
             entity.Property(e => e.AvgSearchVolume).HasMaxLength(50);
             entity.Property(e => e.Competition).HasMaxLength(50);
@@ -96,12 +98,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.HasOne(d => d.AdsSearchRequest).WithMany(p => p.AdsKeywordData)
                 .HasForeignKey(d => d.AdsSearchRequestId)
-                .HasConstraintName("FK__AdsKeywor__AdsSe__45BE5BA9");
+                .HasConstraintName("FK__AdsKeywor__AdsSe__2CF2ADDF");
         });
 
         modelBuilder.Entity<AdsSearchRequest>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__AdsSearc__3214EC073A9ED2A0");
+            entity.HasKey(e => e.Id).HasName("PK__AdsSearc__3214EC07D619DBDD");
 
             entity.HasIndex(e => e.QueryHash, "IX_AdsSearchRequests_QueryHash");
 
@@ -109,14 +111,15 @@ public partial class SEP_SEOBoostAIContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.QueryHash)
-                .HasMaxLength(8000)
-                .HasComputedColumnSql("(hashbytes('SHA2_256',CONVERT([varbinary](max),[QueryList])))", true);
+                .HasMaxLength(32)
+                .HasComputedColumnSql("(CONVERT([binary](32),hashbytes('SHA2_256',CONVERT([varbinary](max),[QueryList]))))", true)
+                .IsFixedLength();
             entity.Property(e => e.QueryList).IsRequired();
         });
 
         modelBuilder.Entity<AnalysisCache>(entity =>
         {
-            entity.HasKey(e => e.AnalysisCacheID).HasName("PK__Analysis__64960DCD7E3255CF");
+            entity.HasKey(e => e.AnalysisCacheID).HasName("PK__Analysis__64960DCD987565BA");
 
             entity.ToTable("AnalysisCache");
 
@@ -141,7 +144,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<AnalysisSnapshot>(entity =>
         {
-            entity.HasKey(e => e.SnapshotID).HasName("PK__Analysis__664F570B606BCB0C");
+            entity.HasKey(e => e.SnapshotID).HasName("PK__Analysis__664F570B0713B35F");
 
             entity.ToTable("AnalysisSnapshot");
 
@@ -157,7 +160,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<ContentOptimization>(entity =>
         {
-            entity.HasKey(e => e.ContentOptimizationID).HasName("PK__ContentO__27E3172DA7D43B50");
+            entity.HasKey(e => e.ContentOptimizationID).HasName("PK__ContentO__27E3172DA928431C");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -172,7 +175,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Element>(entity =>
         {
-            entity.HasKey(e => e.ElementID).HasName("PK__Elements__A429723A64EEFDAE");
+            entity.HasKey(e => e.ElementID).HasName("PK__Elements__A429723A2769C642");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -188,7 +191,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Feature>(entity =>
         {
-            entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A290686B646");
+            entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A29550637FF");
 
             entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.Name)
@@ -199,7 +202,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Feedback>(entity =>
         {
-            entity.HasKey(e => e.FeedbackID).HasName("PK__Feedback__6A4BEDF6BB88E786");
+            entity.HasKey(e => e.FeedbackID).HasName("PK__Feedback__6A4BEDF683F51149");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -218,9 +221,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<FeedbackMessage>(entity =>
         {
-            entity.HasKey(e => e.MessageID).HasName("PK__Feedback__C87C037CE059E400");
-
-            entity.HasIndex(e => e.FeedbackID, "IX_FeedbackMessages_FeedbackID");
+            entity.HasKey(e => e.MessageID).HasName("PK__Feedback__C87C037CDA68ECF9");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -233,9 +234,27 @@ public partial class SEP_SEOBoostAIContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
+        modelBuilder.Entity<GeminiKey>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__GeminiKe__3214EC078AB6D8F7");
+
+            entity.HasIndex(e => new { e.IsActive, e.RequestsUsedToday, e.RateLimitedUntil }, "IX_GeminiKeys_GetAvailable");
+
+            entity.Property(e => e.ApiKey)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.KeyName).HasMaxLength(100);
+            entity.Property(e => e.LastResetDate).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.RpdLimit).HasDefaultValue(250);
+            entity.Property(e => e.RpmLimit).HasDefaultValue(10);
+            entity.Property(e => e.TpmLimit).HasDefaultValue(250000);
+        });
+
         modelBuilder.Entity<InterestByRegion>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07B3F8A78D");
+            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07DB7AB306");
 
             entity.ToTable("InterestByRegion");
 
@@ -249,12 +268,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestByRegions)
                 .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__InterestB__Trend__0C85DE4D");
+                .HasConstraintName("FK__InterestB__Trend__7A672E12");
         });
 
         modelBuilder.Entity<InterestOverTime>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07A96A35F8");
+            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07ADD5B3AB");
 
             entity.ToTable("InterestOverTime");
 
@@ -267,12 +286,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestOverTimes)
                 .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__InterestO__Trend__05D8E0BE");
+                .HasConstraintName("FK__InterestO__Trend__73BA3083");
         });
 
         modelBuilder.Entity<PerformanceHistory>(entity =>
         {
-            entity.HasKey(e => e.ScanHistoryID).HasName("PK__Performa__3AC3D45749E74ADC");
+            entity.HasKey(e => e.ScanHistoryID).HasName("PK__Performa__3AC3D457BFD7070E");
 
             entity.Property(e => e.ScanTime)
                 .HasDefaultValueSql("(getdate())")
@@ -289,7 +308,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<PurchasedFeature>(entity =>
         {
-            entity.HasKey(e => e.PurchasedFeatureID).HasName("PK__Purchase__2DD96E538B377EB3");
+            entity.HasKey(e => e.PurchasedFeatureID).HasName("PK__Purchase__2DD96E5346F1FBC8");
 
             entity.Property(e => e.PurchaseDate)
                 .HasDefaultValueSql("(getdate())")
@@ -302,7 +321,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<QueryHistory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__QueryHis__3214EC07D4E3FDDE");
+            entity.HasKey(e => e.Id).HasName("PK__QueryHis__3214EC07F309A1E5");
 
             entity.ToTable("QueryHistory");
 
@@ -321,12 +340,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
             entity.HasOne(d => d.Member).WithMany(p => p.QueryHistories)
                 .HasForeignKey(d => d.MemberId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__QueryHist__Membe__17036CC0");
+                .HasConstraintName("FK__QueryHist__Membe__04E4BC85");
         });
 
         modelBuilder.Entity<RegionComparison>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RegionCo__3214EC07D3A87487");
+            entity.HasKey(e => e.Id).HasName("PK__RegionCo__3214EC079E881035");
 
             entity.ToTable("RegionComparison");
 
@@ -341,12 +360,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.HasOne(d => d.TrendSearch).WithMany(p => p.RegionComparisons)
                 .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__RegionCom__Trend__1332DBDC");
+                .HasConstraintName("FK__RegionCom__Trend__01142BA1");
         });
 
         modelBuilder.Entity<RelatedQuery>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RelatedQ__3214EC0706937F3D");
+            entity.HasKey(e => e.Id).HasName("PK__RelatedQ__3214EC07A0DD2BD6");
 
             entity.HasIndex(e => e.TrendSearchId, "IX_RelatedQueries_TrendSearchId");
 
@@ -360,12 +379,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedQueries)
                 .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__RelatedQu__Trend__0F624AF8");
+                .HasConstraintName("FK__RelatedQu__Trend__7D439ABD");
         });
 
         modelBuilder.Entity<RelatedTopic>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RelatedT__3214EC071CBBB13F");
+            entity.HasKey(e => e.Id).HasName("PK__RelatedT__3214EC079041BCA3");
 
             entity.HasIndex(e => e.TrendSearchId, "IX_RelatedTopics_TrendSearchId");
 
@@ -384,12 +403,12 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedTopics)
                 .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__RelatedTo__Trend__08B54D69");
+                .HasConstraintName("FK__RelatedTo__Trend__76969D2E");
         });
 
         modelBuilder.Entity<SystemSetting>(entity =>
         {
-            entity.HasKey(e => e.SettingKey).HasName("PK__SystemSe__01E719AC9DC724D5");
+            entity.HasKey(e => e.SettingKey).HasName("PK__SystemSe__01E719AC3204330A");
 
             entity.Property(e => e.SettingKey).HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(255);
@@ -403,9 +422,9 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Transaction>(entity =>
         {
-            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4B6DCF097F");
+            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4B993679C2");
 
-            entity.HasIndex(e => e.GatewayTransactionId, "UQ__Transact__CAD5B8E65B3D00EC").IsUnique();
+            entity.HasIndex(e => e.GatewayTransactionId, "UQ__Transact__CAD5B8E62A6E5D36").IsUnique();
 
             entity.Property(e => e.BankTransId).HasMaxLength(100);
             entity.Property(e => e.CompletedTime).HasColumnType("datetime");
@@ -429,7 +448,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<TrendSearch>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TrendSea__3214EC0738F5A420");
+            entity.HasKey(e => e.Id).HasName("PK__TrendSea__3214EC071F6417D2");
 
             entity.HasIndex(e => new { e.Query, e.Geolocation, e.Timeframe, e.Language, e.CreatedAt }, "IX_TrendSearches_CacheCheck");
 
@@ -453,9 +472,9 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserID).HasName("PK__Users__1788CCAC37ECD5F1");
+            entity.HasKey(e => e.UserID).HasName("PK__Users__1788CCACF38CE183");
 
-            entity.HasIndex(e => e.UserName, "UQ__Users__C9F28456695A751E").IsUnique();
+            entity.HasIndex(e => e.UserName, "UQ__Users__C9F28456CBB7C042").IsUnique();
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -476,7 +495,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<UserMonthlyFreeQuota>(entity =>
         {
-            entity.HasKey(e => e.UserMonthlyFreeQuotaID).HasName("PK__UserMont__3A7DB1E024543B76");
+            entity.HasKey(e => e.UserMonthlyFreeQuotaID).HasName("PK__UserMont__3A7DB1E073E6B6D5");
 
             entity.HasIndex(e => new { e.UserID, e.FeatureID, e.MonthYear }, "UQ_UserMonthlyQuota").IsUnique();
 
@@ -499,9 +518,9 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<Wallet>(entity =>
         {
-            entity.HasKey(e => e.WalletID).HasName("PK__Wallets__84D4F92E8A5A665E");
+            entity.HasKey(e => e.WalletID).HasName("PK__Wallets__84D4F92ED4EECF78");
 
-            entity.HasIndex(e => e.UserID, "UQ__Wallets__1788CCAD4A18C0AB").IsUnique();
+            entity.HasIndex(e => e.UserID, "UQ__Wallets__1788CCADA5787B24").IsUnique();
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
