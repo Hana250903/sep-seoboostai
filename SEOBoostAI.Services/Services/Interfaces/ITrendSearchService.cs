@@ -11,12 +11,11 @@ namespace SEOBoostAI.Service.Services.Interfaces
 {
     public interface ITrendSearchService
     {
-        // Đây là phương thức nghiệp vụ chính, thực hiện toàn bộ workflow
-        Task<TrendAnalysisResponseDto> AnalyzeTrendQueryAsync(int memberId, string originalQuestion);        // Thêm vào Interface
+        Task<TrendAnalysisResponseDto> AnalyzeTrendQueryAsync(int memberId, string originalQuestion, int featureID);
         Task<List<AdsPlannerItemDto>> GetAdsKeywordsDetailAsync(
             int queryHistoryId,
             int currentUserId,
-            bool onlySuggestions = false); // Thêm tham số này
+            bool onlySuggestions = false);
         Task<PaginationResult<List<QueryHistory>>> GetQueryHistoriesAsync(int memberId, int currentPage, int pageSize);
     }
 }
