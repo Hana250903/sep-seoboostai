@@ -69,7 +69,7 @@ namespace SEOBoostAI.Service.Services
         // === 3. PHƯƠNG THỨC NGHIỆP VỤ CHÍNH ===
         public async Task<TrendAnalysisResponseDto> AnalyzeTrendQueryAsync(int memberId, string originalQuestion, int featureID)
         {
-            if (await _userMonthlyFreeQuotaService.CheckLimit(memberId, featureID))
+            if (!await _userMonthlyFreeQuotaService.CheckLimit(memberId, featureID))
             {
                 throw new Exception("Bạn đã vượt quá hạn mức sử dụng miễn phí hàng tháng cho tính năng này.");
             }
@@ -142,13 +142,13 @@ namespace SEOBoostAI.Service.Services
                 AdsSearchRequestId = adsRequestId 
             };
 
+            await _unitOfWork.BeginTransactionAsync();
             try
             {
                 await _queryHistoryRepo.CreateAsync(historyLog);
-                await _unitOfWork.SaveChangesAsync();
-
                 await _userMonthlyFreeQuotaService.IncrementUsageCount(memberId, featureID);
-
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
                 _logger.LogInformation("Hoàn tất quy trình cho MemberId: {memberId}", memberId);
                 return new TrendAnalysisResponseDto
                 {
@@ -160,6 +160,7 @@ namespace SEOBoostAI.Service.Services
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new Exception("Lỗi khi lưu lịch sử truy vấn: " + ex.Message);
             }
         }
