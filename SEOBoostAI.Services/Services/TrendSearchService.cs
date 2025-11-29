@@ -33,6 +33,7 @@ namespace SEOBoostAI.Service.Services
         private readonly IAdsPlannerService _adsPlannerService;
 
         private readonly IAdsKeywordDatumRepository _adsKeywordDatumRepo;
+        private readonly IUserMonthlyFreeQuotaService _userMonthlyFreeQuotaService;
 
 
         // === 2. CONSTRUCTOR ===
@@ -47,7 +48,8 @@ namespace SEOBoostAI.Service.Services
             IAdsPlannerService adsPlannerService,
             IAdsSearchRequestRepository adsRequestRepo,
             IGeminiAiGoogleAdsService adsEvaluationService,
-            IAdsKeywordDatumRepository adsKeywordDatumRepo
+            IAdsKeywordDatumRepository adsKeywordDatumRepo,
+            IUserMonthlyFreeQuotaService userMonthlyFreeQuotaService
             )
         {
             _unitOfWork = unitOfWork;
@@ -61,11 +63,17 @@ namespace SEOBoostAI.Service.Services
             _adsRequestRepo = adsRequestRepo;
             _adsEvaluationService = adsEvaluationService;
             _adsKeywordDatumRepo = adsKeywordDatumRepo;
+            _userMonthlyFreeQuotaService = userMonthlyFreeQuotaService;
         }
 
         // === 3. PHƯƠNG THỨC NGHIỆP VỤ CHÍNH ===
-        public async Task<TrendAnalysisResponseDto> AnalyzeTrendQueryAsync(int memberId, string originalQuestion)
+        public async Task<TrendAnalysisResponseDto> AnalyzeTrendQueryAsync(int memberId, string originalQuestion, int featureID)
         {
+            if (await _userMonthlyFreeQuotaService.CheckLimit(memberId, featureID))
+            {
+                throw new Exception("Bạn đã vượt quá hạn mức sử dụng miễn phí hàng tháng cho tính năng này.");
+            }
+
             _logger.LogInformation("Bắt đầu quy trình AnalyzeTrendQueryAsync cho MemberId: {memberId}", memberId);
 
             // BƯỚC 1: XÁC THỰC ĐẦU VÀO
@@ -134,18 +142,26 @@ namespace SEOBoostAI.Service.Services
                 AdsSearchRequestId = adsRequestId 
             };
 
-            await _queryHistoryRepo.CreateAsync(historyLog);
-            await _unitOfWork.SaveChangesAsync();
-
-            _logger.LogInformation("Hoàn tất quy trình cho MemberId: {memberId}", memberId);
-
-            return new TrendAnalysisResponseDto
+            try
             {
-                Id = historyLog.Id,
-                OriginalQuestion = historyLog.OriginalQuestion,
-                FinalAiResponse = historyLog.FinalAiResponse,
-                CreatedAt = historyLog.CreatedAt
-            };
+                await _queryHistoryRepo.CreateAsync(historyLog);
+                await _unitOfWork.SaveChangesAsync();
+
+                await _userMonthlyFreeQuotaService.IncrementUsageCount(memberId, featureID);
+
+                _logger.LogInformation("Hoàn tất quy trình cho MemberId: {memberId}", memberId);
+                return new TrendAnalysisResponseDto
+                {
+                    Id = historyLog.Id,
+                    OriginalQuestion = historyLog.OriginalQuestion,
+                    FinalAiResponse = historyLog.FinalAiResponse,
+                    CreatedAt = historyLog.CreatedAt
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Lỗi khi lưu lịch sử truy vấn: " + ex.Message);
+            }
         }
 
         // === 4. CÁC PHƯƠNG THỨC HELPER ===

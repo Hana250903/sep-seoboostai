@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Service.Services.Interfaces;
 using SEOBoostAI.Service.Ultils;
+using System.Security.Claims;
 
 namespace SEOBoostAI.API.Controllers
 {
@@ -28,11 +29,14 @@ namespace SEOBoostAI.API.Controllers
             try
             {
                 // Lấy UserID (ưu tiên từ request, nếu không có thì lấy từ token/test)
-                int memberId = requestModel.UserId ?? _currentUserService.GetUserId();
-                if (memberId == 0) memberId = 1; // Hardcode test nếu cần
+                var userIdString = User.FindFirstValue("user_ID");
+                if (!int.TryParse(userIdString, out int userId))
+                {
+                    return Unauthorized(new { message = "Token không hợp lệ hoặc không tìm thấy User ID." });
+                }
 
                 var result = await _trendSearchService.GetQueryHistoriesAsync(
-                    memberId,
+                    userId,
                     requestModel.CurrentPage,
                     requestModel.PageSize
                 );

@@ -12,5 +12,6 @@ namespace SEOBoostAI.Repository.ModelExtensions
         [Required(ErrorMessage = "Vui lòng nhập câu hỏi.")]
         [StringLength(500, MinimumLength = 10, ErrorMessage = "Câu hỏi phải từ 10 đến 500 ký tự.")]
         public string Question { get; set; }
+        public int FeatureID { get; set; }
     }
 }
