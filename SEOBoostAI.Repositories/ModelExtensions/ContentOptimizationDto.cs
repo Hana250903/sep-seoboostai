@@ -12,7 +12,7 @@ namespace SEOBoostAI.Repository.ModelExtensions
 		public int ContentOptimizationID { get; set; }
 		public int UserID { get; set; }
 		public string Model { get; set; }
-		public string UserRequest { get; set; }
+		public OptimizeRequestDto UserRequest { get; set; }
 		public AiOptimizationResponse AiData { get; set; }
 		public DateTime? CreatedAt { get; set; }
 	}

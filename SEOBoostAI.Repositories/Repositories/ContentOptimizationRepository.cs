@@ -15,28 +15,20 @@ namespace SEOBoostAI.Repository.Repositories
 	public class ContentOptimizationRepository : GenericRepository<ContentOptimization>, IContentOptimizationRepository
 	{
 
-        public ContentOptimizationRepository(SEP_SEOBoostAIContext context): base(context) { }
+		public ContentOptimizationRepository(SEP_SEOBoostAIContext context) : base(context) { }
 
-        public async Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationWithPaginateAsync(SearchTransactionRequest searchRequest)
+		public async Task<PaginationResult<List<ContentOptimization>>> GetContentOptimizationWithPaginateAsync(SearchTransactionRequest searchRequest, int userId)
 		{
 			int currentPage = searchRequest.CurrentPage ?? 1;
 			int pageSize = searchRequest.PageSize ?? 10;
-			int? userId = searchRequest.UserId;
 			string keyword = searchRequest.Keyword;
 			string createdAt = searchRequest.CreatedAt;
 
-			var query = _context.Set<ContentOptimization>().AsQueryable();
-
-			if (userId.HasValue)
-			{
-				query = query.Where(co => co.UserID == userId.Value);
-			}
+			var query = _context.Set<ContentOptimization>().Where(co => co.UserID == userId).AsQueryable();
 
 			if (!string.IsNullOrEmpty(keyword))
 			{
-				// Yêu cầu CSDL tìm kiếm 'keyword' BẤT CỨ ĐÂU trong chuỗi JSON UserRequest
-				string keywordLower = keyword.ToLower();
-				query = query.Where(co => co.UserRequest.ToLower().Contains(keywordLower));
+				query = query.Where(co => co.UserRequest.ToLower().Contains(keyword));
 			}
 
 			// 3. SỬA: Lọc theo Ngày tạo (Cách chính xác)
@@ -58,6 +50,7 @@ namespace SEOBoostAI.Repository.Repositories
 			var contents = await query
 				.Skip((currentPage - 1) * pageSize)
 				.Take(pageSize)
+				.OrderByDescending(co => co.CreatedAt)
 				.ToListAsync();
 
 			var result = new PaginationResult<List<ContentOptimization>>
@@ -69,6 +62,14 @@ namespace SEOBoostAI.Repository.Repositories
 				Items = contents
 			};
 			return result;
+		}
+
+		public async Task<List<ContentOptimization>> GetAllByUserIdAsync(int userId)
+		{
+			return await _context.Set<ContentOptimization>()
+								 .Where(co => co.UserID == userId)
+								 .OrderByDescending(co => co.CreatedAt)
+								 .ToListAsync();
 		}
 	}
 }

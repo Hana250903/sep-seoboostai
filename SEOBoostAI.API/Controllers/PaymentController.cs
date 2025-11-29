@@ -64,7 +64,7 @@ namespace SEOBoostAI.API.Controllers
 				var paymentData = new PaymentData(
 					orderCode: orderCode,
 					amount: request.Amount,
-					description: $"SEOBoostAI - Nap tien (ID: {orderCode})",
+					description: $"SEOBoostAI - Nap tien ",
 					items: new List<ItemData>(), // Provide an empty list or populate as needed
 					cancelUrl: "http://your-react-app-domain.com/payment/failed",
 					returnUrl: "http://your-react-app-domain.com/payment/success"

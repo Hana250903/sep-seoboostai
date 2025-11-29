@@ -19,11 +19,6 @@ namespace SEOBoostAI.API.Controllers
 			_walletService = walletService;
 		}
 		// GET: api/<WalletsController>
-		[HttpGet]
-		public async Task<IEnumerable<Wallet>> Get()
-		{
-			return await _walletService.GetWalletsAsync();
-		}
 
 		[HttpGet("{currentPage}/{pageSize}")]
 		public async Task<PaginationResult<List<Wallet>>> Get(int currentPage, int pageSize)
@@ -32,10 +27,18 @@ namespace SEOBoostAI.API.Controllers
 		}
 
 		// GET api/<WalletsController>/5
-		[HttpGet("{id}")]
-		public async Task<Wallet> Get(int id)
+		[HttpGet]
+		public async Task<Wallet> Get()
 		{
-			return await _walletService.GetWalletByIdAsync(id);
+			var userIdString = User.FindFirst("user_ID")?.Value;
+			if (string.IsNullOrEmpty(userIdString))
+			{
+				return null;
+			}
+
+			var userId = int.Parse(userIdString);
+
+			return await _walletService.GetWalletByUserIdAsync(userId);
 		}
 
 		// POST api/<WalletsController>

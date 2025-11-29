@@ -8,12 +8,12 @@ namespace SEOBoostAI.Repository.ModelExtensions
 {
 	public class OptimizeRequestDto
 	{
-		public int UserId { get; set; }
 		public string Keyword { get; set; }
 		public string Content { get; set; }
 		public string ContentLength { get; set; }
 		public int OptimizationLevel { get; set; }
 		public string ReadabilityLevel { get; set; }
 		public bool IncludeCitation { get; set; }
+		public int FeatureId { get; set; }
 	}
 }

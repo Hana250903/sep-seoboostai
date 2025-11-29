@@ -11,10 +11,10 @@ namespace SEOBoostAI.Service.Services.Interfaces
 	public interface IContentOptimizationService
 	{
 		Task<List<ContentOptimizationDto>> GetContentOptimizationsAsync();
-		Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(SearchTransactionRequest searchRequest);
-		Task<ContentOptimizationDto> GetContentOptimizationByIdAsync(int id);
+		Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(SearchTransactionRequest searchRequest, int userId);
+		Task<List<ContentOptimizationDto>> GetContentOptimizationsByUserIdAsync(int userId);
 		Task UpdateAsync(ContentOptimization contentOptimization);
 		Task DeleteAsync(int id);
-		Task<ContentOptimizationDto> OptimizeAndCreateAsync(OptimizeRequestDto request);
+		Task<ContentOptimizationDto> OptimizeAndCreateAsync(OptimizeRequestDto request, int userId);
 	}
 }
