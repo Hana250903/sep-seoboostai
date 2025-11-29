@@ -1,4 +1,5 @@
-﻿using SEOBoostAI.Repository.ModelExtensions;
+﻿using Azure.Core;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories.Interfaces;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -79,9 +81,9 @@ namespace SEOBoostAI.Service.Services
 			return dtos;
 		}
 
-		public async Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(SearchTransactionRequest searchRequest)
+		public async Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(SearchTransactionRequest searchRequest, int userId)
 		{
-			var paginateResult = await _contentOptimizationRepository.GetContentOptimizationWithPaginateAsync(searchRequest);
+			var paginateResult = await _contentOptimizationRepository.GetContentOptimizationWithPaginateAsync(searchRequest, userId);
 
 			var dtos = paginateResult.Items.Select(entity => MapToDto(entity))
 										   .Where(dto => dto != null)
@@ -114,7 +116,6 @@ namespace SEOBoostAI.Service.Services
 		public async Task<ContentOptimizationDto> OptimizeAndCreateAsync(OptimizeRequestDto request, int userId)
 		{
 			// BƯỚC 2: Kiểm tra Quota (Check Limit)
-			// Gọi hàm CheckLimit từ QuotaService
 			bool canUse = await _userMonthlyFreeQuotaService.CheckLimit(userId, request.FeatureId);
 
 			if (!canUse)
@@ -125,6 +126,13 @@ namespace SEOBoostAI.Service.Services
 
 			// --- NẾU CÒN LƯỢT THÌ CHẠY TIẾP ---
 
+			// Cấu hình để KHÔNG mã hóa tiếng Việt
+			var jsonOptions = new JsonSerializerOptions
+			{
+				Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+				WriteIndented = false
+			};
+
 			// 3. Gọi Service AI (Như cũ)
 			var aiResponse = await _geminiService.OptimizeContentAsync(request);
 
@@ -133,8 +141,8 @@ namespace SEOBoostAI.Service.Services
 			{
 				UserID = userId,
 				Model = "gemini-2.0-flash",
-				UserRequest = JsonSerializer.Serialize(request),
-				AIResponse = JsonSerializer.Serialize(aiResponse),
+				UserRequest = JsonSerializer.Serialize(request, jsonOptions),
+				AIResponse = JsonSerializer.Serialize(aiResponse, jsonOptions),
 				CreatedAt = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false
 			};
@@ -178,13 +186,29 @@ namespace SEOBoostAI.Service.Services
 				}
 			}
 
+			OptimizeRequestDto requestData = null;
+			if (!string.IsNullOrEmpty(entity.UserRequest))
+			{
+				try 
+				{
+					requestData = JsonSerializer.Deserialize<OptimizeRequestDto>(entity.UserRequest,
+								new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+				}
+				catch (Exception ex)
+				{
+					// Xử lý nếu JSON trong DB bị lỗi
+					// Bạn có thể log lỗi 'ex' ở đây
+					requestData = null; // Hoặc new OptimizeRequestDto { Keyword = "Lỗi đọc JSON" };
+				}
+			}
+
 			// Chuyển đổi (Map) sang DTO để trả về
 			return new ContentOptimizationDto
 			{
 				ContentOptimizationID = entity.ContentOptimizationID,
 				UserID = entity.UserID,
 				Model = entity.Model,
-				UserRequest = entity.UserRequest, // Giữ nguyên string JSON
+				UserRequest = requestData, // Giữ nguyên string JSON
 				AiData = aiData, // <-- Gán ĐỐI TƯỢNG "dễ đọc"
 				CreatedAt = entity.CreatedAt
 			};

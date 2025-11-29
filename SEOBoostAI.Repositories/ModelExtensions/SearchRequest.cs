@@ -16,6 +16,5 @@ namespace SEOBoostAI.Repository.ModelExtensions
 	{
 		public string? Keyword { get; set; }
 		public string? CreatedAt { get; set; }
-		public int? UserId { get; set; }
 	}
 }

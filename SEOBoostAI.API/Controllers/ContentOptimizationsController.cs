@@ -25,17 +25,15 @@ namespace SEOBoostAI.API.Controllers
 		{
 			try
 			{
-				if (searchRequest == null)
+				var userIdString = User.FindFirst("user_ID")?.Value;
+				if (string.IsNullOrEmpty(userIdString))
 				{
-					searchRequest = new SearchTransactionRequest();
-				}
-				var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-				if (!string.IsNullOrEmpty(userIdString))
-				{
-					searchRequest.UserId = int.Parse(userIdString);
+					return BadRequest(new { message = "Không tìm thấy UserID trong token." });
 				}
 
-				var result = await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(searchRequest);
+				int userId = int.Parse(userIdString);
+
+				var result = await _contentOptimizationService.GetContentOptimizationsWithPaginateAsync(searchRequest, userId);
 
 				return Ok(result);
 			}
@@ -66,7 +64,6 @@ namespace SEOBoostAI.API.Controllers
 			try
 			{
 				// 1. Lấy UserID từ Token (Bảo mật hơn là tin vào requestDto)
-				// Nếu bạn muốn chắc chắn UserID là của người đang đăng nhập
 				var userIdString = User.FindFirst("user_ID")?.Value;
 				if (string.IsNullOrEmpty(userIdString))
 				{
@@ -79,17 +76,14 @@ namespace SEOBoostAI.API.Controllers
 				ContentOptimizationDto result = await _contentOptimizationService.OptimizeAndCreateAsync(requestDto, userId);
 
 				// 3. Trả về kết quả 201 Created
-				// Lưu ý: Đảm bảo bạn có hàm "Get" hoặc "GetContentOptimizationById" để nameof() hoạt động đúng
 				return CreatedAtAction(nameof(Get), new { id = result.ContentOptimizationID }, result);
 			}
-			// --- BẮT LỖI NGHIỆP VỤ (QUAN TRỌNG) ---
+			// --- BẮT LỖI NGHIỆP VỤ ---
 			catch (InvalidOperationException ex)
 			{
-				// Đây là lỗi do Hết Quota hoặc Từ khóa cấm (do Service ném ra)
-				// Trả về 400 Bad Request hoặc 403 Forbidden hoặc 402 Payment Required
 				return StatusCode(403, new { message = ex.Message, errorCode = "QUOTA_EXCEEDED" });
 			}
-			// --- BẮT LỖI KỸ THUẬT (SERVER CRASH) ---
+			// --- BẮT LỖI KỸ THUẬT---
 			catch (Exception ex)
 			{
 				// Lỗi kết nối Database, lỗi Gemini API sập, v.v.
