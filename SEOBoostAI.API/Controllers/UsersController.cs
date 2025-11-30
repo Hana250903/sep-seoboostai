@@ -93,13 +93,13 @@ namespace SEOBoostAI.API.Controllers
             }
         }
 
-        [HttpPut("ban-user/{id}")]
-        public async Task<IActionResult> BanUser(int id)
+        [HttpPut("ban-unban-user")]
+        public async Task<IActionResult> BanAndUnBanUser(List<int> userIds)
         {
             try
             {
-                var result = await _userService.BanUser(id);
-                return Ok(new ResultModel<User>
+                var result = await _userService.BanAndUnbanUser(userIds);
+                return Ok(new ResultModel<List<User>>
                 {
                     Success = true,
                     Message = "User has been banned successfully.",
@@ -108,7 +108,7 @@ namespace SEOBoostAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new ResultModel<User>
+                return BadRequest(new ResultModel<List<User>>
                 {
                     Success = false,
                     Message = ex.Message,

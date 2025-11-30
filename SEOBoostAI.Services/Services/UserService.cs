@@ -91,18 +91,24 @@ namespace SEOBoostAI.Service.Services
             return user;
         }
 
-        public async Task<User> BanUser(int userId)
+        public async Task<List<User>> BanAndUnbanUser(List<int> listUserId)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
+            var listUser = await _userRepository.GetUsersByIdsAsync(listUserId);
+            if (listUser == null)
             {
                 throw new Exception("User not found");
             }
-            user.IsBanned = true;
-            user.UpdatedAt = DateTime.UtcNow.AddHours(7);
-            await _userRepository.UpdateAsync(user);
+
+            List<User> users = new List<User>();
+            foreach (var user in listUser)
+            {
+                user.IsBanned = !user.IsBanned;
+                user.UpdatedAt = DateTime.UtcNow.AddHours(7);
+                users.Add(user);
+            }
+            await _userRepository.UpdateRangeAsync(users);
             await _unitOfWork.SaveChangesAsync();
-            return user;
+            return listUser;
         }
     }
 }

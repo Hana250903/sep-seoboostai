@@ -13,5 +13,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
     {
         Task<PaginationResult<List<User>>> GetUserWithPaginateAsync(int currentPage, int pageSize, string? role, bool? isbanned, bool? isDeleted);
         Task<User?> GetUserByEmailAsync(string email);
+        Task<List<User>> GetUsersByIdsAsync(List<int> userIds);
     }
 }

@@ -56,5 +56,10 @@ namespace SEOBoostAI.Repository.Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
+
+        public async Task<List<User>> GetUsersByIdsAsync(List<int> userIds)
+        {
+            return await _context.Users.Where(u => userIds.Contains(u.UserID)).ToListAsync();
+        }
     }
 }
