@@ -45,5 +45,16 @@ namespace SEOBoostAI.Repository.Repositories
 				.OrderBy(p => p.PurchaseDate) // Dùng gói cũ trước
 				.FirstOrDefaultAsync();
 		}
+
+		public async Task<int> GetTotalRemainingByFeatureAsync(int userId, int featureId)
+		{
+			return await _context.Set<PurchasedFeature>()
+				.Include(p => p.Transaction)
+				.ThenInclude(t => t.Wallet)
+				.Where(p => p.Transaction.Wallet.UserID == userId
+							&& p.FeatureID == featureId
+							&& p.RemainingQuantity > 0)
+				.SumAsync(p => p.RemainingQuantity);
+		}
 	}
 }

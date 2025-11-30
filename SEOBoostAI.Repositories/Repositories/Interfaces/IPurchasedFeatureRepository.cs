@@ -13,5 +13,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 	{
 		Task<PaginationResult<List<PurchasedFeature>>> GetPurchasedFeaturesWithPaginateAsync(int currentPage, int pageSize);
 		Task<PurchasedFeature?> GetAvailablePackAsync(int userId, int featureId);
+		Task<int> GetTotalRemainingByFeatureAsync(int userId, int featureId);
 	}
 }
