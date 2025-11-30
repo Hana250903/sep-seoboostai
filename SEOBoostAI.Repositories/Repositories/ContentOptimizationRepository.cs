@@ -48,9 +48,9 @@ namespace SEOBoostAI.Repository.Repositories
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 
 			var contents = await query
+				.OrderByDescending(co => co.CreatedAt)
 				.Skip((currentPage - 1) * pageSize)
 				.Take(pageSize)
-				.OrderByDescending(co => co.CreatedAt)
 				.ToListAsync();
 
 			var result = new PaginationResult<List<ContentOptimization>>
