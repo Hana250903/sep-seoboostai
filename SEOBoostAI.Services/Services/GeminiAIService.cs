@@ -3,6 +3,7 @@ using Microsoft.Identity.Client;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -16,17 +17,23 @@ namespace SEOBoostAI.Service.Services
     public class GeminiAIService : IGeminiAIService
     {
         private readonly ISystemConfigService _systemConfigService;
-        private readonly string _apikey;
+        private readonly IGeminiRateLimitManager _rateLimitManager;
+        private readonly IGeminiKeyRepository _geminiKeyRepository;
+        private readonly string _apikey; // Fallback key từ SystemConfig
         private readonly string _url;
-
-        public GeminiAIService(ISystemConfigService systemConfigService)
+        public GeminiAIService(
+            ISystemConfigService systemConfigService,
+            IGeminiRateLimitManager rateLimitManager,
+            IGeminiKeyRepository geminiKeyRepository)
         {
             _systemConfigService = systemConfigService;
+            _rateLimitManager = rateLimitManager;
+            _geminiKeyRepository = geminiKeyRepository;
             _apikey = _systemConfigService.GetValue<string>("GeminiKey", "");
             _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
         }
 
-		public async Task<AiAssessment> SuggestionAnalysisPerformance(string newMetrics, string oldMetrics)
+        public async Task<AiAssessment> SuggestionAnalysisPerformance(string newMetrics, string oldMetrics)
         {
             string fullUrl = $"{_url}?key={_apikey}";
 
@@ -219,48 +226,6 @@ namespace SEOBoostAI.Service.Services
             }
 
             return finalResults;
-
-            //string promptTemplate = $@"Bạn là một chuyên gia phân tích HTML, tối ưu hiệu suất website (Core Web Vitals) và SEO. Tôi sẽ cung cấp cho bạn một **danh sách (JSON array)** các phần tử HTML. Mỗi phần tử sẽ có `ElementID`, `TagName`, và `OuterHTML`.
-
-            //    Nhiệm vụ của bạn là:
-            //    1.  Phân tích **từng element** trong danh sách để tìm ra các vấn đề tiềm ẩn về hiệu suất (ví dụ: gây CLS, chặn hiển thị) hoặc SEO (ví dụ: thiếu alt text).
-            //    2.  Trả về **DUY NHẤT** một **JSON array** hợp lệ, không dùng markdown, không giải thích.
-            //    3.  Array này phải chứa một đối tượng cho **mỗi element** đã được phân tích.
-
-            //    **Quan trọng:** Mỗi đối tượng trong array trả về **PHẢI** chứa:
-            //    * `ElementID`: (Giữ nguyên `ElementID` từ đầu vào để map dữ liệu).
-            //    * `HasSuggestion`: (bool) Đặt là `true` nếu bạn có gợi ý (`AIRecommendation`) hoặc mô tả vấn đề (`Description`). Đặt là `false` nếu element này ổn và không cần can thiệp.
-            //    * `Important`: (bool) Đặt là `true` nếu đây là vấn đề nghiêm trọng (ví dụ: Lỗi CLS, Lỗi SEO nghiêm trọng, Lỗi blocking rendering). Đặt là `false` nếu đây chỉ là một gợi ý tối ưu nhỏ hoặc không có vấn đề gì (`HasSuggestion` là `false`).
-            //    * `Description`: Mô tả ngắn gọn vấn đề. Nếu `HasSuggestion` là `false`, hãy để là ""Không tìm thấy vấn đề."" hoặc chuỗi rỗng.
-            //    * `AIRecommendation`: Gợi ý cụ thể để sửa lỗi. Nếu `HasSuggestion` là `false`, hãy để chuỗi rỗng.
-
-            //    Sử dụng cấu trúc JSON array bắt buộc sau (ví dụ cho 2 element):
-            //    [
-            //      {{
-            //        ""ElementID"": 1,
-            //        ""HasSuggestion"": true,
-            //        ""Important"": true,
-            //        ""Description"": ""Thẻ <img> thiếu thuộc tính 'alt'"",
-            //        ""AIRecommendation"": ""Bổ sung thuộc tính 'alt' để mô tả nội dung ảnh, cải thiện SEO và khả năng truy cập.""
-            //      }},
-            //      {{
-            //        ""ElementID"": 2,
-            //        ""HasSuggestion"": true,
-            //        ""Important"": false,
-            //        ""Description"": ""Thẻ <img> nên có thuộc tính 'loading=\""lazy\""'"",
-            //        ""AIRecommendation"": ""Thêm 'loading=\""lazy\""' để trì hoãn tải ảnh cho đến khi nó gần vào khung nhìn, cải thiện LCP.""
-            //      }},
-            //      {{
-            //        ""ElementID"": 3,
-            //        ""HasSuggestion"": false,
-            //        ""Important"": false,
-            //        ""Description"": ""Không tìm thấy vấn đề."",
-            //        ""AIRecommendation"": """"
-            //      }}
-            //    ]
-
-            //    Dữ liệu Elements đầu vào (dạng JSON array):
-            //    {jsonRequest}";
         }
 
 		public async Task<AiOptimizationResponse> OptimizeContentAsync(OptimizeRequestDto request)
