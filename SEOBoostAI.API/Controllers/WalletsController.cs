@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
@@ -70,5 +71,25 @@ namespace SEOBoostAI.API.Controllers
 			await _walletService.DeleteAsync(id);
             return Ok();
         }
+
+		[HttpPut("deposit")]
+		public async Task<IActionResult> DepositManual([FromBody] UpdateBalanceRequest request)
+		{
+			try
+			{
+				if (request.Amount <= 9000)
+				{
+					return BadRequest(new { message = "Số tiền nạp phải lớn hơn 10000." });
+				}
+
+				await _walletService.DepositManualAsync(request.UserId, request.Amount);
+
+				return Ok(new { message = "Cộng tiền thành công!", userId = request.UserId, amountAdded = request.Amount });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 	}
 }

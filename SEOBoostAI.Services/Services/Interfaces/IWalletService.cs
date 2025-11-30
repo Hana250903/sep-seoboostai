@@ -19,5 +19,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		// HÀM MỚI CHO PAYOS
 		Task<Wallet> GetWalletByUserIdAsync(int userId);
 		Task<bool> TopUp(int walletId, decimal amount);
+		Task DepositManualAsync(int userId, decimal amount);
 	}
 }
