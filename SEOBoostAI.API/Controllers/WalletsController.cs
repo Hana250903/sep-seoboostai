@@ -41,6 +41,12 @@ namespace SEOBoostAI.API.Controllers
 			return await _walletService.GetWalletByUserIdAsync(userId);
 		}
 
+		[HttpGet("{userId}")]
+		public async Task<Wallet> Get(int userId)
+		{
+			return await _walletService.GetWalletByUserIdAsync(userId);
+		}
+
 		// POST api/<WalletsController>
 		[HttpPost]
 		public async Task<IActionResult> Post([FromBody] Wallet wallet)
