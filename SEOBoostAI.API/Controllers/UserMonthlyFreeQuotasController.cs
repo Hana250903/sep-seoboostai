@@ -68,5 +68,24 @@ namespace SEOBoostAI.API.Controllers
 			var result = await _userMonthlyFreeQuotaService.CreateQuotaAsync(userId);
 			return Ok(result);
         }
+
+		[HttpGet("quota")]
+		[Authorize]
+		public async Task<IActionResult> GetMyQuota()
+		{
+			try
+			{
+				var userIdString = User.FindFirst("user_ID")?.Value;
+				if (string.IsNullOrEmpty(userIdString)) return Unauthorized();
+				var userId = int.Parse(userIdString);
+
+				var result = await _userMonthlyFreeQuotaService.GetUserQuotaInfoAsync(userId);
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 	}
 }

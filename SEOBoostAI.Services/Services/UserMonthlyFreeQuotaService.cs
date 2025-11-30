@@ -195,5 +195,45 @@ namespace SEOBoostAI.Service.Services
 			// Nếu chạy đến đây nghĩa là logic CheckLimit và Increment không đồng bộ
 			throw new InvalidOperationException("Không tìm thấy lượt sử dụng khả dụng (Lỗi hệ thống).");
 		}
+
+		public async Task<List<UserQuotaDto>> GetUserQuotaInfoAsync(int userId)
+		{
+			var result = new List<UserQuotaDto>();
+
+			// 1. Lấy tất cả Feature (để đảm bảo hiển thị đủ các tính năng)
+			var features = await _featureRepository.GetAllAsync();
+
+			// 2. Lấy Quota Free hiện tại của User
+			var currentMonth = DateTime.UtcNow.AddHours(7).ToString("yyyy-MM");
+
+			var freeQuotas = await _userMonthlyFreeQuotaRepository.GetQuotasByUserId(userId);
+
+			foreach (var feature in features)
+			{
+				var dto = new UserQuotaDto
+				{
+					FeatureId = feature.FeatureID,
+					FeatureName = feature.Name,
+					FreeLimit = 0,
+					FreeUsage = 0,
+					PaidRemaining = 0
+				};
+
+				// --- TÍNH TOÁN FREE ---
+				var userFreeQuota = freeQuotas.FirstOrDefault(q => q.FeatureID == feature.FeatureID && q.MonthYear == currentMonth);
+				if (userFreeQuota != null)
+				{
+					dto.FreeLimit = userFreeQuota.MonthlyLimit;
+					dto.FreeUsage = userFreeQuota.UsageCount;
+				}
+
+				var totalPaidRemaining = await _purchasedFeatureRepository.GetTotalRemainingByFeatureAsync(userId, feature.FeatureID);
+				dto.PaidRemaining = totalPaidRemaining;
+
+				result.Add(dto);
+			}
+
+			return result;
+		}
 	}
 }

@@ -7,6 +7,7 @@ using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.BackgroundServices;
+using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
 using SEOBoostAI.Service.Ultils;
@@ -43,7 +44,8 @@ namespace SEOBoostAI.API
             services.AddScoped<ICrawlingService, CrawlingService>();
             services.AddSingleton<ISystemConfigService, SystemConfigService>();
             services.AddScoped<IGeminiAIService, GeminiAIService>();
-            services.AddScoped<IPerformanceHistoryService, PerformanceHistoryService>();
+			services.AddScoped<IGeminiContentOptimizer, GeminiContentOptimizer>();
+			services.AddScoped<IPerformanceHistoryService, PerformanceHistoryService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IUserMonthlyFreeQuotaService, UserMonthlyFreeQuotaService>();
