@@ -7,6 +7,7 @@ using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.BackgroundServices;
+using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
 using SEOBoostAI.Service.Ultils;
@@ -75,6 +76,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IGeminiKeyRepository, GeminiKeyRepository>();
             services.AddScoped<IGeminiKeyService, GeminiKeyService>();
             services.AddSingleton<IGeminiRateLimitManager, GeminiRateLimitManager>();
+            services.AddTransient<GeminiRateLimitHelper>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICompareUrlString, CompareUrlString>();

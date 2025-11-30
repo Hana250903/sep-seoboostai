@@ -13,11 +13,13 @@ namespace SEOBoostAI.Service.Services
     {
         private readonly IGeminiKeyRepository _geminiKeyRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IGeminiRateLimitManager _geminiRateLimitManager;
 
-        public GeminiKeyService(IGeminiKeyRepository geminiKeyRepository, IUnitOfWork unitOfWork)
+        public GeminiKeyService(IGeminiKeyRepository geminiKeyRepository, IUnitOfWork unitOfWork, IGeminiRateLimitManager geminiRateLimitManager)
         {
             _geminiKeyRepository = geminiKeyRepository;
             _unitOfWork = unitOfWork;
+            _geminiRateLimitManager = geminiRateLimitManager;
         }
 
         public async Task<IEnumerable<GeminiKey>> GetAllActiveKeysAsync()
@@ -51,6 +53,8 @@ namespace SEOBoostAI.Service.Services
             await _geminiKeyRepository.CreateAsync(geminiKey);
             await _unitOfWork.SaveChangesAsync();
 
+            await _geminiRateLimitManager.ReloadKeysAsync();
+
             return geminiKey;
         }
 
@@ -59,13 +63,21 @@ namespace SEOBoostAI.Service.Services
             geminiKey.UpdatedAt = DateTime.UtcNow;
             await _geminiKeyRepository.UpdateAsync(geminiKey);
             await _unitOfWork.SaveChangesAsync();
+
+            await _geminiRateLimitManager.ReloadKeysAsync();
         }
 
         public async Task DeleteKeyAsync(int id)
         {
             var key = await _geminiKeyRepository.GetByIdAsync(id);
-            await _geminiKeyRepository.RemoveAsync(key);
-            await _unitOfWork.SaveChangesAsync();
+            if (key != null)
+            {
+                await _geminiKeyRepository.RemoveAsync(key);
+                await _unitOfWork.SaveChangesAsync();
+
+                // CẬP NHẬT: Xóa key khỏi RAM
+                await _geminiRateLimitManager.ReloadKeysAsync();
+            }
         }
 
         public async Task ToggleActiveAsync(int id)
@@ -80,6 +92,8 @@ namespace SEOBoostAI.Service.Services
             key.UpdatedAt = DateTime.UtcNow;
             await _geminiKeyRepository.UpdateAsync(key);
             await _unitOfWork.SaveChangesAsync();
+
+            await _geminiRateLimitManager.ReloadKeysAsync();
         }
 
         public async Task ResetUsageAsync(int id)
@@ -97,6 +111,8 @@ namespace SEOBoostAI.Service.Services
                 DateTime.UtcNow.Date
             );
             await _unitOfWork.SaveChangesAsync();
+
+            await _geminiRateLimitManager.ReloadKeysAsync();
         }
 
         public async Task<object> GetUsageStatsAsync()
