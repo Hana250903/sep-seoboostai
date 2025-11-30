@@ -85,7 +85,7 @@ namespace SEOBoostAI.Service.Services
 		}
 
 		// HÀM MỚI CHO PAYOS
-		public async Task<Transaction> CreatePendingDeposit(int walletId, decimal amount, string paymentMethod)
+		public async Task<Transaction> CreatePendingDeposit(int walletId, decimal amount, string paymentMethod, string gatewayTransactionId)
 		{
 			var newTransaction = new Transaction
 			{
@@ -94,6 +94,7 @@ namespace SEOBoostAI.Service.Services
 				PaymentMethod = paymentMethod,
 				Type = "DEPOSIT",
 				Description = "Nạp tiền vào ví qua PayOS",
+				GatewayTransactionId = gatewayTransactionId,
 				Status = "PENDING", // Trạng thái quan trọng
 				RequestTime = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false
@@ -109,40 +110,29 @@ namespace SEOBoostAI.Service.Services
 		}
 
 		// HÀM MỚI: Xử lý cập nhật trạng thái thanh toán
-		public async Task UpdateTransactionStatusAsync(int transactionId, string status, string gatewayTransId, string bankTransId)
+		public async Task UpdateTransactionStatusAsync(string gatewayTransactionId, string status, string payOSReference, string bankTransId)
 		{
 			try
 			{
-				// 1. Tìm giao dịch
-				var transaction = await _transactionRepository.GetByIdAsync(transactionId);
+				// Tìm trong DB bằng cái mã chuỗi "628f..."
+				var transaction = await _transactionRepository.GetByGatewayTransactionIdAsync(gatewayTransactionId);
 
 				if (transaction == null)
 				{
-					throw new Exception("Giao dịch không tồn tại.");
+					// Lúc này sẽ không bị lỗi nữa vì DB và Webhook đều dùng chung 1 mã chuỗi
+					throw new Exception($"Giao dịch với mã {gatewayTransactionId} không tồn tại.");
 				}
 
-				// 2. Chỉ cập nhật nếu trạng thái hiện tại là PENDING
-				// (Tránh việc webhook gọi nhiều lần làm sai dữ liệu)
-				if (transaction != null && transaction.Status == "PENDING")
+				if (transaction.Status == "PENDING")
 				{
-					transaction.Status = status; // Ví dụ: "COMPLETED" hoặc "FAILED"
-					transaction.GatewayTransactionId = gatewayTransId;
+					transaction.Status = status;
 					transaction.BankTransId = bankTransId;
 					transaction.CompletedTime = DateTime.UtcNow.AddHours(7);
-
-					if (status == "FAILED" || status == "CANCELED")
-					{
-						// Ví dụ: Ghi chú thêm vào Description lý do thất bại
-						transaction.Description += "Giao dịch thất bại";
-					}
-
-					// 3. Lưu vào CSDL
 					await UpdateAsync(transaction);
 				}
 			}
 			catch (Exception ex)
 			{
-				// Log lỗi nếu cần
 				throw;
 			}
 		}
@@ -236,6 +226,11 @@ namespace SEOBoostAI.Service.Services
 
 			// 8. Lưu tất cả thay đổi cuối cùng
 			await _unitOfWork.SaveChangesAsync();
+		}
+
+		public async Task<Transaction> GetByGatewayTransactionIdAsync(string gatewayTransactionId)
+		{
+			return await _transactionRepository.GetByGatewayTransactionIdAsync(gatewayTransactionId);
 		}
 	}
 }

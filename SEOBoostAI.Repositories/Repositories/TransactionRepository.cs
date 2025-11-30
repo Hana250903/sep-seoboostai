@@ -65,5 +65,18 @@ namespace SEOBoostAI.Repository.Repositories
 				Items = transactions
 			};
 		}
+
+		public async Task<Transaction> GetByGatewayTransactionIdAsync(string gatewayTransactionId)
+		{
+			return await _context.Set<Transaction>()
+								 .FirstOrDefaultAsync(t => t.GatewayTransactionId == gatewayTransactionId);
+		}
+
+		public async Task<List<Transaction>> GetExpiredPendingTransactionsAsync(DateTime threshold)
+		{
+			return await _context.Set<Transaction>()
+				.Where(t => t.Status == "PENDING" && t.RequestTime < threshold)
+				.ToListAsync();
+		}
 	}
 }

@@ -13,5 +13,7 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 	{
 		Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize);
 		Task<PaginationResult<List<Transaction>>> GetSuccessfulDepositsByUserIdAsync(int userId, int currentPage, int pageSize);
+		Task<Transaction> GetByGatewayTransactionIdAsync(string gatewayTransactionId);
+		Task<List<Transaction>> GetExpiredPendingTransactionsAsync(DateTime threshold);
 	}
 }

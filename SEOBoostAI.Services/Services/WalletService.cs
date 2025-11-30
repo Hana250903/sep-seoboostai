@@ -106,5 +106,6 @@ namespace SEOBoostAI.Service.Services
 				throw;
 			}
 		}
+
 	}
 }
