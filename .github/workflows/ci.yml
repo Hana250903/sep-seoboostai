@@ -1,0 +1,42 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore SEP_SEOBoostAI.sln
+
+    - name: Build solution
+      run: dotnet build SEP_SEOBoostAI.sln --configuration Release --no-restore
+
+    - name: Run tests
+      run: dotnet test SEP_SEOBoostAI.sln --configuration Release --no-build --verbosity normal
+
+    - name: Publish artifacts
+      if: success()
+      run: dotnet publish SEOBoostAI.API/SEOBoostAI.API.csproj --configuration Release --output ./publish --no-build
+
+    - name: Upload build artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: seoboostai-build
+        path: ./publish
+        retention-days: 7
