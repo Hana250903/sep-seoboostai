@@ -4,9 +4,11 @@ using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories.Interfaces;
+using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -17,26 +19,19 @@ namespace SEOBoostAI.Service.Services
     public class GeminiAIService : IGeminiAIService
     {
         private readonly ISystemConfigService _systemConfigService;
-        private readonly IGeminiRateLimitManager _rateLimitManager;
-        private readonly IGeminiKeyRepository _geminiKeyRepository;
-        private readonly string _apikey; // Fallback key từ SystemConfig
+        private readonly GeminiRateLimitHelper _rateLimitHelper;
         private readonly string _url;
         public GeminiAIService(
             ISystemConfigService systemConfigService,
-            IGeminiRateLimitManager rateLimitManager,
-            IGeminiKeyRepository geminiKeyRepository)
+            GeminiRateLimitHelper rateLimitHelper)
         {
             _systemConfigService = systemConfigService;
-            _rateLimitManager = rateLimitManager;
-            _geminiKeyRepository = geminiKeyRepository;
-            _apikey = _systemConfigService.GetValue<string>("GeminiKey", "");
+            _rateLimitHelper = rateLimitHelper;
             _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
         }
 
         public async Task<AiAssessment> SuggestionAnalysisPerformance(string newMetrics, string oldMetrics)
         {
-            string fullUrl = $"{_url}?key={_apikey}";
-
             string dataInputSection;
             string taskInstruction;
 
@@ -47,7 +42,7 @@ namespace SEOBoostAI.Service.Services
                     1. Phân tích các chỉ số này và viết một **đánh giá chung** (GeneralAssessment) về tình trạng hiệu suất hiện tại (ví dụ: Tốt, Cần cải thiện, Chậm).
                     2. Đưa ra các **gợi ý/đề xuất** (Suggestion) để cải thiện các chỉ số yếu kém nhất.";
 
-                        dataInputSection = $@"
+                dataInputSection = $@"
                     Dữ liệu PageSpeed:
                     {newMetrics}";
             }
@@ -58,7 +53,7 @@ namespace SEOBoostAI.Service.Services
                     1. **So sánh** dữ liệu 'MỚI' so với 'CŨ'. Trong phần **GeneralAssessment**, bạn PHẢI nhận xét xem hiệu suất đã **TĂNG** hay **GIẢM**, chỉ ra cụ thể chỉ số nào thay đổi đáng kể (ví dụ: 'Điểm hiệu suất tăng từ 50 lên 70, LCP cải thiện 0.5s').
                     2. Trong phần **Suggestion**, đưa ra lời khuyên dựa trên sự thay đổi. Nếu hiệu suất giảm, hãy cảnh báo. Nếu tăng nhưng chưa tối ưu, hãy gợi ý bước tiếp theo.";
 
-                        dataInputSection = $@"
+                dataInputSection = $@"
                     Dữ liệu CŨ (Lần trước):
                     {oldMetrics}
 
@@ -83,7 +78,6 @@ namespace SEOBoostAI.Service.Services
                 Dữ liệu đầu vào:
                 {dataInputSection}";
 
-            using HttpClient client = new HttpClient();
             var requestData = new GeminiAIRequestModel
             {
                 Contents = new[]
@@ -107,27 +101,35 @@ namespace SEOBoostAI.Service.Services
                 }
             };
 
-            string json = JsonSerializer.Serialize(requestData);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            // GỌI QUA HELPER ĐỂ XỬ LÝ RATE LIMIT & AUTO SWITCH KEY
+            // Hàm này sẽ tự động: Lấy key -> Gọi -> Nếu 429 -> Lấy key khác -> Gọi lại
+            var assessmentResult = await _rateLimitHelper.ExecuteWithRateLimitAsync<AiAssessment>(_url,
+                async (urlWithKey) => // Delegate: nhận url đã kèm key từ helper
+                {
+                    using HttpClient client = new HttpClient();
+                    string json = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    // Gọi vào URL động (đã chứa key A hoặc key B...)
+                    var response = await client.PostAsync(urlWithKey, content);
 
-            var response = await client.PostAsync(fullUrl, content);
-            response.EnsureSuccessStatusCode();
+                    // Quan trọng: Phải throw exception nếu gặp lỗi để Helper bắt được catch
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        // Ném lỗi HttpRequestException kèm StatusCode để Helper check 429
+                        throw new HttpRequestException($"API Error: {response.ReasonPhrase}", null, response.StatusCode);
+                    }
 
-            string result = await response.Content.ReadAsStringAsync();
+                    string result = await response.Content.ReadAsStringAsync();
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                    return DeserializeResponse<AiAssessment>(geminiResponse);
+                });
 
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
-
-            var assessmentResult = DeserializeResponse<AiAssessment>(geminiResponse);
             return assessmentResult;
         }
 
         public async Task<List<AiElementAnalysis>> SuggestionElement(List<ElementRequest> elements)
         {
-            string fullUrl = $"{_url}?key={_apikey}";
-
-            using HttpClient client = new HttpClient();
-
             var finalResults = new List<AiElementAnalysis>();
 
             var batches = elements.Chunk(50).ToList();
@@ -200,18 +202,26 @@ namespace SEOBoostAI.Service.Services
                         }
                     };
 
-                    string json = JsonSerializer.Serialize(requestData);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var batchResult = await _rateLimitHelper.ExecuteWithRateLimitAsync<List<AiElementAnalysis>>(_url,
+                        async (urlWithKey) =>
+                        {
+                            using HttpClient client = new HttpClient();
+                            string json = JsonSerializer.Serialize(requestData);
+                            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                    var response = await client.PostAsync(fullUrl, content);
-                    response.EnsureSuccessStatusCode();
+                            var response = await client.PostAsync(urlWithKey, content);
 
-                    string result = await response.Content.ReadAsStringAsync();
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                throw new HttpRequestException($"API Error: {response.ReasonPhrase}", null, response.StatusCode);
+                            }
 
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                            string result = await response.Content.ReadAsStringAsync();
+                            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                            var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
 
-                    var batchResult = DeserializeResponse<List<AiElementAnalysis>>(geminiResponse);
+                            return DeserializeResponse<List<AiElementAnalysis>>(geminiResponse);
+                        });
 
                     if (batchResult != null)
                     {
@@ -228,7 +238,7 @@ namespace SEOBoostAI.Service.Services
             return finalResults;
         }
 
-		private T DeserializeResponse<T>(GeminiAIResponseModel geminiResponse)
+        private T DeserializeResponse<T>(GeminiAIResponseModel geminiResponse)
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
@@ -248,5 +258,5 @@ namespace SEOBoostAI.Service.Services
 
             return result;
         }
-	}
+    }
 }
