@@ -77,6 +77,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IGeminiKeyRepository, GeminiKeyRepository>();
             services.AddScoped<IGeminiKeyService, GeminiKeyService>();
             services.AddSingleton<IGeminiRateLimitManager, GeminiRateLimitManager>();
+            services.AddTransient<GeminiRateLimitHelper>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICompareUrlString, CompareUrlString>();

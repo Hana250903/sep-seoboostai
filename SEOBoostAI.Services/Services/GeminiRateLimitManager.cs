@@ -29,19 +29,15 @@ namespace SEOBoostAI.Service.Services
         }
 
         private ConcurrentDictionary<int, KeyUsageTracker> _keyTrackers = new ConcurrentDictionary<int, KeyUsageTracker>();
-        private int _currentKeyIndex = 0;
 
         public GeminiRateLimitManager(IServiceScopeFactory scopeFactory)
         {
             _scopeFactory = scopeFactory;
-            // KHÔNG gọi InitializeKeysAsync() ở đây để tránh async void và lỗi scope
-            // Chúng ta sẽ load lazy trong GetAvailableKeyAsync
         }
 
         // Hàm helper để lấy Repository trong một scope ngắn hạn
         private async Task InitializeKeysAsync()
         {
-            // Tạo một scope mới chỉ tồn tại trong block using này
             using (var scope = _scopeFactory.CreateScope())
             {
                 var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
@@ -55,46 +51,48 @@ namespace SEOBoostAI.Service.Services
                         _keyTrackers.TryAdd(key.Id, new KeyUsageTracker { Key = key });
                     }
                 }
-            } // Scope kết thúc tại đây, DbContext được giải phóng
+            }
         }
 
         public async Task<GeminiKey> GetAvailableKeyAsync()
         {
-            await _semaphore.WaitAsync();
-            try
+            var maxWaitTime = TimeSpan.FromSeconds(10);
+            var startTime = DateTime.UtcNow;
+            while (true)
             {
-                // Lazy loading: Chỉ load keys lần đầu tiên khi cần dùng
-                if (_keyTrackers.IsEmpty)
-                {
-                    await InitializeKeysAsync();
-                }
+                GeminiKey selectedKey = null;
 
-                if (_keyTrackers.IsEmpty)
+                // 1. Vào vùng an toàn (Critical Section)
+                await _semaphore.WaitAsync();
+                try
                 {
-                    throw new InvalidOperationException("Không có API key nào khả dụng trong database.");
-                }
-
-                var now = DateTime.UtcNow;
-                var today = DateTime.UtcNow.Date;
-                var maxWaitTime = TimeSpan.FromSeconds(10);
-                var startTime = DateTime.UtcNow;
-
-                while (true)
-                {
-                    foreach (var tracker in _keyTrackers.Values.OrderBy(t => t.Key.Id))
+                    // Lazy load lần đầu
+                    if (_keyTrackers.IsEmpty)
                     {
-                        // 1. Check Rate Limit tạm thời
+                        await InitializeKeysAsync();
+                        if (_keyTrackers.IsEmpty) throw new InvalidOperationException("DB không có Key nào active.");
+                    }
+
+                    var now = DateTime.UtcNow;
+                    var today = DateTime.UtcNow.Date;
+
+                    // 2. Tìm kiếm Key khả dụng (Logic Round-Robin hoặc Least Used có thể áp dụng ở đây, hiện tại dùng First Available)
+                    // Sắp xếp theo RequestUsedToday để ưu tiên key ít dùng trước (Load balancing đơn giản)
+                    foreach (var tracker in _keyTrackers.Values.OrderBy(t => t.Key.RequestsUsedToday))
+                    {
+                        // --- A. Kiểm tra trạng thái bị khóa tạm thời (429/428) ---
                         if (tracker.IsRateLimited && tracker.RateLimitedUntil.HasValue)
                         {
                             if (now > tracker.RateLimitedUntil.Value)
                             {
+                                // Hết hạn phạt -> Mở khóa
                                 tracker.IsRateLimited = false;
                                 tracker.RateLimitedUntil = null;
                             }
                             else continue;
                         }
 
-                        // 2. Reset counter theo phút
+                        // --- B. Reset bộ đếm theo phút ---
                         if ((now - tracker.LastMinuteReset).TotalMinutes >= 1)
                         {
                             tracker.RequestTimestamps.Clear();
@@ -102,24 +100,18 @@ namespace SEOBoostAI.Service.Services
                             tracker.LastMinuteReset = now;
                         }
 
-                        // 3. Reset counter theo ngày (Database update cần scope)
+                        // --- C. Reset bộ đếm theo ngày (Sync DB nếu cần) ---
                         if (tracker.Key.LastResetDate.Date < today)
                         {
-                            using (var scope = _scopeFactory.CreateScope())
-                            {
-                                var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
-                                var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                            tracker.Key.RequestsUsedToday = 0;
+                            tracker.Key.TokensUsedToday = 0;
+                            tracker.Key.LastResetDate = today;
 
-                                tracker.Key.RequestsUsedToday = 0;
-                                tracker.Key.TokensUsedToday = 0;
-                                tracker.Key.LastResetDate = today;
-
-                                await repo.UpdateKeyUsageAsync(tracker.Key.Id, 0, 0, today);
-                                await uow.SaveChangesAsync();
-                            }
+                            await ResetKeyDailyUsageInDb(tracker.Key.Id, today);
                         }
 
-                        // 4. Clean up timestamps cũ
+                        // --- D. Kiểm tra giới hạn Quota ---
+                        // 1. Check RPM (Requests Per Minute) - Clean timestamp cũ
                         while (tracker.RequestTimestamps.Count > 0 && (now - tracker.RequestTimestamps.Peek()).TotalMinutes >= 1)
                         {
                             tracker.RequestTimestamps.Dequeue();
@@ -130,20 +122,41 @@ namespace SEOBoostAI.Service.Services
                         if (tracker.Key.RequestsUsedToday >= tracker.Key.RpdLimit) continue;
                         if (tracker.TokensUsedInMinute >= tracker.Key.TpmLimit) continue;
 
-                        return tracker.Key;
+                        // ===> TÌM THẤY KEY KHẢ DỤNG <===
+                        selectedKey = tracker.Key;
+                        break;
                     }
-
-                    if (DateTime.UtcNow - startTime > maxWaitTime)
-                    {
-                        throw new InvalidOperationException("Tất cả API keys đều đang bận.");
-                    }
-
-                    await Task.Delay(100);
                 }
+                finally
+                {
+                    _semaphore.Release();
+                }
+
+                // 3. Xử lý kết quả tìm kiếm (Ở ngoài Semaphore)
+                if (selectedKey != null)
+                {
+                    return selectedKey;
+                }
+
+                // Nếu chưa tìm thấy key, kiểm tra timeout
+                if (DateTime.UtcNow - startTime > maxWaitTime)
+                {
+                    throw new InvalidOperationException("Tất cả API keys đều đang bận.");
+                }
+
+                // Chờ một chút trước khi thử lại (KHÔNG GIỮ KHÓA KHI NGỦ)
+                await Task.Delay(100);
             }
-            finally
+        }
+
+        private async Task ResetKeyDailyUsageInDb(int keyId, DateTime today)
+        {
+            using (var scope = _scopeFactory.CreateScope())
             {
-                _semaphore.Release();
+                var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
+                var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                await repo.UpdateKeyUsageAsync(keyId, 0, 0, today); // Reset về 0
+                await uow.SaveChangesAsync();
             }
         }
 
@@ -161,49 +174,68 @@ namespace SEOBoostAI.Service.Services
                     // Update tracker object
                     tracker.Key.RequestsUsedToday++;
                     tracker.Key.TokensUsedToday += estimatedTokens;
-
-                    // Ghi xuống DB (Tạo Scope Mới)
-                    using (var scope = _scopeFactory.CreateScope())
-                    {
-                        var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
-                        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
-                        await repo.UpdateKeyUsageAsync(keyId, 1, estimatedTokens, DateTime.UtcNow.Date);
-                        await uow.SaveChangesAsync();
-                    }
                 }
             }
             finally
             {
                 _semaphore.Release();
             }
+
+            // Update DB: Làm async bên ngoài semaphore để trả khóa nhanh cho request khác
+            // Lưu ý: Có thể dùng cơ chế batch update hoặc background job nếu lượng request quá lớn
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
+                        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                        // Hàm repository này nên cộng dồn (increment) thay vì set cứng
+                        await repo.UpdateKeyUsageAsync(keyId, 1, estimatedTokens, DateTime.UtcNow.Date);
+                        await uow.SaveChangesAsync();
+                    }
+                }
+                catch
+                {
+                    // Log error update DB (không throw ra ngoài làm crash app)
+                }
+            });
         }
 
         public async Task MarkKeyRateLimitedAsync(int keyId)
         {
+            DateTime lockedUntil;
+
             await _semaphore.WaitAsync();
             try
             {
                 if (_keyTrackers.TryGetValue(keyId, out var tracker))
                 {
+                    // Phạt 1 phút (hoặc tùy chỉnh)
+                    lockedUntil = DateTime.UtcNow.AddMinutes(1);
+
                     tracker.IsRateLimited = true;
-                    tracker.RateLimitedUntil = DateTime.UtcNow.AddMinutes(1);
-
-                    // Ghi xuống DB (Tạo Scope Mới)
-                    using (var scope = _scopeFactory.CreateScope())
-                    {
-                        var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
-                        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
-                        await repo.MarkKeyRateLimitedAsync(keyId, tracker.RateLimitedUntil.Value);
-                        await uow.SaveChangesAsync();
-                    }
+                    tracker.RateLimitedUntil = lockedUntil;
                 }
+                else return;
             }
             finally
             {
                 _semaphore.Release();
             }
+
+            // Update DB async
+            _ = Task.Run(async () =>
+            {
+                using (var scope = _scopeFactory.CreateScope())
+                {
+                    var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
+                    var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                    await repo.MarkKeyRateLimitedAsync(keyId, lockedUntil);
+                    await uow.SaveChangesAsync();
+                }
+            });
         }
 
         public async Task ReloadKeysAsync()
@@ -211,11 +243,17 @@ namespace SEOBoostAI.Service.Services
             await _semaphore.WaitAsync();
             try
             {
-                // Clear trackers cũ
                 _keyTrackers.Clear();
-
-                // Gọi hàm InitializeKeysAsync (hàm này đã tự tạo scope bên trong)
-                await InitializeKeysAsync();
+                // Cần gọi lại init trong này luôn vì method này explicit reload
+                using (var scope = _scopeFactory.CreateScope())
+                {
+                    var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
+                    var keys = await repo.GetAllActiveKeysAsync();
+                    foreach (var key in keys)
+                    {
+                        _keyTrackers.TryAdd(key.Id, new KeyUsageTracker { Key = key });
+                    }
+                }
             }
             finally
             {
