@@ -4,23 +4,24 @@ using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Service.Services.Interfaces;
 using System.Text;
 using System.Text.Json;
+using SEOBoostAI.Service.Helpers;
 
 namespace SEOBoostAI.Service.Services
 {
     public class GeminiAiGoogleAdsService : IGeminiAiGoogleAdsService
     {
         private readonly ISystemConfigService _systemConfigService;
-        private readonly string _apikey;
+        private readonly GeminiRateLimitHelper _geminiRateLimitHelper;
         private readonly string _url;
         // Thêm Logger để bạn soi lỗi
         private readonly ILogger<GeminiAiGoogleAdsService> _logger;
 
-        public GeminiAiGoogleAdsService(ISystemConfigService systemConfigService, ILogger<GeminiAiGoogleAdsService> logger)
+        public GeminiAiGoogleAdsService(ISystemConfigService systemConfigService, GeminiRateLimitHelper geminiRateLimitHelper, ILogger<GeminiAiGoogleAdsService> logger)
         {
             _systemConfigService = systemConfigService;
+            _geminiRateLimitHelper = geminiRateLimitHelper;
             _logger = logger;
-            _apikey = _systemConfigService.GetValue<string>("giaapi", "");
-            _url = _systemConfigService.GetValue<string>("giaurl", "");
+            _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
         }
 
         public async Task<List<AdsEvaluationItem>> EvaluateAdsKeywordsAsync(string aiAdvice, List<AdsPlannerItemDto> adsData)
@@ -29,9 +30,6 @@ namespace SEOBoostAI.Service.Services
             var dataToSend = adsData.Take(50).ToList();
 
             string adsDataJson = JsonSerializer.Serialize(dataToSend);
-            string fullUrl = $"{_url}?key={_apikey}";
-
-            using HttpClient client = new HttpClient();
 
             // === PROMPT MỚI: YÊU CẦU LỌC VÀ GIỚI HẠN ===
             string promptTemplate = $@"Bạn là một chuyên gia Google Ads (SEM).
@@ -63,16 +61,19 @@ namespace SEOBoostAI.Service.Services
                 Contents = new[] { new ContentRequest { Parts = new[] { new PartRequest { Text = promptTemplate } } } }
             };
 
-            string json = JsonSerializer.Serialize(requestData);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync(fullUrl, content);
-            string result = await response.Content.ReadAsStringAsync();
-
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
-
-            return DeserializeResponse(geminiResponse);
+            var googleAdsResult = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<List<AdsEvaluationItem>>(_url,
+                async (urlWithKey) =>
+                {
+                    using HttpClient client = new HttpClient();
+                    string json = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await client.PostAsync(urlWithKey, content);
+                    string result = await response.Content.ReadAsStringAsync();
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                    return DeserializeResponse(geminiResponse);
+                });
+            return googleAdsResult;
         }
 
         private List<AdsEvaluationItem> DeserializeResponse(GeminiAIResponseModel geminiResponse)

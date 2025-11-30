@@ -1,4 +1,5 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
+using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -12,22 +13,19 @@ namespace SEOBoostAI.Service.Services
     public class GeminiAiAnalysisService : IGeminiAiAnalysisService
     {
         private readonly ISystemConfigService _systemConfigService;
-        private readonly string _apikey;
+        private readonly GeminiRateLimitHelper _geminiRateLimitHelper;
         private readonly string _url;
 
-        public GeminiAiAnalysisService(ISystemConfigService systemConfigService)
+        public GeminiAiAnalysisService(ISystemConfigService systemConfigService, GeminiRateLimitHelper geminiRateLimitHelper)
         {
             _systemConfigService = systemConfigService;
-            _apikey = _systemConfigService.GetValue<string>("giaapi", "");
-            _url = _systemConfigService.GetValue<string>("giaurl", "");
+            _geminiRateLimitHelper = geminiRateLimitHelper;
+            _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
         }
 
         // --- Thực thi Phân tích Lần 2 ---
         public async Task<string> GetTrendAnalysisSuggestionAsync(string originalQuestion, string trendDataJson)
         {
-            string fullUrl = $"{_url}?key={_apikey}";
-            using HttpClient client = new HttpClient();
-
             // === PROMPT HOÀN CHỈNH (CÂN BẰNG GIỮA BẢO MẬT & VĂN PHONG) ===
             string promptTemplate = $@"Bạn là một trợ lý AI chuyên gia, là bộ não của một công cụ phân tích thị trường.
             Nhiệm vụ của bạn là nhận dữ liệu thô và biến nó thành một bài tư vấn chiến lược, chi tiết, và thân thiện cho người dùng.
@@ -68,40 +66,41 @@ namespace SEOBoostAI.Service.Services
                 Contents = new[] { new ContentRequest { Parts = new[] { new PartRequest { Text = promptTemplate } } } }
             };
 
-            string json = JsonSerializer.Serialize(requestData);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            // ... (Gửi request như cũ) ...
-
-            var response = await client.PostAsync(fullUrl, content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception($"Lỗi gọi Gemini API: {response.StatusCode}");
-            }
-
-            string result = await response.Content.ReadAsStringAsync();
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
-            try
-            {
-                var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
-
-                if (geminiResponse?.Candidates == null || !geminiResponse.Candidates.Any())
+            var analysisResult = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<string>(
+                _url,
+                async (urlWithKey) =>
                 {
-                    return "Hiện tại hệ thống đang bận, vui lòng thử lại sau."; // Trả về thông báo thay vì crash
-                }
+                    using HttpClient client = new HttpClient();
+                    string json = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await client.PostAsync(urlWithKey, content);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exception($"Lỗi gọi Gemini API: {response.StatusCode}");
+                    }
+                    string result = await response.Content.ReadAsStringAsync();
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    try
+                    {
+                        var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
 
-                // Lấy văn bản thô
-                string finalAnswer = geminiResponse.Candidates.First().Content.Parts.First().Text;
-                return finalAnswer.Trim();
-            }
-            catch (Exception ex)
-            {
-                // Log lỗi nếu cần
-                return "Đã xảy ra lỗi khi xử lý phản hồi từ AI.";
-            }
+                        if (geminiResponse?.Candidates == null || !geminiResponse.Candidates.Any())
+                        {
+                            return "Hiện tại hệ thống đang bận, vui lòng thử lại sau."; // Trả về thông báo thay vì crash
+                        }
 
+                        // Lấy văn bản thô
+                        string finalAnswer = geminiResponse.Candidates.First().Content.Parts.First().Text;
+                        return finalAnswer.Trim();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log lỗi nếu cần
+                        return "Đã xảy ra lỗi khi xử lý phản hồi từ AI.";
+                    }
+                });
+
+            return analysisResult;
         }
     }
 }

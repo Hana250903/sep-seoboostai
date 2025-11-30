@@ -1,5 +1,6 @@
-﻿using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
-using SEOBoostAI.Repository.ModelExtensions;
+﻿using SEOBoostAI.Repository.ModelExtensions;
+using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
+using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -13,23 +14,20 @@ namespace SEOBoostAI.Service.Services
     public class GeminiAiKeywordService : IGeminiAiKeywordService
     {
         private readonly ISystemConfigService _systemConfigService;
-        private readonly string _apikey;
+        private readonly GeminiRateLimitHelper _geminiRateLimitHelper;
         private readonly string _url;
 
-        public GeminiAiKeywordService(ISystemConfigService systemConfigService)
+        public GeminiAiKeywordService(ISystemConfigService systemConfigService, GeminiRateLimitHelper geminiRateLimitHelper)
         {
             _systemConfigService = systemConfigService;
+            _geminiRateLimitHelper = geminiRateLimitHelper;
             // Dùng chung key và url với service Gemini cũ
-            _apikey = _systemConfigService.GetValue<string>("giaapi", "");
-            _url = _systemConfigService.GetValue<string>("giaurl", "");
+            _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
         }
 
         // --- Thực thi Phân tích Lần 1 ---
         public async Task<TrendParameters> ExtractKeywordsFromQuestionAsync(string originalQuestion)
         {
-            string fullUrl = $"{_url}?key={_apikey}";
-            using HttpClient client = new HttpClient();
-
             // === PROMPT ĐÃ ĐƯỢC CẬP NHẬT (THÔNG MINH HƠN) ===
             string promptTemplate = $@"Bạn là một chuyên gia phân tích ý định (Intent) của người dùng.
             Nhiệm vụ của bạn là trích xuất CHỦ ĐỀ SẢN PHẨM/THỊ TRƯỜNG (thứ mà khách hàng tìm kiếm) để phân tích.
@@ -87,17 +85,20 @@ namespace SEOBoostAI.Service.Services
                 Contents = new[] { new ContentRequest { Parts = new[] { new PartRequest { Text = promptTemplate } } } }
             };
 
-            string json = JsonSerializer.Serialize(requestData);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync(fullUrl, content);
-            string result = await response.Content.ReadAsStringAsync();
-
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
-
-            // Tái sử dụng hàm private để dọn dẹp JSON
-            return DeserializeResponse<TrendParameters>(geminiResponse);
+            var keywordResult = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<TrendParameters>(
+                _url,
+                async (urlWithKey) =>
+                {
+                    using HttpClient client = new HttpClient();
+                    string json = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await client.PostAsync(urlWithKey, content);
+                    string result = await response.Content.ReadAsStringAsync();
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                    return DeserializeResponse<TrendParameters>(geminiResponse);
+                });
+            return keywordResult;
         }
 
         // --- Hàm Private dọn dẹp JSON (Giống service cũ) ---

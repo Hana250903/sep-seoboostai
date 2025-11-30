@@ -93,6 +93,30 @@ namespace SEOBoostAI.API.Controllers
             }
         }
 
+        [HttpPut("ban-user/{id}")]
+        public async Task<IActionResult> BanUser(int id)
+        {
+            try
+            {
+                var result = await _userService.BanUser(id);
+                return Ok(new ResultModel<User>
+                {
+                    Success = true,
+                    Message = "User has been banned successfully.",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ResultModel<User>
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    Data = null
+                });
+            }
+        }
+
         // PUT api/<UsersController>
         [HttpPut]
         public async Task<IActionResult> Put([FromBody] User user)

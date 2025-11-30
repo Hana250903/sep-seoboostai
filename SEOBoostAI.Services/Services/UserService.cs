@@ -90,5 +90,19 @@ namespace SEOBoostAI.Service.Services
             await _unitOfWork.SaveChangesAsync();
             return user;
         }
+
+        public async Task<User> BanUser(int userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+            user.IsBanned = true;
+            user.UpdatedAt = DateTime.UtcNow.AddHours(7);
+            await _userRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+            return user;
+        }
     }
 }

@@ -7,22 +7,23 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
-using SEOBoostAI.Service.Services.Interfaces; // Để dùng ISystemConfigService
+using SEOBoostAI.Service.Helpers;
+using SEOBoostAI.Service.Services.Interfaces;
 
-namespace SEOBoostAI.Service.Helpers
+namespace SEOBoostAI.Service.Services
 {
 	public class GeminiContentOptimizer : IGeminiContentOptimizer
 	{
 		private readonly ISystemConfigService _systemConfigService;
-		private readonly string _apiKey;
+        private readonly GeminiRateLimitHelper _geminiRateLimitHelper;
 		private readonly string _url;
 
 		// Constructor để nhận các dependencies
-		public GeminiContentOptimizer(ISystemConfigService systemConfigService)
+		public GeminiContentOptimizer(ISystemConfigService systemConfigService, GeminiRateLimitHelper geminiRateLimitHelper)
 		{
 			_systemConfigService = systemConfigService;
-			_apiKey = _systemConfigService.GetValue<string>("GeminiKey", "");
-			_url = _systemConfigService.GetValue<string>("GeminiUrl", "");
+            _geminiRateLimitHelper = geminiRateLimitHelper;
+            _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
 		}
 
 		public async Task<AiOptimizationResponse> OptimizeContentAsync(OptimizeRequestDto request)
@@ -55,10 +56,6 @@ namespace SEOBoostAI.Service.Helpers
 					}
 				}
 			}
-
-			// --- 2. GỌI GEMINI API ---
-			string fullUrl = $"{_url}?key={_apiKey}";
-			using HttpClient client = new HttpClient();
 
 			string citationText = request.IncludeCitation ? "Có, hãy thêm các trích dẫn chất lượng cao để hỗ trợ luận điểm." : "Không, đừng thêm trích dẫn bên ngoài.";
 
@@ -146,21 +143,24 @@ namespace SEOBoostAI.Service.Helpers
 				}
 			};
 
-			string json = JsonSerializer.Serialize(requestData);
-			var content = new StringContent(json, Encoding.UTF8, "application/json");
+			var geminiResponse = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<AiOptimizationResponse>(_url,
+				async (urlWithKey) =>
+				{
+					using HttpClient client = new HttpClient();
+                    string json = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+					var response = await client.PostAsync(urlWithKey, content);
+					string result = await response.Content.ReadAsStringAsync();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new HttpRequestException($"Lỗi từ Gemini API: {response.StatusCode}. Chi tiết: {result}");
+                    }
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+					var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+					return DeserializeResponse<AiOptimizationResponse>(geminiResponse);
+                });
 
-			var response = await client.PostAsync(fullUrl, content);
-			string result = await response.Content.ReadAsStringAsync();
-
-			if (!response.IsSuccessStatusCode)
-			{
-				throw new HttpRequestException($"Lỗi từ Gemini API: {response.StatusCode}. Chi tiết: {result}");
-			}
-
-			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-			var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
-
-			return DeserializeResponse<AiOptimizationResponse>(geminiResponse);
+			return geminiResponse;
 		}
 
 		// Hàm helper này nên để private trong class này hoặc static trong utils
