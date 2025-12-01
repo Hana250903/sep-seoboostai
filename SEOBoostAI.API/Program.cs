@@ -10,6 +10,7 @@ using SEOBoostAI.Service.Services.Interfaces;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.Azure.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
