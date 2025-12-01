@@ -1,5 +1,30 @@
 # Troubleshooting CI/CD
 
+## ❌ Lỗi: "Could not load file or assembly 'System.IdentityModel.Tokens.Jwt'" (Azure Deploy)
+
+### Nguyên nhân
+Version number của package JWT không đúng format (sử dụng `7.1.2.0` thay vì `7.1.2`).
+
+### ✅ Giải pháp đã áp dụng
+Đã cập nhật packages trong `SEOBoostAI.API.csproj`:
+
+```xml
+<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+```
+
+### Các bước sau khi fix:
+
+1. **Restore và rebuild**:
+   ```bash
+   dotnet restore
+   dotnet build --configuration Release
+   ```
+
+2. **Deploy lại lên Azure** (xem chi tiết trong [AZURE_DEPLOY.md](AZURE_DEPLOY.md))
+
+---
+
 ## ❌ Lỗi: "installation not allowed to Create organization package"
 
 ### Nguyên nhân
