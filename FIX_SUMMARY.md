@@ -22,14 +22,24 @@ NuGet packages thường dùng semantic versioning (major.minor.patch), không p
 ### 1. Cập nhật packages trong `SEOBoostAI.API.csproj`:
 
 ```xml
-<!-- CŨ -->
+<!-- CŨ - Chỉ có JWT package với version sai -->
 <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2.0" />
 <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.5" />
 
-<!-- MỚI -->
-<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+<!-- MỚI - Thêm tất cả các IdentityModel packages để tránh conflicts -->
 <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.2.1" />
+<PackageReference Include="Microsoft.IdentityModel.Protocols" Version="7.7.1" />
+<PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.7.1" />
+<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.1" />
+<PackageReference Include="Microsoft.IdentityModel.Logging" Version="8.2.1" />
 ```
+
+**Lý do cần thêm tất cả packages:**
+- JWT package có nhiều transitive dependencies
+- Các dependencies này cũng có version conflicts
+- Explicit references đảm bảo dùng version đúng cho tất cả
 
 ### 2. Restore và build lại:
 

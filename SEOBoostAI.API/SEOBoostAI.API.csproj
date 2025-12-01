@@ -18,7 +18,14 @@
 		<PackageReference Include="payOS" Version="2.0.1" />
 		<PackageReference Include="payOS.Net5" Version="1.0.7" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+		
+		<!-- JWT and Identity Model packages - explicit versions to avoid conflicts -->
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+		<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.2.1" />
+		<PackageReference Include="Microsoft.IdentityModel.Protocols" Version="7.7.1" />
+		<PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.7.1" />
+		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.1" />
+		<PackageReference Include="Microsoft.IdentityModel.Logging" Version="8.2.1" />
 	</ItemGroup>
 
 	<ItemGroup>

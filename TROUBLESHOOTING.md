@@ -6,11 +6,17 @@
 Version number của package JWT không đúng format (sử dụng `7.1.2.0` thay vì `7.1.2`).
 
 ### ✅ Giải pháp đã áp dụng
-Đã cập nhật packages trong `SEOBoostAI.API.csproj`:
+Đã thêm explicit references cho tất cả IdentityModel packages trong `SEOBoostAI.API.csproj`:
 
 ```xml
-<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+<!-- JWT and Identity Model packages - explicit versions to avoid conflicts -->
 <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.2.1" />
+<PackageReference Include="Microsoft.IdentityModel.Protocols" Version="7.7.1" />
+<PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.7.1" />
+<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.2.1" />
+<PackageReference Include="Microsoft.IdentityModel.Logging" Version="8.2.1" />
 ```
 
 ### Các bước sau khi fix:
