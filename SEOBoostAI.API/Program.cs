@@ -5,8 +5,8 @@ using Microsoft.OpenApi.Models;
 using SEOBoostAI.API;
 using SEOBoostAI.API.Infrastructure;
 using SEOBoostAI.API.Mappers;
-using SEOBoostAI.Service.BackgroundServices;
 using SEOBoostAI.Service.Services.Interfaces;
+using SEOBoostAI.Service.Services.Payments;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -97,7 +97,7 @@ builder.Services.AddSingleton(provider =>
 	return new Net.payOS.PayOS(clientId, apiKey, checksumKey);
 });
 
-builder.Services.AddHostedService<SEOBoostAI.Service.BackgroundServices.PaymentCleanupService>();
+builder.Services.AddHostedService<PaymentCleanupService>();
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();

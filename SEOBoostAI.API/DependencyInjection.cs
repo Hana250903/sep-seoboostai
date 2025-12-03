@@ -8,8 +8,14 @@ using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.BackgroundServices;
 using SEOBoostAI.Service.Helpers;
-using SEOBoostAI.Service.Services;
+using SEOBoostAI.Service.Services.Configurations;
+using SEOBoostAI.Service.Services.ContentOptimizations;
+using SEOBoostAI.Service.Services.Feedbacks;
 using SEOBoostAI.Service.Services.Interfaces;
+using SEOBoostAI.Service.Services.Payments;
+using SEOBoostAI.Service.Services.PerformanceAnalysis;
+using SEOBoostAI.Service.Services.SearchKeywords;
+using SEOBoostAI.Service.Services.UserAndAuthen;
 using SEOBoostAI.Service.Ultils;
 using System.Configuration;
 
