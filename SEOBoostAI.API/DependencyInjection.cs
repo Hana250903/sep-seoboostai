@@ -6,7 +6,6 @@ using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
-using SEOBoostAI.Service.BackgroundServices;
 using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services.Configurations;
 using SEOBoostAI.Service.Services.ContentOptimizations;
