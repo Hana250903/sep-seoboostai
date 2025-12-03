@@ -54,7 +54,6 @@ namespace SEOBoostAI.API.Controllers
 					return BadRequest(new { message = "Số tiền nạp tối thiểu là 10.000 VNĐ." });
 				}
 
-				// PayOS cũng có giới hạn tối đa (thường là 100 triệu hoặc tùy hạn mức)
 				if (request.Amount > 100000000)
 				{
 					return BadRequest(new { message = "Số tiền nạp quá lớn. Vui lòng liên hệ admin." });
@@ -139,15 +138,15 @@ namespace SEOBoostAI.API.Controllers
 					// Tìm lại để cộng tiền (Tìm bằng paymentLinkId)
 					var transaction = await _transactionService.GetByGatewayTransactionIdAsync(paymentLinkId);
 
-					if (transaction != null && transaction.Status == "COMPLETED" && transaction.Money == verifiedData.amount)
+					if (transaction != null && transaction.Status == "COMPLETED" && transaction.Money == verifiedData.amount && transaction.BalanceAfter == null)
 					{
-						await _walletService.TopUp(transaction.WalletID, transaction.Money);
+						await _walletService.TopUp(transaction.WalletID, transaction.Money, transaction.TransactionID);
 					}
 				}
 				else // Thất bại
 				{
 					await _transactionService.UpdateTransactionStatusAsync(
-						paymentLinkId, // <-- Truyền chuỗi
+						paymentLinkId,
 						"FAILED",
 						verifiedData.reference,
 						"Lỗi: " + verifiedData.desc
@@ -212,7 +211,12 @@ namespace SEOBoostAI.API.Controllers
 					// Để tránh cộng dồn nếu hàm này được gọi nhiều lần cùng lúc
 					if (transaction.Status == "PENDING")
 					{
-						await _walletService.TopUp(transaction.WalletID, transaction.Money);
+						await _walletService.TopUp(transaction.WalletID, transaction.Money, transaction.TransactionID);
+					}
+
+					if (transaction.BalanceAfter == null)
+					{
+						await _walletService.TopUp(transaction.WalletID, transaction.Money, transaction.TransactionID);
 					}
 
 					return Ok(new { status = "COMPLETED", message = "Giao dịch thành công" });

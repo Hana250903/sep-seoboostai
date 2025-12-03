@@ -86,20 +86,29 @@ namespace SEOBoostAI.Service.Services.Payments
 		}
 
 		// HÀM MỚI CHO PAYOS (Nạp tiền)
-		public async Task<bool> TopUp(int walletId, decimal amount)
+		public async Task<bool> TopUp(int walletId, decimal amount, int transactionId)
 		{
 			try
 			{
 				// 1. Lấy ví
 				var wallet = await _walletRepository.GetByIdAsync(walletId);
-				if (wallet == null) return false;
+				if (wallet == null) throw new Exception("Ví không tồn tại");
 
 				// 2. Cập nhật số dư
 				wallet.Currency += amount;
-				wallet.UpdatedAt = DateTime.UtcNow;
-
-				// 3. Dùng hàm UpdateAsync đã có của bạn (vì nó tự SaveChanges)
+				wallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
 				await UpdateAsync(wallet);
+
+				var transaction = await _transactionRepository.GetByIdAsync(transactionId);
+				if (transaction != null)
+				{
+					// LƯU SỐ DƯ SAU KHI NẠP VÀO LỊCH SỬ
+					transaction.BalanceAfter = wallet.Currency;
+					await _transactionRepository.UpdateAsync(transaction);
+				}
+
+				// 3. Lưu tất cả thay đổi
+				await _unitOfWork.SaveChangesAsync();
 				return true;
 			}
 			catch (Exception ex)

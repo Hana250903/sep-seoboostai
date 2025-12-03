@@ -78,5 +78,12 @@ namespace SEOBoostAI.Repository.Repositories
 				.Where(t => t.Status == "PENDING" && t.RequestTime < threshold)
 				.ToListAsync();
 		}
+
+		public async Task<List<Transaction>> GetTransactionsByIdAsync(int transactionId)
+		{
+			return await _context.Set<Transaction>()
+				.Where(t => t.TransactionID == transactionId)
+				.ToListAsync();
+		}
 	}
 }

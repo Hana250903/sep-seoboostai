@@ -8,7 +8,7 @@ namespace SEOBoostAI.API.Controllers
 {
 	[Route("api/features")]
 	[ApiController]
-	[Authorize(Roles = "Admin")]
+	[Authorize]
 	public class FeaturesController : ControllerBase
 	{
 		private readonly IFeatureService _featureService;
@@ -20,6 +20,7 @@ namespace SEOBoostAI.API.Controllers
 
 		// GET: api/<FeaturesController>
 		[HttpGet]
+		[Authorize(Roles = "Member")]
 		public async Task<IEnumerable<Feature>> Get()
 		{
 			return await _featureService.GetFeaturesAsync();
@@ -33,6 +34,7 @@ namespace SEOBoostAI.API.Controllers
 
 		// GET api/<FeaturesController>/5
 		[HttpGet("{id}")]
+		[Authorize(Roles = "Admin, Staff")]
 		public async Task<Feature> Get(int id)
 		{
 			return await _featureService.GetFeatureByIdAsync(id);
@@ -40,6 +42,7 @@ namespace SEOBoostAI.API.Controllers
 
 		// POST api/<FeaturesController>
 		[HttpPost]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> Post([FromBody] Feature feature)
 		{
 			await _featureService.CreateAsync(feature);
@@ -48,6 +51,7 @@ namespace SEOBoostAI.API.Controllers
 
 		// PUT api/<FeaturesController>/
 		[HttpPut]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> Put([FromBody] Feature feature)
 		{
 			await _featureService.UpdateAsync(feature);
@@ -56,6 +60,7 @@ namespace SEOBoostAI.API.Controllers
 
 		// DELETE api/<FeaturesController>/5
 		[HttpDelete("{id}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> Delete(int id)
 		{
 			await _featureService.DeleteAsync(id);

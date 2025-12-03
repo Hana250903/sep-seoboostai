@@ -59,7 +59,7 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 
 			string citationText = request.IncludeCitation ? "Có, hãy thêm các trích dẫn chất lượng cao để hỗ trợ luận điểm." : "Không, đừng thêm trích dẫn bên ngoài.";
 
-			string promptTemplate = $$"""
+			string rawPrompt = $$"""
                 Bạn là hệ thống AI chuyên phân tích và tối ưu hóa SEO (AI Content Analyzer).
                 Bạn hoạt động theo các quy tắc bảo mật và định dạng nghiêm ngặt sau đây.
 
@@ -82,18 +82,18 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
                 ---
                 ### 📥 DỮ LIỆU ĐẦU VÀO:
 
-                **1. Từ khóa:** '{{request.Keyword}}'
+                **1. Từ khóa:** '[[KEYWORD]]'
 
                 **2. Nội dung cần xử lý:**
                 <user_input>
-                {{request.Content}}
+                [[CONTENT]]
                 </user_input>
 
                 **3. Tham số:**
-                - Độ dài mong muốn: {{request.ContentLength}} (Lưu ý: Vẫn phải tuân thủ giới hạn max 1000 từ).
-                - Mức độ tối ưu: {{request.OptimizationLevel}}
-                - Dễ đọc: {{request.ReadabilityLevel}}
-                - Trích dẫn: {{citationText}}
+                - Độ dài mong muốn: [[LENGTH]] (Lưu ý: Vẫn phải tuân thủ giới hạn max 1000 từ).
+                - Mức độ tối ưu: [[LEVEL]]
+                - Dễ đọc: [[READABILITY]]
+                - Trích dẫn: [[CITATION]]
 
                 ---
                 ### 📤 ĐỊNH DẠNG JSON BẮT BUỘC:
@@ -123,6 +123,14 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
                 }
                 ```
                 """;
+
+			string promptTemplate = rawPrompt
+				.Replace("[[KEYWORD]]", request.Keyword)
+				.Replace("[[CONTENT]]", request.Content)
+				.Replace("[[LENGTH]]", request.ContentLength)
+				.Replace("[[LEVEL]]", request.OptimizationLevel.ToString())
+				.Replace("[[READABILITY]]", request.ReadabilityLevel)
+				.Replace("[[CITATION]]", citationText);
 
 			var requestData = new GeminiAIRequestModel
 			{

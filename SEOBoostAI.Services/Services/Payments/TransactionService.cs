@@ -114,7 +114,6 @@ namespace SEOBoostAI.Service.Services.Payments
 		{
 			try
 			{
-				// Tìm trong DB bằng cái mã chuỗi "628f..."
 				var transaction = await _transactionRepository.GetByGatewayTransactionIdAsync(gatewayTransactionId);
 
 				if (transaction == null)
@@ -176,7 +175,6 @@ namespace SEOBoostAI.Service.Services.Payments
 			// 2. Lấy Ví người dùng
 			// (Giả sử bạn đã viết hàm GetWalletByUserId trong Repository)
 			var wallet = await _walletRepository.GetWalletByUserIdAsync(userId);
-			if (wallet == null) throw new Exception("Ví không tồn tại.");
 
 			// 3. KIỂM TRA SỐ DƯ
 			if (wallet.Currency < totalCost)
@@ -204,7 +202,8 @@ namespace SEOBoostAI.Service.Services.Payments
 				PaymentMethod = "Wallet Balance",
 				RequestTime = DateTime.UtcNow.AddHours(7),
 				CompletedTime = DateTime.UtcNow.AddHours(7),
-				IsDeleted = false
+				IsDeleted = false,
+				BalanceAfter = wallet.Currency,
 			};
 			await _transactionRepository.CreateAsync(transaction);
 			// Lưu ý: Phải SaveChanges 1 lần ở đây để lấy TransactionID cho bảng PurchasedFeatures
