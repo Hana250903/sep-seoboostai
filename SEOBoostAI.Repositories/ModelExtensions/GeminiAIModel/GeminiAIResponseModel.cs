@@ -50,6 +50,9 @@ namespace SEOBoostAI.Repository.ModelExtensions.GeminiAIModel
 
 		[JsonPropertyName("optimized_content")]
 		public string OptimizedContent { get; set; }
+
+		[JsonPropertyName("summary")]
+		public string Summary { get; set; }
 	}
 
 	public class ComparisonData

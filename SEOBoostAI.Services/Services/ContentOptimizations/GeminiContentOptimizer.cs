@@ -77,6 +77,7 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
                 1.  **PHÂN TÍCH GỐC:** Chấm điểm nội dung trong thẻ `<user_input>` (0-100).
                 2.  **TỐI ƯU HÓA:** Viết lại nội dung đó chuẩn SEO.
                 3.  **PHÂN TÍCH MỚI:** Chấm điểm nội dung bạn vừa viết (0-100).
+                4.  **TẠO TÓM TẮT:** Viết một đoạn tóm tắt ngắn gọn (khoảng 5-6 câu) về nội dung đã tối ưu (thích hợp làm Meta Description).
 
                 ---
                 ### 📥 DỮ LIỆU ĐẦU VÀO:
@@ -117,8 +118,10 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
                       "engagement_justification": "..."
                     }
                   },
-                  "optimized_content": "..."
+                  "optimized_content": "...",
+                  "summary": "..."
                 }
+                ```
                 """;
 
 			var requestData = new GeminiAIRequestModel
