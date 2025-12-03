@@ -31,6 +31,8 @@ public partial class Transaction
 
     public bool IsDeleted { get; set; }
 
+    public decimal? BalanceAfter { get; set; }
+
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
     public virtual Wallet Wallet { get; set; }
