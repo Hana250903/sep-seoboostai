@@ -177,9 +177,13 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
 
             // 1. Check Cache
             var cachedData = await _adsRequestRepo.GetValidCacheAsync(queryListString);
+
+            // === TRƯỜNG HỢP 1: CACHE HIT (ĐÃ CÓ DATA THÔ) ===
             if (cachedData != null)
             {
-                _logger.LogInformation("Ads Cache HIT: {query}", queryListString);
+                _logger.LogInformation("Ads Cache HIT: {query}. Tiến hành nhân bản dữ liệu...", queryListString);
+
+                // A. Tạo DTO để gửi cho AI (Lấy từ DB cũ)
                 var dto = cachedData.AdsKeywordData.Select(x => new AdsPlannerItemDto
                 {
                     Keyword = x.Keyword,
@@ -187,32 +191,59 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                     Competition = x.Competition,
                     LowBid = x.LowBid,
                     HighBid = x.HighBid
+                    // Không lấy AiSuggestion/AiMessage cũ vì ngữ cảnh mới khác
                 }).ToList();
 
-                return (dto, cachedData.Id); // Trả về ID cũ
+                // B. CLONE (NHÂN BẢN) RA BẢN GHI MỚI
+                // Mục đích: Để khi update đánh giá, nó không ghi đè vào bản ghi của người dùng trước
+                var clonedRequest = new AdsSearchRequest
+                {
+                    QueryList = queryListString,
+                    CreatedAt = DateTime.UtcNow, // Thời gian mới
+                    AdsKeywordData = cachedData.AdsKeywordData.Select(x => new AdsKeywordDatum
+                    {
+                        // Copy dữ liệu thô (Tiết kiệm tiền API Google)
+                        Keyword = x.Keyword,
+                        AvgSearchVolume = x.AvgSearchVolume,
+                        Competition = x.Competition,
+                        LowBid = x.LowBid,
+                        HighBid = x.HighBid,
+
+                        // RESET trạng thái đánh giá (Để chờ AI mới đánh giá)
+                        AiSuggestion = false,
+                        AiMessage = null
+                    }).ToList()
+                };
+
+                // C. Lưu bản ghi Clone vào DB để sinh ID mới
+                await _adsRequestRepo.CreateAsync(clonedRequest);
+                await _unitOfWork.SaveChangesAsync();
+
+                // D. Trả về ID MỚI (clonedRequest.Id) thay vì ID cũ
+                return (dto, clonedRequest.Id);
             }
 
-            // 2. Cache Miss -> Gọi API
-            _logger.LogInformation("Ads Cache MISS: {query}", queryListString);
+            // === TRƯỜNG HỢP 2: CACHE MISS (GỌI API BÊN THỨ 3) ===
+            _logger.LogInformation("Ads Cache MISS: {query}. Gọi API Google Ads...", queryListString);
             var apiDataRaw = await _adsPlannerService.GetAdsDataAsync(keywords);
 
             // Xử lý dữ liệu thô
             var apiDataProcessed = apiDataRaw
-                .Take(50) // Chỉ lấy 50 kết quả đầu tiên
+                .Take(50)
                 .Select(x => new AdsPlannerItemDto
-            {
-                Keyword = x.Keyword,
-                AvgSearchVolume = x.AvgSearchVolume,
-                Competition = x.Competition,
-                LowBid = string.IsNullOrWhiteSpace(x.LowBid) || x.LowBid == "N/A" ? "Chưa có dữ liệu" : x.LowBid,
-                HighBid = string.IsNullOrWhiteSpace(x.HighBid) || x.HighBid == "N/A" ? "Chưa có dữ liệu" : x.HighBid
-            }).ToList();
+                {
+                    Keyword = x.Keyword,
+                    AvgSearchVolume = x.AvgSearchVolume,
+                    Competition = x.Competition,
+                    LowBid = string.IsNullOrWhiteSpace(x.LowBid) || x.LowBid == "N/A" ? "Chưa có dữ liệu" : x.LowBid,
+                    HighBid = string.IsNullOrWhiteSpace(x.HighBid) || x.HighBid == "N/A" ? "Chưa có dữ liệu" : x.HighBid
+                }).ToList();
 
             int? newRequestId = null;
 
             if (apiDataProcessed.Any())
             {
-                // Lưu vào DB
+                // Lưu vào DB lần đầu
                 var newRequest = new AdsSearchRequest
                 {
                     QueryList = queryListString,
@@ -224,14 +255,14 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                         Competition = x.Competition,
                         LowBid = x.LowBid,
                         HighBid = x.HighBid,
-                        AiSuggestion = false, // Mặc định
-                        AiMessage = null      // Mặc định
+                        AiSuggestion = false,
+                        AiMessage = null
                     }).ToList()
                 };
 
                 await _adsRequestRepo.CreateAsync(newRequest);
                 await _unitOfWork.SaveChangesAsync();
-                newRequestId = newRequest.Id; // Lấy ID mới
+                newRequestId = newRequest.Id;
             }
 
             return (apiDataProcessed, newRequestId);
