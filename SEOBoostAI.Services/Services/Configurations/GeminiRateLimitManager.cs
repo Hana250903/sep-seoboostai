@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEOBoostAI.Service.Services.SearchKeywords
+namespace SEOBoostAI.Service.Services.Configurations
 {
     public class GeminiRateLimitManager : IGeminiRateLimitManager
     {
@@ -154,9 +154,7 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
             using (var scope = _scopeFactory.CreateScope())
             {
                 var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
-                var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-                await repo.UpdateKeyUsageAsync(keyId, 0, 0, today); // Reset về 0
-                await uow.SaveChangesAsync();
+                await repo.UpdateKeyUsageAsync(keyId, 0, today); // Reset về 0
             }
         }
 
@@ -190,10 +188,8 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                     using (var scope = _scopeFactory.CreateScope())
                     {
                         var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
-                        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-                        // Hàm repository này nên cộng dồn (increment) thay vì set cứng
-                        await repo.UpdateKeyUsageAsync(keyId, 1, estimatedTokens, DateTime.UtcNow.Date);
-                        await uow.SaveChangesAsync();
+
+                        await repo.UpdateKeyUsageAsync(keyId, estimatedTokens, DateTime.UtcNow.Date);
                     }
                 }
                 catch
@@ -231,9 +227,46 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
-                    var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                     await repo.MarkKeyRateLimitedAsync(keyId, lockedUntil);
-                    await uow.SaveChangesAsync();
+                }
+            });
+        }
+
+        public async Task UpdateActualTokensAsync(int keyId, int actualTokens, int estimatedTokens)
+            {
+            int tokenDifference = actualTokens - estimatedTokens;
+
+            // Update in-memory tracker
+            await _semaphore.WaitAsync();
+            try
+            {
+                if (_keyTrackers.TryGetValue(keyId, out var tracker))
+                {
+                    // Điều chỉnh tokens theo hiệu số thực tế vs ước tính
+                    tracker.TokensUsedInMinute += tokenDifference;
+                    tracker.Key.TokensUsedToday += tokenDifference;
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+
+            // Update DB async
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        var repo = scope.ServiceProvider.GetRequiredService<IGeminiKeyRepository>();
+                        // Gọi update để điều chỉnh token count
+                        await repo.AdjustTokenUsageAsync(keyId, tokenDifference);
+                    }
+                }
+                catch
+                {
+                    // Log error (không throw để tránh crash app)
                 }
             });
         }

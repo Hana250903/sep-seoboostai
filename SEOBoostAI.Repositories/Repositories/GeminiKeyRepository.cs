@@ -32,34 +32,55 @@ namespace SEOBoostAI.Repository.Repositories
                                  .FirstOrDefaultAsync(k => k.Id == keyId);
         }
 
-        public async Task UpdateKeyUsageAsync(int keyId, int requestsToAdd, int tokensToAdd, DateTime resetDate)
+        public async Task UpdateKeyUsageAsync(int keyId, int tokensToAdd, DateTime resetDate)
         {
-            var key = await _context.GeminiKeys.FindAsync(keyId);
-            if (key != null)
-            {
-                // Logic Lazy Reset: Nếu ngày trong DB khác ngày truyền vào -> Reset về 0
-                if (key.LastResetDate.Date < resetDate.Date)
-                {
-                    key.RequestsUsedToday = 0;
-                    key.TokensUsedToday = 0;
-                    key.LastResetDate = resetDate;
-                }
-
-                key.RequestsUsedToday += requestsToAdd;
-                key.TokensUsedToday += tokensToAdd;
+            // Kiểm tra xem có cần reset không
+            var key = await _context.GeminiKeys
+                .AsNoTracking()
+                .FirstOrDefaultAsync(k => k.Id == keyId);
                 
-                _context.GeminiKeys.Update(key);
+            if (key == null) return;
+            
+            if (key.LastResetDate.Date < resetDate.Date)
+            {
+                // Reset về 0 và set giá trị mới
+                await _context.GeminiKeys
+                    .Where(k => k.Id == keyId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(k => k.RequestsUsedToday, 1)
+                        .SetProperty(k => k.TokensUsedToday, tokensToAdd)
+                        .SetProperty(k => k.LastResetDate, resetDate)
+                        .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+            }
+            else
+            {
+                // Increment giá trị hiện tại
+                await _context.GeminiKeys
+                    .Where(k => k.Id == keyId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(k => k.RequestsUsedToday, k => k.RequestsUsedToday + 1)
+                        .SetProperty(k => k.TokensUsedToday, k => k.TokensUsedToday + tokensToAdd)
+                        .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
             }
         }
 
         public async Task MarkKeyRateLimitedAsync(int keyId, DateTime until)
         {
-            var key = await _context.GeminiKeys.FindAsync(keyId);
-            if (key != null)
-            {
-                key.RateLimitedUntil = until;
-                _context.GeminiKeys.Update(key);
-            }
+            await _context.GeminiKeys
+                .Where(k => k.Id == keyId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(k => k.RateLimitedUntil, until)
+                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+        }
+
+        public async Task AdjustTokenUsageAsync(int keyId, int tokenDifference)
+        {
+            // Điều chỉnh token count bằng cách cộng/trừ difference (có thể âm hoặc dương)
+            await _context.GeminiKeys
+                .Where(k => k.Id == keyId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(k => k.TokensUsedToday, k => k.TokensUsedToday + tokenDifference)
+                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
         }
     }
 }

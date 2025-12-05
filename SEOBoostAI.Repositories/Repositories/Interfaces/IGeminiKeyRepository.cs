@@ -12,7 +12,8 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
     {
         Task<List<GeminiKey>> GetAllActiveKeysAsync();
         Task<GeminiKey> GetKeyByIdAsync(int keyId);
-        Task UpdateKeyUsageAsync(int keyId, int requestsToAdd, int tokensToAdd, DateTime resetDate);
+        Task UpdateKeyUsageAsync(int keyId, int tokensToAdd, DateTime resetDate);
         Task MarkKeyRateLimitedAsync(int keyId, DateTime until);
+        Task AdjustTokenUsageAsync(int keyId, int tokenDifference);
     }
 }

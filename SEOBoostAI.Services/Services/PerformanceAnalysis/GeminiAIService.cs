@@ -7,6 +7,7 @@ using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -101,13 +102,17 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 }
             };
 
+            int estimatedTokens = _rateLimitHelper.EstimateTokens(promptTemplate);
+            int actualTokens = estimatedTokens;
+
             // GỌI QUA HELPER ĐỂ XỬ LÝ RATE LIMIT & AUTO SWITCH KEY
             // Hàm này sẽ tự động: Lấy key -> Gọi -> Nếu 429 -> Lấy key khác -> Gọi lại
-            var assessmentResult = await _rateLimitHelper.ExecuteWithRateLimitAsync<AiAssessment>(_url,
+            var (assessmentResult, keyId, initialEstimate) = await _rateLimitHelper.ExecuteWithRateLimitAsync<AiAssessment>(_url,
                 async (urlWithKey) => // Delegate: nhận url đã kèm key từ helper
                 {
                     using HttpClient client = new HttpClient();
                     string json = JsonSerializer.Serialize(requestData);
+
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
                     // Gọi vào URL động (đã chứa key A hoặc key B...)
                     var response = await client.PostAsync(urlWithKey, content);
@@ -122,25 +127,48 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     string result = await response.Content.ReadAsStringAsync();
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                    
+                    // LẤY ACTUAL TOKENS TỪ RESPONSE
+                    actualTokens = geminiResponse?.UsageMetadata?.PromptTokenCount ?? estimatedTokens;
+                    
                     return DeserializeResponse<AiAssessment>(geminiResponse);
-                });
+                },
+                estimatedTokens: estimatedTokens
+                );
+
+            // UPDATE ACTUAL TOKENS
+            if (actualTokens > 0)
+            {
+                await _rateLimitHelper.RateLimitManager.UpdateActualTokensAsync(keyId, actualTokens, estimatedTokens);
+            }
 
             return assessmentResult;
         }
 
         public async Task<List<AiElementAnalysis>> SuggestionElement(List<ElementRequest> elements)
         {
-            var finalResults = new List<AiElementAnalysis>();
+            // Dùng ConcurrentBag để thread-safe khi add kết quả từ nhiều luồng
+            var finalResults = new ConcurrentBag<AiElementAnalysis>();
 
             var batches = elements.Chunk(50).ToList();
 
+            // Cấu hình song song
+            int maxConcurrency = 5; // Chạy tối đa 5 batch cùng lúc (tương đương 250 elements)
+            using var semaphore = new SemaphoreSlim(maxConcurrency);
+            var tasks = new List<Task>();
+
             foreach (var batch in batches)
             {
-                try
+                // Tạo Task cho mỗi batch
+                tasks.Add(Task.Run(async () =>
                 {
-                    string jsonRequest = JsonSerializer.Serialize(batch);
+                    // Chờ đến lượt (nếu đang có 5 luồng chạy thì luồng thứ 6 phải đợi)
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        string jsonRequest = JsonSerializer.Serialize(batch);
 
-                    string promptTemplate = $@"Bạn là chuyên gia Audit SEO & Core Web Vitals (LCP, CLS, INP).
+                        string promptTemplate = $@"Bạn là chuyên gia Audit SEO & Core Web Vitals (LCP, CLS, INP).
             
                         Nhiệm vụ: Phân tích danh sách các elements HTML được cung cấp dưới dạng JSON.
             
@@ -179,10 +207,10 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                             }}
                         ]";
 
-                    var requestData = new GeminiAIRequestModel
-                    {
-                        Contents = new[]
+                        var requestData = new GeminiAIRequestModel
                         {
+                            Contents = new[]
+                            {
                             new ContentRequest
                             {
                                 Parts = new[]
@@ -194,48 +222,233 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                                 }
                             }
                         },
-                        GenerationConfig = new GenerationConfig
-                        {
-                            //MaxOutputTokens = 8192,
-                            Temperature = 0.2,      // Giữ nhiệt độ thấp để JSON chuẩn
-                            ResponseMimeType = "application/json" // Bắt buộc Gemini trả về JSON chuẩn (không markdown)
-                        }
-                    };
-
-                    var batchResult = await _rateLimitHelper.ExecuteWithRateLimitAsync<List<AiElementAnalysis>>(_url,
-                        async (urlWithKey) =>
-                        {
-                            using HttpClient client = new HttpClient();
-                            string json = JsonSerializer.Serialize(requestData);
-                            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                            var response = await client.PostAsync(urlWithKey, content);
-
-                            if (!response.IsSuccessStatusCode)
+                            GenerationConfig = new GenerationConfig
                             {
-                                throw new HttpRequestException($"API Error: {response.ReasonPhrase}", null, response.StatusCode);
+                                //MaxOutputTokens = 8192,
+                                Temperature = 0.2,      // Giữ nhiệt độ thấp để JSON chuẩn
+                                ResponseMimeType = "application/json" // Bắt buộc Gemini trả về JSON chuẩn (không markdown)
                             }
+                        };
 
-                            string result = await response.Content.ReadAsStringAsync();
-                            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                            var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                        int estimatedTokens = _rateLimitHelper.EstimateTokens(promptTemplate);
+                        int actualTokens = estimatedTokens;
 
-                            return DeserializeResponse<List<AiElementAnalysis>>(geminiResponse);
-                        });
+                        var (batchResult, keyId, initialEstimate) = await _rateLimitHelper.ExecuteWithRateLimitAsync<List<AiElementAnalysis>>(_url,
+                            async (urlWithKey) =>
+                            {
+                                using HttpClient client = new HttpClient();
+                                string json = JsonSerializer.Serialize(requestData);
+                                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                    if (batchResult != null)
-                    {
-                        finalResults.AddRange(batchResult);
+                                var response = await client.PostAsync(urlWithKey, content);
+
+                                if (!response.IsSuccessStatusCode)
+                                {
+                                    throw new HttpRequestException($"API Error: {response.ReasonPhrase}", null, response.StatusCode);
+                                }
+
+                                string result = await response.Content.ReadAsStringAsync();
+                                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                                var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+
+                                // LẤY ACTUAL TOKENS TỪ RESPONSE
+                                actualTokens = geminiResponse?.UsageMetadata?.PromptTokenCount ?? estimatedTokens;
+
+                                return DeserializeResponse<List<AiElementAnalysis>>(geminiResponse);
+                            },
+                            estimatedTokens: estimatedTokens
+                            );
+                        
+                        // UPDATE ACTUAL TOKENS
+                        if (actualTokens > 0)
+                        {
+                            await _rateLimitHelper.RateLimitManager.UpdateActualTokensAsync(keyId, actualTokens, estimatedTokens);
+                        }
+                        if (batchResult != null)
+                        {
+                            foreach (var item in batchResult)
+                            {
+                                finalResults.Add(item);
+                            }
+                        }
                     }
-                }
-                catch (Exception ex)
+                    finally
+                    {
+                        // Giải phóng semaphore để luồng khác có thể chạy
+                        semaphore.Release();
+                    }
+
+                }));
+            }
+            // Đợi tất cả các batch chạy xong
+            await Task.WhenAll(tasks);
+
+            return finalResults.ToList();
+        }
+
+        /// <summary>
+        /// Phân tích metadata SEO của trang web sử dụng Gemini AI
+        /// </summary>
+        /// <param name="metaData">Metadata đã được extract từ HTML</param>
+        /// <returns>Kết quả phân tích với suggestions</returns>
+        public async Task<MetaDataAnalysisResult> AnalyzeMetaDataSEO(MetaDataAnalysis metaData)
+        {
+            var jsonReadOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var jsonWriteOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping // Để hiển thị tiếng Việt đẹp trong prompt
+            };
+
+            var openGraphDict = !string.IsNullOrEmpty(metaData.OpenGraphData)
+                ? JsonSerializer.Deserialize<Dictionary<string, string>>(metaData.OpenGraphData, jsonReadOptions)
+                : new Dictionary<string, string>();
+
+            var twitterCardDict = !string.IsNullOrEmpty(metaData.TwitterCardData)
+                ? JsonSerializer.Deserialize<Dictionary<string, string>>(metaData.TwitterCardData, jsonReadOptions)
+                : new Dictionary<string, string>();
+
+            var otherMetaDict = !string.IsNullOrEmpty(metaData.OtherMetaData)
+                ? JsonSerializer.Deserialize<Dictionary<string, string>>(metaData.OtherMetaData, jsonReadOptions)
+                : new Dictionary<string, string>();
+
+            // Serialize metadata thành JSON để đưa vào prompt
+            var metaDataJson = JsonSerializer.Serialize(new
+            {
+                metaData.Title,
+                metaData.Description,
+                metaData.Keywords,
+                metaData.Charset,
+                metaData.Viewport,
+                metaData.Canonical,
+                metaData.Robots,
+                OpenGraph = openGraphDict,
+                TwitterCard = twitterCardDict,
+                OtherMeta = otherMetaDict
+            }, jsonWriteOptions);
+
+            string promptTemplate = $@"Bạn là chuyên gia SEO và phân tích metadata cho website.
+
+                **Nhiệm vụ:** Phân tích metadata sau đây và đưa ra đánh giá + gợi ý tối ưu SEO.
+
+                **Tiêu chí phân tích:**
+                1. **Title Tag:**
+                - Độ dài tối ưu: 50-60 ký tự
+                - Có chứa từ khóa chính không?
+                - Có hấp dẫn và mô tả đúng nội dung không?
+
+                2. **Meta Description:**
+                - Độ dài tối ưu: 150-160 ký tự
+                - Có call-to-action không?
+                - Có chứa từ khóa relevant không?
+
+                3. **Meta Keywords:**
+                - Tag này đã deprecated, nhưng nếu có thì kiểm tra có spam không
+
+                4. **Charset & Viewport:**
+                - Charset nên là UTF-8
+                - Viewport phải có cho responsive design
+
+                5. **Canonical URL:**
+                - Có được set đúng không?
+                - Tránh duplicate content
+
+                6. **Robots Meta Tag:**
+                - Có đang block indexing không?
+                - index/noindex, follow/nofollow có đúng không?
+
+                7. **Open Graph Tags (og:*):**
+                - Kiểm tra có đủ: og:title, og:description, og:image, og:url, og:type không
+                - Giá trị có phù hợp không?
+
+                8. **Twitter Cards:**
+                - Có twitter:card, twitter:title, twitter:description, twitter:image không?
+                - Loại card có phù hợp không? (summary, summary_large_image)
+
+                **Dữ liệu Metadata:**
+                {metaDataJson}
+
+                **Format Output:**
+                Bạn PHẢI trả về JSON với cấu trúc sau (100% tiếng Việt):
+
+                {{
+                    ""GeneralAssessment"": ""Đánh giá tổng quan về metadata SEO (tốt/trung bình/cần cải thiện)"",
+                    ""Suggestions"": [
+                        {{
+                            ""TagName"": ""Tên tag (ví dụ: 'title', 'meta description', 'og:image')"",
+                            ""CurrentValue"": ""Giá trị hiện tại (hoặc 'Không có' nếu thiếu)"",
+                            ""Issue"": ""Vấn đề cụ thể (ví dụ: 'Quá dài', 'Thiếu tag', 'Không tối ưu')"",
+                            ""Recommendation"": ""Gợi ý cải thiện cụ thể"",
+                            ""IsImportant"": true/false
+                        }}
+                    ]
+                }}
+
+                **Lưu ý quan trọng:**
+                - Chỉ trả về JSON, không có text khác
+                - Không dùng markdown code block (```json)
+                - Nội dung phải 100% tiếng Việt
+                - Chỉ đưa ra suggestions cho các tags có vấn đề hoặc thiếu
+                - Nếu metadata đã tối ưu hoàn toàn, Suggestions có thể rỗng []";
+
+            var requestData = new GeminiAIRequestModel
+            {
+                Contents = new[]
                 {
-                    Console.WriteLine($"Lỗi xử lý batch: {ex.Message}");
-                    // Có thể bỏ qua batch lỗi hoặc retry, nhưng không làm chết cả luồng
+                    new ContentRequest
+                    {
+                        Parts = new[]
+                        {
+                            new PartRequest
+                            {
+                                Text = promptTemplate,
+                            }
+                        }
+                    }
+                },
+                GenerationConfig = new GenerationConfig
+                {
+                    Temperature = 0.2,      // Nhiệt độ thấp để JSON chuẩn
+                    ResponseMimeType = "application/json"
                 }
+            };
+
+            int estimatedTokens = _rateLimitHelper.EstimateTokens(promptTemplate);
+            int actualTokens = estimatedTokens;
+
+            var (analysisResult, keyId, initialEstimate) = await _rateLimitHelper.ExecuteWithRateLimitAsync<MetaDataAnalysisResult>(_url,
+                async (urlWithKey) =>
+                {
+                    using HttpClient client = new HttpClient();
+                    string json = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync(urlWithKey, content);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new HttpRequestException($"API Error: {response.ReasonPhrase}", null, response.StatusCode);
+                    }
+
+                    string result = await response.Content.ReadAsStringAsync();
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                    
+                    // LẤY ACTUAL TOKENS TỪ RESPONSE
+                    actualTokens = geminiResponse?.UsageMetadata?.PromptTokenCount ?? estimatedTokens;
+                    
+                    return DeserializeResponse<MetaDataAnalysisResult>(geminiResponse);
+                },
+                estimatedTokens: estimatedTokens
+                );
+
+            // UPDATE ACTUAL TOKENS
+            if (actualTokens > 0)
+            {
+                await _rateLimitHelper.RateLimitManager.UpdateActualTokensAsync(keyId, actualTokens, estimatedTokens);
             }
 
-            return finalResults;
+            return analysisResult;
         }
 
         private T DeserializeResponse<T>(GeminiAIResponseModel geminiResponse)

@@ -154,7 +154,10 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 				}
 			};
 
-			var geminiResponse = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<AiOptimizationResponse>(_url,
+			int estimatedTokens = _geminiRateLimitHelper.EstimateTokens(promptTemplate);
+			int actualTokens = estimatedTokens;
+
+            var (geminiResponse, keyId, initialEstimate) = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<AiOptimizationResponse>(_url,
 				async (urlWithKey) =>
 				{
 					using HttpClient client = new HttpClient();
@@ -167,9 +170,21 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
                         throw new HttpRequestException($"Lỗi từ Gemini API: {response.StatusCode}. Chi tiết: {result}");
                     }
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-					var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
-					return DeserializeResponse<AiOptimizationResponse>(geminiResponse);
-                });
+					var geminiResponseModel = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+					
+					// LẤY ACTUAL TOKENS TỪ RESPONSE
+					actualTokens = geminiResponseModel?.UsageMetadata?.PromptTokenCount ?? estimatedTokens;
+					
+					return DeserializeResponse<AiOptimizationResponse>(geminiResponseModel);
+                },
+				estimatedTokens: estimatedTokens
+                );
+
+			// UPDATE ACTUAL TOKENS
+			if (actualTokens > 0)
+			{
+				await _geminiRateLimitHelper.RateLimitManager.UpdateActualTokensAsync(keyId, actualTokens, estimatedTokens);
+			}
 
 			return geminiResponse;
 		}

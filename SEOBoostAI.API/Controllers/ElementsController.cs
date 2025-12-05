@@ -101,7 +101,7 @@ namespace SEOBoostAI.API.Controllers
             try
             {
                 var result = await _elementService.Suggestion(analysisCacheID);
-                return Ok(new ResultModel<List<Element>>
+                return Ok(new ResultModel<List<ElementViewModel>>
                 {
                     Success = true,
                     Message = "Suggestions generated successfully.",
@@ -110,7 +110,7 @@ namespace SEOBoostAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new ResultModel<List<Element>>
+                return StatusCode(500, new ResultModel<List<ElementViewModel>>
                 {
                     Success = false,
                     Message = $"An error occurred while generating suggestions: {ex.Message}",

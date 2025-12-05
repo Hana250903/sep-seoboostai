@@ -106,7 +106,6 @@ namespace SEOBoostAI.Service.Services.Configurations
 
             await _geminiKeyRepository.UpdateKeyUsageAsync(
                 id, 
-                -key.RequestsUsedToday, 
                 -(int)key.TokensUsedToday, 
                 DateTime.UtcNow.Date
             );

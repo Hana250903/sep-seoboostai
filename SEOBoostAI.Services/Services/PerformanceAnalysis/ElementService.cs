@@ -9,7 +9,11 @@ using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 using System.Threading.Tasks;
 
 namespace SEOBoostAI.Service.Services.PerformanceAnalysis
@@ -18,17 +22,15 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
     {
         private readonly IElementRepository _elementRepository;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ICrawlingService _crawlingService;
         private readonly IAnalysisCacheRepository _analysisCacheRepository;
         private readonly IGeminiAIService _geminiAIService;
 
         public ElementService(IElementRepository elementRepository, IUnitOfWork unitOfWork, 
-            ICrawlingService crawlingService, IAnalysisCacheRepository analysisCacheRepository,
+            IAnalysisCacheRepository analysisCacheRepository,
             IGeminiAIService geminiAIService)
         {
             _elementRepository = elementRepository;
             _unitOfWork = unitOfWork;
-            _crawlingService = crawlingService;
             _analysisCacheRepository = analysisCacheRepository;
             _geminiAIService = geminiAIService;
         }
@@ -142,25 +144,37 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         {
             var lists = new List<ElementFinding>();
 
-            var lcp = _crawlingService.CheckLCP(htmlDoc);
+            var lcp = CheckElementHelper.CheckLCP(htmlDoc);
             foreach (var element in lcp)
             {
                 lists.Add(element);
             }
 
-            var cls = _crawlingService.CheckCLS(htmlDoc);
+            var cls = CheckElementHelper.CheckCLS(htmlDoc);
             foreach (var element in cls)
             {
                 lists.Add(element);
             }
 
-            var fcp = _crawlingService.CheckFCP(htmlDoc);
+            var fcp = CheckElementHelper.CheckFCP(htmlDoc);
             foreach (var element in fcp)
             {
                 lists.Add(element);
             }
 
-            var tbt = _crawlingService.FindThirdPartyScripts(htmlDoc, url);
+            var heading = CheckElementHelper.CheckHeadingStructure(htmlDoc);
+            foreach (var element in heading)
+            {
+                lists.Add(element);
+            }
+
+            var altText = CheckElementHelper.CheckMissingAltText(htmlDoc);
+            foreach (var element in altText)
+            {
+                lists.Add(element);
+            }
+
+            var tbt = CheckElementHelper.FindThirdPartyScripts(htmlDoc, url);
             foreach (var element in tbt)
             {
                 lists.Add(element);
@@ -169,9 +183,15 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             return lists;
         }
 
-        public async Task<List<Element>> PrepareElementsAsync(string url)
+        public async Task<AnalysisResultViewModel> AnalyzeFullPageAsync(string url)
         {
-            var htmlDoc = await _crawlingService.GetHtmlDocumentAsync(url);
+            string htmlContent = await HtmlFetchHelper.FetchHtmlAsync(url, useSelenium: true);
+
+            var htmlDoc = new HtmlDocument();
+            htmlDoc.LoadHtml(htmlContent);
+
+            var metaData = HtmlOptimizerHelper.ExtractMetaData(htmlContent);
+
             var lists = CheckElement(htmlDoc, url);
 
             var elements = new List<Element>();
@@ -186,15 +206,42 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     Important = true
                 });
             }
-            return elements;
+
+            var jsonOptions = new JsonSerializerOptions
+            {
+                // Chấp nhận mọi ký tự, không encode tiếng Việt
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                WriteIndented = false
+            };
+
+            var metaDataAnalysis = new MetaDataAnalysis
+            {
+                Url = url,
+                Title = metaData.Title,
+                Description = metaData.Description,
+                Keywords = metaData.Keywords,
+                Charset = metaData.Charset,
+                Viewport = metaData.Viewport,
+                Canonical = metaData.Canonical,
+                Robots = metaData.Robots,
+                OpenGraphData = metaData.OpenGraph.Count > 0 ? JsonSerializer.Serialize(metaData.OpenGraph, jsonOptions) : null,
+                TwitterCardData = metaData.TwitterCard.Count > 0 ? JsonSerializer.Serialize(metaData.TwitterCard, jsonOptions) : null,
+                OtherMetaData = metaData.OtherMeta.Count > 0 ? JsonSerializer.Serialize(metaData.OtherMeta, jsonOptions) : null,
+            };
+            var result = new AnalysisResultViewModel
+            {
+                Elements = elements,
+                MetaDataAnalysis = metaDataAnalysis
+            };
+            return result;
         }
 
-        public async Task<List<Element>> Suggestion(int analysisCacheID)
+        public async Task<List<ElementViewModel>> Suggestion(int analysisCacheID)
         {
             var analysisCache = await _analysisCacheRepository.GetAnalysisCacheAsync(analysisCacheID);
 
             var dbElements = analysisCache.Elements.ToList();
-            if (!dbElements.Any()) return dbElements;
+            if (!dbElements.Any()) return null;
 
             var requests = new List<ElementRequest>();
 
@@ -206,7 +253,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             }
 
             var geminiResults = await _geminiAIService.SuggestionElement(requests);
-
+            
             foreach (var aiResult in geminiResults)
             {
                 // Tìm phần tử tương ứng trong list đang track
@@ -226,7 +273,25 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 await _elementRepository.UpdateRangeAsync(dbElements);
                 await _unitOfWork.SaveChangesAsync();
 
-                return dbElements;
+                var elementViewModels = new List<ElementViewModel>();
+                foreach (var element in dbElements)
+                {
+                    if (element.HasSuggestion)
+                    {
+                        elementViewModels.Add(new ElementViewModel
+                        {
+                            TagName = element.TagName,
+                            InnerText = element.InnerText,
+                            OuterHTML = element.OuterHTML,
+                            Important = element.Important,
+                            HasSuggestion = element.HasSuggestion,
+                            AIRecommendation = element.AIRecommendation,
+                            Description = element.Description
+                        });
+                    }                    
+                }
+
+                return elementViewModels;
             }
             catch (Exception ex)
             {

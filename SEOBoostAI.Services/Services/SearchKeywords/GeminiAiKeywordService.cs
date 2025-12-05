@@ -85,7 +85,10 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                 Contents = new[] { new ContentRequest { Parts = new[] { new PartRequest { Text = promptTemplate } } } }
             };
 
-            var keywordResult = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<TrendParameters>(
+            int estimatedTokens = _geminiRateLimitHelper.EstimateTokens(promptTemplate);
+            int actualTokens = estimatedTokens;
+
+            var (keywordResult, keyId, initialEstimate) = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<TrendParameters>(
                 _url,
                 async (urlWithKey) =>
                 {
@@ -95,9 +98,22 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                     var response = await client.PostAsync(urlWithKey, content);
                     string result = await response.Content.ReadAsStringAsync();
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
-                    return DeserializeResponse<TrendParameters>(geminiResponse);
-                });
+                    var geminiResponseModel = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                    
+                    // LẤY ACTUAL TOKENS TỪ RESPONSE
+                    actualTokens = geminiResponseModel?.UsageMetadata?.PromptTokenCount ?? estimatedTokens;
+                    
+                    return DeserializeResponse<TrendParameters>(geminiResponseModel);
+                },
+                estimatedTokens
+                );
+            
+            // UPDATE ACTUAL TOKENS
+            if (actualTokens > 0)
+            {
+                await _geminiRateLimitHelper.RateLimitManager.UpdateActualTokensAsync(keyId, actualTokens, estimatedTokens);
+            }
+            
             return keywordResult;
         }
 

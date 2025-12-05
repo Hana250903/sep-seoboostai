@@ -39,14 +39,16 @@ namespace SEOBoostAI.API
             services.AddScoped<IPurchasedFeatureRepository, PurchasedFeatureRepository>();
             services.AddScoped<IFeedbackMessageRepository, FeedbackMessageRepository>();
             services.AddScoped<ISpamCacheRepository, SpamCacheRepository>();
+            services.AddScoped<IMetaDataAnalysisRepository, MetaDataAnalysisRepository>();
+            services.AddScoped<IMetaDataSuggestionRepository, MetaDataSuggestionRepository>();
+            services.AddScoped<IMetaTagSuggestionDetailRepository, MetaTagSuggestionDetailRepository>();
 
-			services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
             services.AddScoped<IAnalysisCacheService, AnalysisCacheService>();
             services.AddScoped<IContentOptimizationService, ContentOptimizationService>();
             services.AddScoped<IFeedbackService, FeedbackService>();
             services.AddScoped<IPageSpeedService, PageSpeedService>();
-            services.AddScoped<ICrawlingService, CrawlingService>();
             services.AddSingleton<ISystemConfigService, SystemConfigService>();
             services.AddScoped<IGeminiAIService, GeminiAIService>();
 			services.AddScoped<IGeminiContentOptimizer, GeminiContentOptimizer>();
@@ -62,6 +64,9 @@ namespace SEOBoostAI.API
             services.AddScoped<IChatNotifier, SignalRChatNotifier>();
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<ISpamProtectionService, SpamProtectionService>();
+            services.AddScoped<IMetaDataAnalysisService, MetaDataAnalysisService>();
+            services.AddScoped<IMetaDataSuggestionService, MetaDataSuggestionService>();
+            services.AddScoped<IMetaTagSuggestionDetailService, MetaTagSuggestionDetailService>();
 
             // test xong xóa ( 3 dòng dưới )
             services.AddScoped<IAdsPlannerService, AdsPlannerService>();

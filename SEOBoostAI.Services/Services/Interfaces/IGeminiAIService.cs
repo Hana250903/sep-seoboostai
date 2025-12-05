@@ -13,5 +13,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
     {
         Task<AiAssessment> SuggestionAnalysisPerformance(string newMetrics, string oldMetrics);
         Task<List<AiElementAnalysis>> SuggestionElement(List<ElementRequest> elements);
-	}
+        Task<MetaDataAnalysisResult> AnalyzeMetaDataSEO(MetaDataAnalysis metaData);
+    }
 }

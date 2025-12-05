@@ -66,7 +66,10 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                 Contents = new[] { new ContentRequest { Parts = new[] { new PartRequest { Text = promptTemplate } } } }
             };
 
-            var analysisResult = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<string>(
+            int estimatedTokens = _geminiRateLimitHelper.EstimateTokens(promptTemplate);
+            int actualTokens = estimatedTokens;
+
+            var (analysisResult, keyId, initialEstimate) = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<string>(
                 _url,
                 async (urlWithKey) =>
                 {
@@ -82,15 +85,18 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     try
                     {
-                        var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                        var geminiResponseModel = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
 
-                        if (geminiResponse?.Candidates == null || !geminiResponse.Candidates.Any())
+                        // LẤY ACTUAL TOKENS Từ RESPONSE
+                        actualTokens = geminiResponseModel?.UsageMetadata?.PromptTokenCount ?? estimatedTokens;
+
+                        if (geminiResponseModel?.Candidates == null || !geminiResponseModel.Candidates.Any())
                         {
                             return "Hiện tại hệ thống đang bận, vui lòng thử lại sau."; // Trả về thông báo thay vì crash
                         }
 
                         // Lấy văn bản thô
-                        string finalAnswer = geminiResponse.Candidates.First().Content.Parts.First().Text;
+                        string finalAnswer = geminiResponseModel.Candidates.First().Content.Parts.First().Text;
                         return finalAnswer.Trim();
                     }
                     catch (Exception ex)
@@ -98,7 +104,15 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                         // Log lỗi nếu cần
                         return "Đã xảy ra lỗi khi xử lý phản hồi từ AI.";
                     }
-                });
+                },
+                estimatedTokens: estimatedTokens
+                );
+
+            // UPDATE ACTUAL TOKENS
+            if (actualTokens > 0)
+            {
+                await _geminiRateLimitHelper.RateLimitManager.UpdateActualTokensAsync(keyId, actualTokens, estimatedTokens);
+            }
 
             return analysisResult;
         }

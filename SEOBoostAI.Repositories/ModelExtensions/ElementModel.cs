@@ -37,4 +37,15 @@ namespace SEOBoostAI.Repository.ModelExtensions
         public string Description { get; set; }
         public string AIRecommendation { get; set; }
     }
+
+    public class ElementViewModel
+    {
+        public string TagName { get; set; }
+        public string InnerText { get; set; }
+        public string OuterHTML { get; set; }
+        public bool Important { get; set; }
+        public bool HasSuggestion { get; set; }
+        public string AIRecommendation { get; set; }
+        public string Description { get; set; }
+    }
 }

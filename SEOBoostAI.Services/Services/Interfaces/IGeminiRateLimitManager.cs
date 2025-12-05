@@ -28,6 +28,14 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task MarkKeyRateLimitedAsync(int keyId);
 
         /// <summary>
+        /// Update số tokens thực tế từ Gemini response (thay thế estimated tokens)
+        /// </summary>
+        /// <param name="keyId">ID của key đã sử dụng</param>
+        /// <param name="actualTokens">Số tokens thực tế từ UsageMetadata.TotalTokenCount</param>
+        /// <param name="estimatedTokens">Số tokens đã ước tính trước đó (để trừ đi)</param>
+        Task UpdateActualTokensAsync(int keyId, int actualTokens, int estimatedTokens);
+
+        /// <summary>
         /// Reload danh sách keys từ database (dùng khi thêm/xóa key)
         /// </summary>
         Task ReloadKeysAsync();

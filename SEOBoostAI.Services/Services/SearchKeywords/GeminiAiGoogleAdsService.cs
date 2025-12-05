@@ -61,7 +61,10 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                 Contents = new[] { new ContentRequest { Parts = new[] { new PartRequest { Text = promptTemplate } } } }
             };
 
-            var googleAdsResult = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<List<AdsEvaluationItem>>(_url,
+            int estimatedTokens = _geminiRateLimitHelper.EstimateTokens(promptTemplate);
+            int actualTokens = estimatedTokens;
+
+            var (googleAdsResult, keyId, initialEstimate) = await _geminiRateLimitHelper.ExecuteWithRateLimitAsync<List<AdsEvaluationItem>>(_url,
                 async (urlWithKey) =>
                 {
                     using HttpClient client = new HttpClient();
@@ -70,9 +73,22 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                     var response = await client.PostAsync(urlWithKey, content);
                     string result = await response.Content.ReadAsStringAsync();
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    var geminiResponse = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
-                    return DeserializeResponse(geminiResponse);
-                });
+                    var geminiResponseModel = JsonSerializer.Deserialize<GeminiAIResponseModel>(result, options);
+                    
+                    // LẤY ACTUAL TOKENS Từ RESPONSE
+                    actualTokens = geminiResponseModel?.UsageMetadata?.PromptTokenCount ?? estimatedTokens;
+                    
+                    return DeserializeResponse(geminiResponseModel);
+                },
+                estimatedTokens: estimatedTokens
+                );
+            
+            // UPDATE ACTUAL TOKENS
+            if (actualTokens > 0)
+            {
+                await _geminiRateLimitHelper.RateLimitManager.UpdateActualTokensAsync(keyId, actualTokens, estimatedTokens);
+            }
+            
             return googleAdsResult;
         }
 

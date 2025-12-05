@@ -1,62 +1,16 @@
 ﻿using HtmlAgilityPack;
-using Microsoft.Extensions.Logging;
-using OpenQA.Selenium.BiDi.Script;
 using SEOBoostAI.Repository.ModelExtensions;
-using SEOBoostAI.Repository.Models;
-using SEOBoostAI.Repository.Repositories.Interfaces;
-using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEOBoostAI.Service.Services.PerformanceAnalysis
+namespace SEOBoostAI.Service.Helpers
 {
-    public class CrawlingService : ICrawlingService
+    public class CheckElementHelper
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ILogger<CrawlingService> _logger;
-        private readonly IElementRepository _elementRepository;
-
-        public CrawlingService(IHttpClientFactory httpClientFactory, ILogger<CrawlingService> logger, IElementRepository elementRepository)
-        {
-            _httpClientFactory = httpClientFactory;
-            _logger = logger;
-            _elementRepository = elementRepository;
-        }
-
-        public async Task<HtmlDocument> GetHtmlDocumentAsync(string url)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient();
-                // Giả lập user agent của trình duyệt để tránh bị chặn
-                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36");
-
-                _logger.LogInformation("Bắt đầu tải HTML từ: {Url}", url);
-                string htmlString = await httpClient.GetStringAsync(url);
-
-                if (string.IsNullOrWhiteSpace(htmlString))
-                {
-                    _logger.LogWarning("HTML trả về rỗng từ: {Url}", url);
-                    return null;
-                }
-
-                var htmlDoc = new HtmlDocument();
-                htmlDoc.LoadHtml(htmlString);
-
-                _logger.LogInformation("Tải và parse HTML thành công từ: {Url}", url);
-                return htmlDoc;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi tải hoặc parse HTML từ: {Url}", url);
-                return null;
-            }
-        }
-
-        public List<ElementFinding> CheckLCP(HtmlDocument htmlDoc)
+        public static List<ElementFinding> CheckLCP(HtmlDocument htmlDoc)
         {
             var findings = new List<ElementFinding>();
 
@@ -83,7 +37,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
         }
 
-        public List<ElementFinding> CheckCLS(HtmlDocument htmlDoc)
+        public static List<ElementFinding> CheckCLS(HtmlDocument htmlDoc)
         {
             var findings = new List<ElementFinding>();
 
@@ -94,7 +48,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 {
                     bool hasHtmlWidth = img.Attributes["width"] != null;
                     bool hasHtmlHeight = img.Attributes["height"] != null;
-                    if (hasHtmlWidth && hasHtmlHeight) return false;
+                    if (hasHtmlWidth && hasHtmlHeight) return false;//Okay nếu có cả 2 thuộc tính width và height
 
                     var styleAttribute = img.Attributes["style"];
                     if (styleAttribute != null)
@@ -102,8 +56,10 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                         string styleValue = styleAttribute.Value;
                         bool hasInlineWidth = styleValue.Contains("width:");
                         bool hasInlineHeight = styleValue.Contains("height:");
-                        if (hasInlineWidth && hasInlineHeight) return false;
+                        bool hasAspectRatio = styleValue.Contains("aspect-ratio:");
+                        if ((hasInlineWidth && hasInlineHeight) || hasAspectRatio) return false;//Okay nếu có cả 2 thuộc tính width và height trong style hoặc có aspect-ratio
                     }
+                    //Nếu không có thuộc tính width hoặc height nào, hoặc không có aspect-ratio, thì đây là ứng viên CLS
                     return true;
                 }).ToList();
 
@@ -135,11 +91,71 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             return findings;
         }
 
-        public List<ElementFinding> CheckFCP(HtmlDocument htmlDoc)
+        public static List<ElementFinding> CheckMissingAltText(HtmlDocument htmlDoc)
         {
-            //var blockingStylesheets = htmlDoc.DocumentNode.SelectNodes("//head/link[@rel='stylesheet']");
-            //var blockingScripts = htmlDoc.DocumentNode.SelectNodes("//head/script[not(@async) and not(@defer) and @src]");
+            var findings = new List<ElementFinding>();
 
+            // Lấy tất cả ảnh không có alt hoặc alt rỗng
+            var images = htmlDoc.DocumentNode.SelectNodes("//img[not(@alt) or @alt='']");
+
+            if (images != null)
+            {
+                foreach (var img in images)
+                {
+                    // Bỏ qua icon trang trí (thường có role="presentation" hoặc kích thước nhỏ)
+                    if (img.GetAttributeValue("role", "") == "presentation") continue;
+
+                    findings.Add(new ElementFinding
+                    {
+                        TagName = "img",
+                        OuterHtml = img.OuterHtml,
+                        InnerHtml = "Missing Alt Text", // Đánh dấu lỗi
+                    });
+                }
+            }
+            return findings;
+        }
+        public static List<ElementFinding> CheckHeadingStructure(HtmlDocument htmlDoc)
+        {
+            var findings = new List<ElementFinding>();
+
+            var h1 = htmlDoc.DocumentNode.SelectNodes("//h1");
+            if (h1 == null || h1.Count == 0)
+            {
+                findings.Add(new ElementFinding
+                {
+                    TagName = "h1",
+                    InnerHtml = "Missing H1 Tag",
+                    OuterHtml = "<h1>N/A</h1>" // Gán giá trị giả để không bị null
+                });
+            }
+            else if (h1.Count > 1)
+            {
+                // Gom tất cả các thẻ H1 lại thành một chuỗi string để lưu vào OuterHtml
+                string combinedH1Html = string.Join("\n", h1.Select(node => node.OuterHtml));
+                findings.Add(new ElementFinding
+                {
+                    TagName = "h1",
+                    InnerHtml = "Multiple H1 Tags found (Should imply only one)",
+                    OuterHtml = combinedH1Html
+                });
+            }
+
+            // Kiểm tra các thẻ H rỗng (SEO spam hoặc lỗi code)
+            var emptyHeadings = htmlDoc.DocumentNode.SelectNodes("//h1[not(normalize-space())] | //h2[not(normalize-space())] | //h3[not(normalize-space())]");
+            if (emptyHeadings != null)
+            {
+                foreach (var h in emptyHeadings)
+                {
+                    findings.Add(new ElementFinding { TagName = h.Name, OuterHtml = h.OuterHtml, InnerHtml = "Empty Heading" });
+                }
+            }
+
+            return findings;
+        }
+
+        public static List<ElementFinding> CheckFCP(HtmlDocument htmlDoc)
+        {
             var findings = new List<ElementFinding>();
 
             var allBlockingResources = htmlDoc.DocumentNode.SelectNodes(
@@ -155,15 +171,6 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             {
                 foreach (var resource in allBlockingResources)
                 {
-                    //if (resource.Name == "link")
-                    //{
-                    //    Console.WriteLine($"CSS: {resource.GetAttributeValue("href", "N/A")}");
-                    //}
-                    //else if (resource.Name == "script")
-                    //{
-                    //    Console.WriteLine($"Script: {resource.GetAttributeValue("src", "N/A")}");
-                    //}
-
                     findings.Add(new ElementFinding
                     {
                         TagName = resource.Name,
@@ -176,21 +183,20 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             return findings;
         }
 
-        public List<ElementFinding> FindThirdPartyScripts(HtmlDocument htmlDoc, string originalUrl)
+        public static List<ElementFinding> FindThirdPartyScripts(HtmlDocument htmlDoc, string originalUrl)
         {
             var findings = new List<ElementFinding>();
 
-            // 1. Lấy tên miền "first-party" (chủ nhà)
+            // Lấy tên miền "first-party"
             Uri baseUri;
             if (!Uri.TryCreate(originalUrl, UriKind.Absolute, out baseUri))
             {
                 return null;
             }
 
-            // Chuẩn hóa tên miền gốc, ví dụ "www.blazorise.com" -> "blazorise.com"
             string firstPartyHost = GetRootDomain(baseUri.Host);
 
-            // 2. Lấy tất cả các thẻ <script> có thuộc tính [src]
+            // Lấy tất cả các thẻ <script> có thuộc tính [src]
             var scriptNodes = htmlDoc.DocumentNode.SelectNodes("//script[@src]");
 
             if (scriptNodes == null)
@@ -206,7 +212,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 // Bỏ qua nếu src rỗng
                 if (string.IsNullOrWhiteSpace(src)) continue;
 
-                // 3. Xử lý các URL tương đối (ví dụ: /js/app.js)
+                // Xử lý các URL tương đối (ví dụ: /js/app.js)
                 // Nếu không phải là URL tuyệt đối, nó là first-party
                 if (!src.StartsWith("http://") && !src.StartsWith("https://") && !src.StartsWith("//"))
                 {
@@ -214,7 +220,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     continue;
                 }
 
-                // 4. Phân tích tên miền của script
+                // Phân tích tên miền của script
                 Uri scriptUri;
                 // Xử lý URL bắt đầu bằng // (ví dụ: //cdn.example.com)
                 if (src.StartsWith("//"))
@@ -226,7 +232,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 {
                     string scriptHost = GetRootDomain(scriptUri.Host);
 
-                    // 5. So sánh tên miền
+                    // So sánh tên miền
                     if (scriptHost != firstPartyHost)
                     {
                         findings.Add(new ElementFinding
@@ -241,7 +247,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             return findings;
         }
 
-        private string GetRootDomain(string host)
+        private static string GetRootDomain(string host)
         {
             if (host.StartsWith("www."))
             {
