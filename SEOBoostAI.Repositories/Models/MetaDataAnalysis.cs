@@ -35,5 +35,9 @@ public partial class MetaDataAnalysis
 
     public byte[] UrlHash { get; set; }
 
+    public int? AnalysisCacheID { get; set; }
+
+    public virtual AnalysisCache AnalysisCache { get; set; }
+
     public virtual ICollection<MetaDataSuggestion> MetaDataSuggestions { get; set; } = new List<MetaDataSuggestion>();
 }

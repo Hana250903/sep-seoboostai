@@ -303,6 +303,8 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.ToTable("MetaDataAnalysis");
 
+            entity.HasIndex(e => e.AnalysisCacheID, "IX_MetaDataAnalysis_AnalysisCacheID");
+
             entity.HasIndex(e => e.CreatedAt, "IX_MetaDataAnalysis_CreatedAt").IsDescending();
 
             entity.HasIndex(e => e.UrlHash, "IX_MetaDataAnalysis_UrlHash").IsUnique();
@@ -318,6 +320,10 @@ public partial class SEP_SEOBoostAIContext : DbContext
                 .HasMaxLength(32)
                 .HasComputedColumnSql("(CONVERT([varbinary](32),hashbytes('SHA2_256',[Url])))", false);
             entity.Property(e => e.Viewport).HasMaxLength(200);
+
+            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.MetaDataAnalyses)
+                .HasForeignKey(d => d.AnalysisCacheID)
+                .HasConstraintName("FK_MetaDataAnalysis_AnalysisCache");
         });
 
         modelBuilder.Entity<MetaDataSuggestion>(entity =>

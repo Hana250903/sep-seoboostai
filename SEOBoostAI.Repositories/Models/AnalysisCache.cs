@@ -27,5 +27,7 @@ public partial class AnalysisCache
 
     public virtual ICollection<Element> Elements { get; set; } = new List<Element>();
 
+    public virtual ICollection<MetaDataAnalysis> MetaDataAnalyses { get; set; } = new List<MetaDataAnalysis>();
+
     public virtual ICollection<PerformanceHistory> PerformanceHistories { get; set; } = new List<PerformanceHistory>();
 }
