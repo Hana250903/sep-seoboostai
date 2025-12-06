@@ -192,12 +192,12 @@ namespace SEOBoostAI.Service.Services.Payments
 			{
 				UserID = user.UserID,
 				Money = totalCost, // Số tiền bị trừ
-				GatewayTransactionId = "W_" + Guid.NewGuid().ToString("N"), // Mã giao dịch nội bộ
+				GatewayTransactionId = "U_" + Guid.NewGuid().ToString("N"), // Mã giao dịch nội bộ
 				BankTransId = null,
 				Type = "PURCHASE", // Loại giao dịch Mua hàng
 				Status = "COMPLETED", // Mua bằng Currency của user nên thành công ngay
 				Description = $"Mua {quantity} lượt {feature.Name}",
-				PaymentMethod = "Wallet Balance",
+				PaymentMethod = "Account Balance",
 				RequestTime = DateTime.UtcNow.AddHours(7),
 				CompletedTime = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false,
