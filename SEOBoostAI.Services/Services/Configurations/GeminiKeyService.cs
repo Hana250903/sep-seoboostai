@@ -14,12 +14,14 @@ namespace SEOBoostAI.Service.Services.Configurations
         private readonly IGeminiKeyRepository _geminiKeyRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IGeminiRateLimitManager _geminiRateLimitManager;
+        private readonly IEncryptionService _encryptionService;
 
-        public GeminiKeyService(IGeminiKeyRepository geminiKeyRepository, IUnitOfWork unitOfWork, IGeminiRateLimitManager geminiRateLimitManager)
+        public GeminiKeyService(IGeminiKeyRepository geminiKeyRepository, IUnitOfWork unitOfWork, IGeminiRateLimitManager geminiRateLimitManager, IEncryptionService encryptionService)
         {
             _geminiKeyRepository = geminiKeyRepository;
             _unitOfWork = unitOfWork;
             _geminiRateLimitManager = geminiRateLimitManager;
+            _encryptionService = encryptionService;
         }
 
         public async Task<IEnumerable<GeminiKey>> GetAllActiveKeysAsync()
@@ -34,6 +36,12 @@ namespace SEOBoostAI.Service.Services.Configurations
 
         public async Task<GeminiKey> CreateKeyAsync(GeminiKey geminiKey)
         {
+            // Encrypt API key before saving to database
+            if (!string.IsNullOrEmpty(geminiKey.ApiKey))
+            {
+                geminiKey.ApiKey = await _encryptionService.EncryptAsync(geminiKey.ApiKey);
+            }
+
             // Set default values
             geminiKey.CreatedAt = DateTime.UtcNow;
             geminiKey.LastResetDate = DateTime.UtcNow.Date;
@@ -60,6 +68,12 @@ namespace SEOBoostAI.Service.Services.Configurations
 
         public async Task UpdateKeyAsync(GeminiKey geminiKey)
         {
+            // Encrypt API key if it's being updated
+            if (!string.IsNullOrEmpty(geminiKey.ApiKey))
+            {
+                geminiKey.ApiKey = await _encryptionService.EncryptAsync(geminiKey.ApiKey);
+            }
+
             geminiKey.UpdatedAt = DateTime.UtcNow;
             await _geminiKeyRepository.UpdateAsync(geminiKey);
             await _unitOfWork.SaveChangesAsync();

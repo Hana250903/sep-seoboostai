@@ -85,6 +85,7 @@ namespace SEOBoostAI.API
 
             // Gemini Rate Limit Management
             services.AddScoped<IGeminiKeyRepository, GeminiKeyRepository>();
+            services.AddScoped<IEncryptionService, EncryptionService>(); // Encryption for Gemini API Keys
             services.AddScoped<IGeminiKeyService, GeminiKeyService>();
             services.AddSingleton<IGeminiRateLimitManager, GeminiRateLimitManager>();
             services.AddTransient<GeminiRateLimitHelper>();

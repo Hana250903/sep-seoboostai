@@ -16,6 +16,7 @@ namespace SEOBoostAI.Service.Services.Configurations
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private readonly IEncryptionService _encryptionService;
 
         // In-memory tracking cho mỗi key
         private class KeyUsageTracker
@@ -30,9 +31,10 @@ namespace SEOBoostAI.Service.Services.Configurations
 
         private ConcurrentDictionary<int, KeyUsageTracker> _keyTrackers = new ConcurrentDictionary<int, KeyUsageTracker>();
 
-        public GeminiRateLimitManager(IServiceScopeFactory scopeFactory)
+        public GeminiRateLimitManager(IServiceScopeFactory scopeFactory, IEncryptionService encryptionService)
         {
             _scopeFactory = scopeFactory;
+            _encryptionService = encryptionService;
         }
 
         // Hàm helper để lấy Repository trong một scope ngắn hạn
@@ -45,6 +47,12 @@ namespace SEOBoostAI.Service.Services.Configurations
 
                 foreach (var key in keys)
                 {
+                    // Decrypt API key before storing in memory
+                    if (!string.IsNullOrEmpty(key.ApiKey))
+                    {
+                        key.ApiKey = await _encryptionService.DecryptAsync(key.ApiKey);
+                    }
+
                     // Dùng TryAdd để tránh lỗi nếu key đã tồn tại
                     if (!_keyTrackers.ContainsKey(key.Id))
                     {
@@ -284,6 +292,12 @@ namespace SEOBoostAI.Service.Services.Configurations
                     var keys = await repo.GetAllActiveKeysAsync();
                     foreach (var key in keys)
                     {
+                        // Decrypt API key before storing in memory
+                        if (!string.IsNullOrEmpty(key.ApiKey))
+                        {
+                            key.ApiKey = await _encryptionService.DecryptAsync(key.ApiKey);
+                        }
+                        
                         _keyTrackers.TryAdd(key.Id, new KeyUsageTracker { Key = key });
                     }
                 }
