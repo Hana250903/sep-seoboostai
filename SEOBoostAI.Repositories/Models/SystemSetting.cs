@@ -14,4 +14,8 @@ public partial class SystemSetting
     public string Description { get; set; }
 
     public DateTime? LastUpdatedDate { get; set; }
+
+    public int? FeatureID { get; set; }
+
+    public virtual Feature Feature { get; set; }
 }

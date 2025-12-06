@@ -17,5 +17,7 @@ public partial class Feature
 
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
+    public virtual ICollection<SystemSetting> SystemSettings { get; set; } = new List<SystemSetting>();
+
     public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
 }

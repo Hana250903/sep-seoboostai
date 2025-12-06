@@ -9,7 +9,7 @@ public partial class Transaction
 {
     public int TransactionID { get; set; }
 
-    public int WalletID { get; set; }
+    public int UserID { get; set; }
 
     public decimal Money { get; set; }
 
@@ -35,5 +35,5 @@ public partial class Transaction
 
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
-    public virtual Wallet Wallet { get; set; }
+    public virtual User User { get; set; }
 }

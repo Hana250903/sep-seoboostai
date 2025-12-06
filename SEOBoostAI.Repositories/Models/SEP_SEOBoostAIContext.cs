@@ -70,8 +70,6 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
     public virtual DbSet<UserMonthlyFreeQuota> UserMonthlyFreeQuotas { get; set; }
 
-    public virtual DbSet<Wallet> Wallets { get; set; }
-
     public static string GetConnectionString(string connectionStringName)
     {
         var config = new ConfigurationBuilder()
@@ -186,7 +184,6 @@ public partial class SEP_SEOBoostAIContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.TagName).HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
 
@@ -481,6 +478,8 @@ public partial class SEP_SEOBoostAIContext : DbContext
             entity.Property(e => e.SettingValue)
                 .IsRequired()
                 .HasMaxLength(255);
+
+            entity.HasOne(d => d.Feature).WithMany(p => p.SystemSettings).HasForeignKey(d => d.FeatureID);
         });
 
         modelBuilder.Entity<Transaction>(entity =>
@@ -507,7 +506,9 @@ public partial class SEP_SEOBoostAIContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
 
-            entity.HasOne(d => d.Wallet).WithMany(p => p.Transactions).HasForeignKey(d => d.WalletID);
+            entity.HasOne(d => d.User).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.UserID)
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<TrendSearch>(entity =>
@@ -543,6 +544,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.Currency).HasColumnType("money");
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -578,23 +580,6 @@ public partial class SEP_SEOBoostAIContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.UserMonthlyFreeQuota)
                 .HasForeignKey(d => d.UserID)
                 .HasConstraintName("FK_UserMonthlyFreeQuota_Users_UserID");
-        });
-
-        modelBuilder.Entity<Wallet>(entity =>
-        {
-            entity.HasKey(e => e.WalletID).HasName("PK__Wallets__84D4F92E62A9210D");
-
-            entity.HasIndex(e => e.UserID, "UQ__Wallets__1788CCADC5872EDF").IsUnique();
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Currency).HasColumnType("money");
-            entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnType("datetime");
-
-            entity.HasOne(d => d.User).WithOne(p => p.Wallet).HasForeignKey<Wallet>(d => d.UserID);
         });
 
         OnModelCreatingPartial(modelBuilder);

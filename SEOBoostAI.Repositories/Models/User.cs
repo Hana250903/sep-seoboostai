@@ -35,6 +35,8 @@ public partial class User
 
     public bool IsDeleted { get; set; }
 
+    public decimal Currency { get; set; }
+
     public virtual ICollection<ContentOptimization> ContentOptimizations { get; set; } = new List<ContentOptimization>();
 
     public virtual ICollection<FeedbackMessage> FeedbackMessages { get; set; } = new List<FeedbackMessage>();
@@ -45,7 +47,7 @@ public partial class User
 
     public virtual ICollection<QueryHistory> QueryHistories { get; set; } = new List<QueryHistory>();
 
-    public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
+    public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 
-    public virtual Wallet Wallet { get; set; }
+    public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
 }
