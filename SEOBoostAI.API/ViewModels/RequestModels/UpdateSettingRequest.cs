@@ -11,5 +11,7 @@ namespace SEOBoostAI.API.ViewModels.RequestModels
         // Cho phép giá trị rỗng, nhưng không cho phép null
         [Required]
         public string Value { get; set; }
+
+        public int? FeatureID { get; set; }
     }
 }

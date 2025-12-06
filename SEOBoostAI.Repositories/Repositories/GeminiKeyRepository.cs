@@ -64,6 +64,17 @@ namespace SEOBoostAI.Repository.Repositories
             }
         }
 
+        public async Task ResetKeySpecificUsageAsync(int keyId)
+        {
+            await _context.GeminiKeys
+                .Where(k => k.Id == keyId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(k => k.RequestsUsedToday, 0) // Set cứng về 0
+                    .SetProperty(k => k.TokensUsedToday, 0)   // Set cứng về 0
+                    .SetProperty(k => k.LastResetDate, DateTime.UtcNow.Date) // Cập nhật ngày reset
+                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+        }
+
         public async Task MarkKeyRateLimitedAsync(int keyId, DateTime until)
         {
             await _context.GeminiKeys
@@ -81,6 +92,11 @@ namespace SEOBoostAI.Repository.Repositories
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(k => k.TokensUsedToday, k => k.TokensUsedToday + tokenDifference)
                     .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+        }
+
+        public async Task<bool> ExistsAsync(int id)
+        {
+            return await _context.GeminiKeys.AnyAsync(k => k.Id == id);
         }
     }
 }

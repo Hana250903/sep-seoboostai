@@ -65,6 +65,7 @@ namespace SEOBoostAI.API
             services.AddScoped<IMetaDataAnalysisService, MetaDataAnalysisService>();
             services.AddScoped<IMetaDataSuggestionService, MetaDataSuggestionService>();
             services.AddScoped<IMetaTagSuggestionDetailService, MetaTagSuggestionDetailService>();
+            services.AddScoped<IEncryptionService, EncryptionService>();
 
             // test xong xóa ( 3 dòng dưới )
             services.AddScoped<IAdsPlannerService, AdsPlannerService>();

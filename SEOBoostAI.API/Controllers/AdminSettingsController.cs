@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.API.ViewModels.RequestModels;
+using SEOBoostAI.Repository.ModelExtensions;
+using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
 
@@ -24,7 +26,24 @@ namespace SEOBoostAI.API.Controllers
         public IActionResult GetAllSettings()
         {
             var settings = _systemConfigService.GetAllSettings();
-            return Ok(settings);
+            return Ok(new ResultModel<Dictionary<string, string>>
+            {
+                Data = settings,
+                Message = "Lấy tất cả cài đặt hệ thống thành công.",
+                Success = true
+            });
+        }
+
+        [HttpGet("{featureId}")]
+        public async Task<IActionResult> GetSettingsByFeatureID(int featureId)
+        {
+            var settings = await _systemConfigService.GetAllSettingsByFeatureIDAsync(featureId);
+            return Ok(new ResultModel<List<SystemSetting>>
+            {
+                Data = settings,
+                Message = $"Lấy cài đặt hệ thống cho FeatureID {featureId} thành công.",
+                Success = true
+            });
         }
 
         [HttpPut]
@@ -37,7 +56,7 @@ namespace SEOBoostAI.API.Controllers
 
             try
             {
-                await _systemConfigService.UpdateValueAsync(request.Key, request.Value);
+                await _systemConfigService.UpdateValueAsync(request.Key, request.Value, request.FeatureID);
                 return Ok(new { message = $"Đã cập nhật '{request.Key}' thành công." });
             }
             catch (Exception ex)

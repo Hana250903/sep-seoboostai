@@ -2,11 +2,11 @@
 
 namespace SEOBoostAI.API.ViewModels.RequestModels
 {
-    public class QueryHistoryRequestModel
+    public class AnalyzeUrlRequestModel
     {
         [Required]
-        public int CurrentPage { get; set; } = 1;
+        public string Url { get; set; }
         [Required]
-        public int PageSize { get; set; } = 10;
+        public string Strategy { get; set; }
     }
 }

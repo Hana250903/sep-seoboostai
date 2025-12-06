@@ -110,6 +110,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
                         FullName = payload.Name,
                         Email = payload.Email,
                         Role = "Member",
+                        Currency = 0M,
                         Avatar = payload.Picture,
                         Password = "".Trim(),
                         CreatedAt = DateTime.UtcNow,

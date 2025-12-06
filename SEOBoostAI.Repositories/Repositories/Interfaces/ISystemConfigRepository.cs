@@ -10,5 +10,7 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 {
     public interface ISystemConfigRepository : IGenericRepository<SystemSetting>
     {
+        Task<List<SystemSetting>> GetAllSystemSettingsByFeatureIDAsync(int? featureID);
+        Task<SystemSetting?> GetByKeyAsync(string key);
     }
 }

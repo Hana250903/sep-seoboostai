@@ -17,5 +17,7 @@ public partial class SystemSetting
 
     public int? FeatureID { get; set; }
 
+    public int SettingID { get; set; }
+
     public virtual Feature Feature { get; set; }
 }

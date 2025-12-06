@@ -68,7 +68,7 @@ namespace SEOBoostAI.API.Controllers
         }
 
         [HttpPost("analyze")]
-        public async Task<IActionResult> AnalysisAnalysisCache ([FromBody] AnalyzeUrlViewModel model)
+        public async Task<IActionResult> AnalysisAnalysisCache ([FromBody] AnalyzeUrlRequestModel model)
         {
             if (!ModelState.IsValid)
             {

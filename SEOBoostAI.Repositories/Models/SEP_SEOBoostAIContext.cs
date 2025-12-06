@@ -247,7 +247,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
             entity.Property(e => e.ApiKey)
                 .IsRequired()
-                .HasMaxLength(500);
+                .HasMaxLength(600);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.KeyName).HasMaxLength(100);
@@ -468,13 +468,17 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<SystemSetting>(entity =>
         {
-            entity.HasKey(e => e.SettingKey).HasName("PK__SystemSe__01E719AC0E71B1F1");
+            entity.HasKey(e => e.SettingID).HasName("PK_SystemSettings_New");
 
-            entity.Property(e => e.SettingKey).HasMaxLength(100);
+            entity.HasIndex(e => new { e.SettingKey, e.FeatureID }, "UQ_SystemSettings_Key_Feature").IsUnique();
+
             entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.LastUpdatedDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.SettingKey)
+                .IsRequired()
+                .HasMaxLength(100);
             entity.Property(e => e.SettingValue)
                 .IsRequired()
                 .HasMaxLength(255);

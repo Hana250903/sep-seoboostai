@@ -14,34 +14,55 @@ namespace SEOBoostAI.Service.Services.Configurations
 {
     public class SystemConfigService : ISystemConfigService
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly ConcurrentDictionary<string, string> _settingsCache;
 
-        public SystemConfigService(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-            _settingsCache = new ConcurrentDictionary<string, string>();
+        private bool _isLoaded = false;
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
-            LoadAllSettings();
+        public SystemConfigService(IServiceScopeFactory scopeFactory)
+        {
+            _scopeFactory = scopeFactory;
+            _settingsCache = new ConcurrentDictionary<string, string>();
         }
 
-        private void LoadAllSettings()
+        // Hàm này đảm bảo data luôn được load trước khi lấy
+        private async Task EnsureLoadedAsync()
         {
-            using (var scope = _serviceProvider.CreateScope())
+            if (_isLoaded) return;
+
+            await _lock.WaitAsync();
+            try
             {
-                var configRepo = scope.ServiceProvider.GetRequiredService<ISystemConfigRepository>();
+                if (_isLoaded) return; // Double-check locking
 
-                var allSettings = configRepo.GetAllAsync().Result;
-
-                foreach (var setting in allSettings)
+                using (var scope = _scopeFactory.CreateScope())
                 {
-                    _settingsCache[setting.SettingKey] = setting.SettingValue;
+                    var configRepo = scope.ServiceProvider.GetRequiredService<ISystemConfigRepository>();
+                    var allSettings = await configRepo.GetAllAsync();
+
+                    foreach (var setting in allSettings)
+                    {
+                        _settingsCache[setting.SettingKey] = setting.SettingValue;
+                    }
+                    _isLoaded = true;
                 }
+            }
+            finally
+            {
+                _lock.Release();
             }
         }
 
         public T GetValue<T>(string key, T defaultValue)
         {
+            // Nếu bắt buộc giữ nguyên signature Sync:
+            if (!_isLoaded)
+            {
+                // Chạy async task để load nếu chưa có
+                Task.Run(async () => await EnsureLoadedAsync()).Wait();
+            }
+
             if (_settingsCache.TryGetValue(key, out var valueAsString))
             {
                 try
@@ -56,14 +77,16 @@ namespace SEOBoostAI.Service.Services.Configurations
             return defaultValue;
         }
 
-        public async Task UpdateValueAsync(string key, string newValue)
+        public async Task UpdateValueAsync(string key, string newValue, int? featureID)
         {
-            using (var scope = _serviceProvider.CreateScope())
+            await EnsureLoadedAsync();
+
+            using (var scope = _scopeFactory.CreateScope())
             {
                 var configRepo = scope.ServiceProvider.GetRequiredService<ISystemConfigRepository>();
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-                var setting = await configRepo.GetByIdAsync(key);
+                var setting = await configRepo.GetByKeyAsync(key);
 
                 if (setting != null)
                 {
@@ -77,7 +100,8 @@ namespace SEOBoostAI.Service.Services.Configurations
                     {
                         SettingKey = key,
                         SettingValue = newValue,
-                        LastUpdatedDate = DateTime.UtcNow
+                        LastUpdatedDate = DateTime.UtcNow,
+                        FeatureID = featureID == 0 ? null : featureID,
                     };
                     await configRepo.CreateAsync(newSetting);
                 }
@@ -91,6 +115,15 @@ namespace SEOBoostAI.Service.Services.Configurations
         public Dictionary<string, string> GetAllSettings()
         {
             return new Dictionary<string, string>(_settingsCache);
+        }
+
+        public async Task<List<SystemSetting>> GetAllSettingsByFeatureIDAsync(int? featureID)
+        {
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var configRepo = scope.ServiceProvider.GetRequiredService<ISystemConfigRepository>();
+                return await configRepo.GetAllSystemSettingsByFeatureIDAsync(featureID);
+            }
         }
     }
 }

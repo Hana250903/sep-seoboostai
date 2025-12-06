@@ -29,14 +29,14 @@ namespace SEOBoostAI.API.Controllers
 
         // GET: api/<PerformanceHistoriesController>
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] PerformanceHistoryRequestModel performanceHistoryRequestModel)
+        public async Task<IActionResult> Get([FromQuery] PerformanceHistoryGetAllRequestModel performanceHistoryGetAllRequestModel)
         {
             var userIdString = User.FindFirstValue("user_ID");
             if (!int.TryParse(userIdString, out int userId))
             {
                 return Unauthorized();
             }
-            var result = await _performanceHistoryService.GetPerformanceHistorysWithPagination(performanceHistoryRequestModel.CurrentPage, performanceHistoryRequestModel.PageSize, userId);
+            var result = await _performanceHistoryService.GetPerformanceHistorysWithPagination(performanceHistoryGetAllRequestModel.CurrentPage, performanceHistoryGetAllRequestModel.PageSize, userId);
             return Ok(new ResultModel<PaginationResult<List<PerformanceHistory>>>
             {
                 Success = true,
@@ -70,7 +70,7 @@ namespace SEOBoostAI.API.Controllers
 
         // POST api/<PerformanceHistoriesController>
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] PerformanceHistoryViewModel performanceHistoryViewModel)
+        public async Task<IActionResult> Post([FromBody] PerformanceHistoryRequestModel performanceHistoryViewModel)
         {
             var userIdString = User.FindFirstValue("user_ID");
             if (!int.TryParse(userIdString, out int userId))

@@ -14,9 +14,11 @@ namespace SEOBoostAI.Service.Services.Interfaces
         T GetValue<T>(string key, T defaultValue);
 
         // Cập nhật giá trị (bất đồng bộ vì ghi vào DB)
-        Task UpdateValueAsync(string key, string newValue);
+        Task UpdateValueAsync(string key, string newValue, int? featureID);
 
         // (Tùy chọn) Một hàm để lấy tất cả về cho trang Admin
         Dictionary<string, string> GetAllSettings();
+
+        Task<List<SystemSetting>> GetAllSettingsByFeatureIDAsync(int? featureID);
     }
 }

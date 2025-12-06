@@ -15,5 +15,7 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
         Task UpdateKeyUsageAsync(int keyId, int tokensToAdd, DateTime resetDate);
         Task MarkKeyRateLimitedAsync(int keyId, DateTime until);
         Task AdjustTokenUsageAsync(int keyId, int tokenDifference);
+        Task ResetKeySpecificUsageAsync(int keyId);
+        Task<bool> ExistsAsync(int id);
     }
 }
