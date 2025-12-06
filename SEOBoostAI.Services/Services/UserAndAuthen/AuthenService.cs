@@ -23,17 +23,15 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
     {
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IWalletRepository _walletRepository;
         private readonly IConfiguration _configuration;
         private readonly IUserMonthlyFreeQuotaService _userMonthlyFreeQuotaService;
         private readonly IFeatureRepository _featureRepository;
 
-        public AuthenService(IUserRepository userRepository, IUnitOfWork unitOfWork, IWalletRepository walletRepository, IConfiguration configuration, 
+        public AuthenService(IUserRepository userRepository, IUnitOfWork unitOfWork, IConfiguration configuration, 
             IUserMonthlyFreeQuotaService userMonthlyFreeQuotaService, IFeatureRepository featureRepository)
         {
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
-            _walletRepository = walletRepository;
             _configuration = configuration;
             _userMonthlyFreeQuotaService = userMonthlyFreeQuotaService;
             _featureRepository = featureRepository;
@@ -141,22 +139,6 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
                     {
                         await _unitOfWork.RollbackTransactionAsync();
                         throw new Exception("Failed to store refresh token for new user.");
-                    }
-
-                    // Create wallet
-                    Wallet wallet = new Wallet()
-                    {
-                        Currency = 0.0M,
-                        CreatedAt = DateTime.UtcNow,
-                        UserID = newUser.UserID
-                    };
-
-                    await _walletRepository.CreateAsync(wallet);
-                    var walletResult = await _unitOfWork.SaveChangesAsync();
-                    if (walletResult <= 0)
-                    {
-                        await _unitOfWork.RollbackTransactionAsync();
-                        throw new Exception("Failed to create user wallet.");
                     }
 
                     // Create user monthly free quota entries

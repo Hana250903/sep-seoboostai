@@ -1,5 +1,6 @@
 ﻿using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
+using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -14,12 +15,14 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly ITransactionRepository _transactionRepository;
+		private readonly IUnitOfWork _unitOfWork;
 
-        public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
+        public UserService(IUserRepository userRepository, ITransactionRepository transactionRepository, IUnitOfWork unitOfWork)
         {
             _userRepository = userRepository;
-            _unitOfWork = unitOfWork;
+            _transactionRepository = transactionRepository;
+			_unitOfWork = unitOfWork;
         }
 
         public async Task CreateAsync(User user)
@@ -110,5 +113,56 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
             await _unitOfWork.SaveChangesAsync();
             return listUser;
         }
-    }
+
+		public async Task TopUpAsync(int userId, decimal amount, int transactionId)
+		{
+			var user = await _userRepository.GetByIdAsync(userId);
+			if (user == null) throw new Exception("User không tồn tại");
+
+			// 1. Cộng tiền trực tiếp vào User
+			user.Currency += amount;
+			await _userRepository.UpdateAsync(user);
+
+			// 2. Cập nhật số dư cuối cùng vào Transaction
+			var transaction = await _transactionRepository.GetByIdAsync(transactionId);
+			if (transaction != null)
+			{
+				transaction.BalanceAfter = user.Currency;
+				await _transactionRepository.UpdateAsync(transaction);
+			}
+
+			await _unitOfWork.SaveChangesAsync();
+		}
+
+		public async Task<bool> DeductBalanceAsync(int userId, decimal amount)
+		{
+			try
+			{
+				// 1. Tìm User
+				var user = await _userRepository.GetByIdAsync(userId);
+				if (user == null) return false;
+
+				// 2. Kiểm tra số dư
+				if (user.Currency < amount)
+				{
+					return false; // Không đủ tiền
+				}
+
+				// 3. Trừ tiền
+				user.Currency -= amount;
+
+				await _userRepository.UpdateAsync(user);
+
+				// Lưu ý: Không gọi SaveChanges ở đây nếu bạn muốn gộp nó vào Transaction (UnitOfWork) ở Service gọi nó.
+				// Nhưng nếu UserService tự quản lý thì gọi luôn:
+				await _unitOfWork.SaveChangesAsync();
+
+				return true; // Trừ tiền thành công
+			}
+			catch (Exception)
+			{
+				return false; // Lỗi hệ thống
+			}
+		}
+	}
 }

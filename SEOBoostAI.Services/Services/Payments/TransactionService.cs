@@ -16,19 +16,19 @@ namespace SEOBoostAI.Service.Services.Payments
 	{
 		private readonly ITransactionRepository _transactionRepository;
 		private readonly IFeatureRepository _featureRepository;
-		private readonly IWalletRepository _walletRepository;
+		private readonly IUserRepository _userRepository;
 		private readonly IPurchasedFeatureRepository _purchasedFeatureRepository;
 		private readonly IUserMonthlyFreeQuotaRepository _userMonthlyFreeQuotaRepository;
 		private readonly IUnitOfWork _unitOfWork;
-		public TransactionService(ITransactionRepository transactionRepository, IUnitOfWork unitOfWork, 
+		public TransactionService(ITransactionRepository transactionRepository, IUnitOfWork unitOfWork, IUserRepository userRepository,
 			IFeatureRepository featureRepository, IUserMonthlyFreeQuotaRepository userMonthlyFreeQuotaRepository, 
-			IWalletRepository walletRepository, IPurchasedFeatureRepository purchasedFeatureRepository)
+			IPurchasedFeatureRepository purchasedFeatureRepository)
 		{
 			_transactionRepository = transactionRepository;
 			_unitOfWork = unitOfWork;
 			_featureRepository = featureRepository;
+			_userRepository = userRepository;
 			_userMonthlyFreeQuotaRepository = userMonthlyFreeQuotaRepository;
-			_walletRepository = walletRepository;
 			_purchasedFeatureRepository = purchasedFeatureRepository;
 		}
 		public async Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize)
@@ -85,11 +85,11 @@ namespace SEOBoostAI.Service.Services.Payments
 		}
 
 		// HÀM MỚI CHO PAYOS
-		public async Task<Transaction> CreatePendingDeposit(int walletId, decimal amount, string paymentMethod, string gatewayTransactionId)
+		public async Task<Transaction> CreatePendingDeposit(int userId, decimal amount, string paymentMethod, string gatewayTransactionId)
 		{
 			var newTransaction = new Transaction
 			{
-				WalletID = walletId,
+				UserID = userId,
 				Money = amount,
 				PaymentMethod = paymentMethod,
 				Type = "DEPOSIT",
@@ -172,45 +172,42 @@ namespace SEOBoostAI.Service.Services.Payments
 
 			decimal totalCost = feature.Price * quantity;
 
-			// 2. Lấy Ví người dùng
-			// (Giả sử bạn đã viết hàm GetWalletByUserId trong Repository)
-			var wallet = await _walletRepository.GetWalletByUserIdAsync(userId);
+			// 2. Lấy Currency của người dùng
+			var user = await _userRepository.GetByIdAsync(userId);
 
 			// 3. KIỂM TRA SỐ DƯ
-			if (wallet.Currency < totalCost)
+			if (user.Currency < totalCost)
 			{
 				throw new InvalidOperationException("Số dư trong ví không đủ để thực hiện giao dịch.");
 			}
 
 			// --- BẮT ĐẦU GIAO DỊCH (UnitOfWork sẽ đảm bảo tất cả cùng thành công hoặc cùng thất bại) ---
 
-			// 4. Trừ tiền trong Ví
-			wallet.Currency -= totalCost;
-			wallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
-			_walletRepository.UpdateAsync(wallet);
+			// 4. Trừ tiền trong User
+			user.Currency -= totalCost;
+			await _userRepository.UpdateAsync(user);
 
 			// 5. Tạo Transaction ghi nhận việc trừ tiền
 			var transaction = new Transaction
 			{
-				WalletID = wallet.WalletID,
+				UserID = user.UserID,
 				Money = totalCost, // Số tiền bị trừ
-				GatewayTransactionId = "W_" + Guid.NewGuid().ToString("N"), 
+				GatewayTransactionId = "W_" + Guid.NewGuid().ToString("N"), // Mã giao dịch nội bộ
 				BankTransId = null,
 				Type = "PURCHASE", // Loại giao dịch Mua hàng
-				Status = "COMPLETED", // Mua bằng ví nên thành công ngay
+				Status = "COMPLETED", // Mua bằng Currency của user nên thành công ngay
 				Description = $"Mua {quantity} lượt {feature.Name}",
 				PaymentMethod = "Wallet Balance",
 				RequestTime = DateTime.UtcNow.AddHours(7),
 				CompletedTime = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false,
-				BalanceAfter = wallet.Currency,
+				BalanceAfter = user.Currency,
 			};
 			await _transactionRepository.CreateAsync(transaction);
 			// Lưu ý: Phải SaveChanges 1 lần ở đây để lấy TransactionID cho bảng PurchasedFeatures
-			// Hoặc nếu EF Core thông minh, nó sẽ tự map. An toàn nhất là SaveChanges luôn.
 			await _unitOfWork.SaveChangesAsync();
 
-			// 6. Lưu vào bảng PurchasedFeatures (Lịch sử mua hàng chi tiết)
+			// 6. Lưu vào bảng PurchasedFeatures
 			var purchasedFeature = new PurchasedFeature
 			{
 				FeatureID = featureId,
@@ -220,7 +217,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				PurchaseDate = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false
 			};
-			// Giả sử bạn có Repository cho bảng này
+
 			await _purchasedFeatureRepository.CreateAsync(purchasedFeature);
 
 			// 8. Lưu tất cả thay đổi cuối cùng

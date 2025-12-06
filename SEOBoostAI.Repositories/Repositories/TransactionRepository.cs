@@ -39,8 +39,7 @@ namespace SEOBoostAI.Repository.Repositories
 		{
 			// 1. Tạo Query cơ bản (Chưa chạy lệnh SQL)
 			var query = _context.Set<Transaction>() // Nhớ dùng .Set<Transaction>()
-				.Include(t => t.Wallet)
-				.Where(t => t.Wallet.UserID == userId
+				.Where(t => t.UserID == userId
 							&& t.Status == "COMPLETED"  // Chỉ lấy thành công
 							&& t.Type == "DEPOSIT");    // Chỉ lấy nạp tiền
 

@@ -18,17 +18,15 @@ namespace SEOBoostAI.API.Controllers
 		private readonly Net.payOS.PayOS _payOS;
 		private readonly ITransactionService _transactionService;
 		private readonly ISystemConfigService _systemConfigService;
-		private readonly IWalletService _walletService;
 		private readonly IUserService _userService;
 		private readonly string _returnUrl;
 		private readonly string _cancelUrl;
 
-		public PaymentController(Net.payOS.PayOS payOS, ITransactionService transactionService, ISystemConfigService systemConfigService , IWalletService walletService, IUserService userService)
+		public PaymentController(Net.payOS.PayOS payOS, ITransactionService transactionService, ISystemConfigService systemConfigService, IUserService userService)
 		{
 			_payOS = payOS;
 			_transactionService = transactionService;
 			_systemConfigService = systemConfigService;
-			_walletService = walletService;
 			_userService = userService;
 			_returnUrl = _systemConfigService.GetValue<string>("Payment:ReturnUrl","");
 			_cancelUrl = _systemConfigService.GetValue<string>("Payment:CancelUrl","");
@@ -59,20 +57,12 @@ namespace SEOBoostAI.API.Controllers
 					return BadRequest(new { message = "Số tiền nạp quá lớn. Vui lòng liên hệ admin." });
 				}
 
-				// 2. Lấy WalletID từ UserID
-				var wallet = await _walletService.GetWalletByUserIdAsync(userId);
-
-				if (wallet == null)
-				{
-					return BadRequest(new { message = "Ví người dùng không tồn tại." });
-				}
-
 				// 1. TẠO MÃ ĐƠN HÀNG
 				long orderCode = long.Parse(DateTime.UtcNow.AddHours(7).ToString("yyMMddHHmmss") + new Random().Next(100, 999));
 
 				// 3. TẠO TRANSACTION "PENDING"
 				var newTransaction = await _transactionService.CreatePendingDeposit(
-					wallet.WalletID,
+					userId,
 					request.Amount,
 					"PayOS",
 					null // GatewayTransactionId sẽ cập nhật sau
@@ -118,41 +108,60 @@ namespace SEOBoostAI.API.Controllers
 			{
 				WebhookData verifiedData = _payOS.verifyPaymentWebhookData(webhookBody);
 
-				// --- Lấy mã chuỗi từ Webhook ---
 				string paymentLinkId = verifiedData.paymentLinkId;
-				// ------------------------------------------
+				long orderCode = verifiedData.orderCode;
 
+				// 1. TÌM GIAO DỊCH (CƠ CHẾ DỰ PHÒNG)
+				// Ưu tiên tìm bằng mã chuỗi (paymentLinkId)
+				var transaction = await _transactionService.GetByGatewayTransactionIdAsync(paymentLinkId);
+
+				// Nếu không thấy, tìm bằng mã số (orderCode)
+				if (transaction == null)
+				{
+					transaction = await _transactionService.GetByGatewayTransactionIdAsync(orderCode.ToString());
+				}
+
+				// Nếu vẫn không thấy -> Trả về OK để PayOS không spam lỗi nữa
+				if (transaction == null) return Ok(new { message = "Transaction not found" });
+
+				// 2. XỬ LÝ TRẠNG THÁI
 				if (verifiedData.code == "00") // Thành công
 				{
-					string bankTransInfo = "";
-					if (!string.IsNullOrEmpty(verifiedData.accountNumber)) bankTransInfo = verifiedData.accountNumber;
+					string bankTransInfo = !string.IsNullOrEmpty(verifiedData.accountNumber) ? verifiedData.accountNumber : "";
 
-					// GỌI SERVICE: Truyền paymentLinkId (chuỗi) vào để tìm
+					// Cập nhật trạng thái COMPLETED
 					await _transactionService.UpdateTransactionStatusAsync(
-						paymentLinkId, 
+						transaction.GatewayTransactionId, // Dùng ID chuẩn từ DB
 						"COMPLETED",
 						verifiedData.reference,
 						bankTransInfo
 					);
 
-					// Tìm lại để cộng tiền (Tìm bằng paymentLinkId)
-					var transaction = await _transactionService.GetByGatewayTransactionIdAsync(paymentLinkId);
+					// 3. CỘNG TIỀN (CHỈ CỘNG NẾU CHƯA CỘNG)
+					// Refresh lại dữ liệu từ DB để lấy BalanceAfter mới nhất
+					var refreshedTransaction = await _transactionService.GetTransactionByIdAsync(transaction.TransactionID);
 
-					if (transaction != null && transaction.Status == "COMPLETED" && transaction.Money == verifiedData.amount && transaction.BalanceAfter == null)
+					// Logic quan trọng: Chỉ cộng khi BalanceAfter là NULL (nghĩa là chưa từng cộng tiền)
+					// Và tiền phải khớp
+					if (refreshedTransaction.BalanceAfter == null && refreshedTransaction.Money == verifiedData.amount)
 					{
-						await _walletService.TopUp(transaction.WalletID, transaction.Money, transaction.TransactionID);
+						await _userService.TopUpAsync(
+							refreshedTransaction.UserID,
+							refreshedTransaction.Money,
+							refreshedTransaction.TransactionID
+						);
 					}
 				}
 				else // Thất bại
 				{
 					await _transactionService.UpdateTransactionStatusAsync(
-						paymentLinkId,
+						transaction.GatewayTransactionId,
 						"FAILED",
 						verifiedData.reference,
 						"Lỗi: " + verifiedData.desc
 					);
 				}
-				return Ok();
+				return Ok(new { message = "Webhook processed" });
 			}
 			catch (Exception ex)
 			{
@@ -181,12 +190,9 @@ namespace SEOBoostAI.API.Controllers
 				}
 
 				// 2. Nếu DB đã chốt trạng thái -> Trả về luôn
-				if (transaction.Status == "COMPLETED")
-					return Ok(new { status = "COMPLETED", message = "Giao dịch đã thành công" });
+				if (transaction.Status == "COMPLETED") return Ok(new { status = "COMPLETED", message = "Giao dịch đã thành công" });
 
-				if (transaction.Status == "CANCELED" || transaction.Status == "FAILED")
-					return Ok(new { status = "CANCELED", message = "Giao dịch đã bị hủy hoặc thất bại" });
-
+				if (transaction.Status == "CANCELED" || transaction.Status == "FAILED") return Ok(new { status = "CANCELED", message = "Giao dịch đã bị hủy hoặc thất bại" });
 
 				// --- TRƯỜNG HỢP THÀNH CÔNG ---
 				if (paymentLinkInfo.status == "PAID")
@@ -199,7 +205,6 @@ namespace SEOBoostAI.API.Controllers
 						bankInfo = $"{transactionInfo.counterAccountBankName} {transactionInfo.counterAccountNumber}";
 					}
 
-					// Cập nhật vào DB
 					await _transactionService.UpdateTransactionStatusAsync(
 						paymentLinkId,
 						"COMPLETED",
@@ -207,21 +212,18 @@ namespace SEOBoostAI.API.Controllers
 						bankInfo
 					);
 
-					// Cộng tiền (Chỉ cộng nếu trạng thái lúc lấy ra từ DB là PENDING)
-					// Để tránh cộng dồn nếu hàm này được gọi nhiều lần cùng lúc
-					if (transaction.Status == "PENDING")
-					{
-						await _walletService.TopUp(transaction.WalletID, transaction.Money, transaction.TransactionID);
-					}
-
+					// Cập nhật vào DB
 					if (transaction.BalanceAfter == null)
 					{
-						await _walletService.TopUp(transaction.WalletID, transaction.Money, transaction.TransactionID);
+						await _userService.TopUpAsync(
+							transaction.UserID,
+							transaction.Money,
+							transaction.TransactionID
+						);
 					}
 
 					return Ok(new { status = "COMPLETED", message = "Giao dịch thành công" });
 				}
-
 				// --- TRƯỜNG HỢP HỦY HOẶC HẾT HẠN ---
 				else if (paymentLinkInfo.status == "CANCELLED" || paymentLinkInfo.status == "EXPIRED")
 				{
@@ -234,7 +236,6 @@ namespace SEOBoostAI.API.Controllers
 
 					return Ok(new { status = "CANCELED", message = "Giao dịch đã bị hủy" });
 				}
-
 				// --- VẪN TREO ---
 				return Ok(new { status = "PENDING", message = "Đang chờ thanh toán" });
 			}

@@ -32,7 +32,6 @@ namespace SEOBoostAI.API
             services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();  
             services.AddScoped<IPerformanceHistoryRepository, PerformanceHistoryRepository>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
-            services.AddScoped<IWalletRepository, WalletRepositoriy>();
             services.AddScoped<IUserMonthlyFreeQuotaRepository, UserMonthlyFreeQuotaRepository>();
             services.AddScoped<IFeatureRepository, FeatureRepository>();
             services.AddScoped<IAnalysisSnapshotRepository, AnalysisSnapshotRepository>();
@@ -54,7 +53,6 @@ namespace SEOBoostAI.API
 			services.AddScoped<IGeminiContentOptimizer, GeminiContentOptimizer>();
 			services.AddScoped<IPerformanceHistoryService, PerformanceHistoryService>();
             services.AddScoped<ITransactionService, TransactionService>();
-            services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IUserMonthlyFreeQuotaService, UserMonthlyFreeQuotaService>();
             services.AddScoped<IFeatureService, FeatureService>();
             services.AddScoped<IAuthenService, AuthenService>();
