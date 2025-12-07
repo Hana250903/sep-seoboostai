@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SEOBoostAI.Repository.Enums;
 using SEOBoostAI.Repository.GenericRepository;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +20,7 @@ namespace SEOBoostAI.Repository.Repositories
 		{
 			var query = _context.Set<Transaction>()
 								.OrderByDescending(t => t.CompletedTime)
-								.Where(t => t.Status == "COMPLETED" && t.Type == "DEPOSIT")
+								.Where(t => t.Status == PaymentStatus.COMPLETED.ToString() && t.Type == PaymentType.DEPOSIT.ToString())
 								.AsQueryable();
 			var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
@@ -43,8 +43,8 @@ namespace SEOBoostAI.Repository.Repositories
 			// 1. Tạo Query cơ bản (Chưa chạy lệnh SQL)
 			var query = _context.Set<Transaction>() // Nhớ dùng .Set<Transaction>()
 				.Where(t => t.UserID == userId
-							&& t.Status == "COMPLETED"  // Chỉ lấy thành công
-							&& t.Type == "DEPOSIT");   // Chỉ lấy nạp tiền
+							&& t.Status == PaymentStatus.COMPLETED.ToString()  // Chỉ lấy thành công
+							&& t.Type == PaymentType.DEPOSIT.ToString());   // Chỉ lấy nạp tiền
 
 			// 2. Đếm tổng số lượng (để tính số trang)
 			var totalItems = await query.CountAsync();
@@ -70,14 +70,13 @@ namespace SEOBoostAI.Repository.Repositories
 
 		public async Task<Transaction> GetByGatewayTransactionIdAsync(string gatewayTransactionId)
 		{
-			return await _context.Set<Transaction>()
-								 .FirstOrDefaultAsync(t => t.GatewayTransactionId == gatewayTransactionId);
+			return await _context.Set<Transaction>().FirstOrDefaultAsync(t => t.GatewayTransactionId == gatewayTransactionId);
 		}
 
 		public async Task<List<Transaction>> GetExpiredPendingTransactionsAsync(DateTime threshold)
 		{
 			return await _context.Set<Transaction>()
-				.Where(t => t.Status == "PENDING" && t.RequestTime < threshold)
+				.Where(t => t.Status == PaymentStatus.PENDING.ToString() && t.RequestTime < threshold)
 				.ToListAsync();
 		}
 

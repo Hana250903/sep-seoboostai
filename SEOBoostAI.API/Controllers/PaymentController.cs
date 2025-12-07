@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Net.payOS.Types;
 using PayOS;
 using SEOBoostAI.API.ViewModels.RequestModels;
+using SEOBoostAI.Repository.Enums;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
 using System.Security.Claims;
@@ -132,7 +133,7 @@ namespace SEOBoostAI.API.Controllers
 					// Cập nhật trạng thái COMPLETED
 					await _transactionService.UpdateTransactionStatusAsync(
 						transaction.GatewayTransactionId, // Dùng ID chuẩn từ DB
-						"COMPLETED",
+						PaymentStatus.COMPLETED.ToString(),
 						verifiedData.reference,
 						bankTransInfo
 					);
@@ -156,7 +157,7 @@ namespace SEOBoostAI.API.Controllers
 				{
 					await _transactionService.UpdateTransactionStatusAsync(
 						transaction.GatewayTransactionId,
-						"FAILED",
+						PaymentStatus.FAILED.ToString(),
 						verifiedData.reference,
 						"Lỗi: " + verifiedData.desc
 					);
@@ -190,12 +191,12 @@ namespace SEOBoostAI.API.Controllers
 				}
 
 				// 2. Nếu DB đã chốt trạng thái -> Trả về luôn
-				if (transaction.Status == "COMPLETED") return Ok(new { status = "COMPLETED", message = "Giao dịch đã thành công" });
+				if (transaction.Status == PaymentStatus.COMPLETED.ToString()) return Ok(new { status = PaymentStatus.COMPLETED.ToString(), message = "Giao dịch đã thành công" });
 
-				if (transaction.Status == "CANCELED" || transaction.Status == "FAILED") return Ok(new { status = "CANCELED", message = "Giao dịch đã bị hủy hoặc thất bại" });
+				if (transaction.Status == PaymentStatus.CANCELED.ToString() || transaction.Status == PaymentStatus.FAILED.ToString()) return Ok(new { status = PaymentStatus.CANCELED.ToString(), message = "Giao dịch đã bị hủy hoặc thất bại" });
 
 				// --- TRƯỜNG HỢP THÀNH CÔNG ---
-				if (paymentLinkInfo.status == "PAID")
+				if (paymentLinkInfo.status == PaymentStatus.PAID.ToString())
 				{
 					// Lấy thông tin người chuyển (nếu có)
 					string bankInfo = "";
@@ -207,7 +208,7 @@ namespace SEOBoostAI.API.Controllers
 
 					await _transactionService.UpdateTransactionStatusAsync(
 						paymentLinkId,
-						"COMPLETED",
+						PaymentStatus.COMPLETED.ToString(),
 						paymentLinkInfo.id,
 						bankInfo
 					);
@@ -222,22 +223,22 @@ namespace SEOBoostAI.API.Controllers
 						);
 					}
 
-					return Ok(new { status = "COMPLETED", message = "Giao dịch thành công" });
+					return Ok(new { status = PaymentStatus.COMPLETED.ToString(), message = "Giao dịch thành công" });
 				}
 				// --- TRƯỜNG HỢP HỦY HOẶC HẾT HẠN ---
-				else if (paymentLinkInfo.status == "CANCELLED" || paymentLinkInfo.status == "EXPIRED")
+				else if (paymentLinkInfo.status == PaymentStatus.CANCELED.ToString() || paymentLinkInfo.status == PaymentStatus.EXPIRED.ToString())
 				{
 					await _transactionService.UpdateTransactionStatusAsync(
 						paymentLinkId,
-						"CANCELED",
+						PaymentStatus.CANCELED.ToString(),
 						paymentLinkInfo.id,
 						"Người dùng hủy hoặc link hết hạn"
 					);
 
-					return Ok(new { status = "CANCELED", message = "Giao dịch đã bị hủy" });
+					return Ok(new { status = PaymentStatus.CANCELED.ToString(), message = "Giao dịch đã bị hủy" });
 				}
 				// --- VẪN TREO ---
-				return Ok(new { status = "PENDING", message = "Đang chờ thanh toán" });
+				return Ok(new { status = PaymentStatus.PENDING.ToString(), message = "Đang chờ thanh toán" });
 			}
 			catch (Exception ex)
 			{

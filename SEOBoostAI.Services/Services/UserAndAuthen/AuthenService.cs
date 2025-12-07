@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
-using SEOBoostAI.Repository.Repositories;
+using SEOBoostAI.Repository.Enums;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -72,7 +72,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
                     throw new Exception("User account has been deleted.");
                 }
 
-                if (existUser.Role == "Admin" || existUser.Role == "Staff")
+                if (existUser.Role == UserRole.Admin.ToString() || existUser.Role == UserRole.Staff.ToString())
                 {
                     throw new Exception("Admin/Staff accounts cannot log in .");
                 }
@@ -109,7 +109,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
                         UserName = payload.Email.Split('@')[0].Trim(),
                         FullName = payload.Name,
                         Email = payload.Email,
-                        Role = "Member",
+                        Role = UserRole.Member.ToString(),
                         Currency = 0M,
                         Avatar = payload.Picture,
                         Password = "".Trim(),
@@ -208,7 +208,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
                     throw new Exception("User account has been deleted.");
                 }
 
-                if (existUser.Role == "Admin" || existUser.Role == "Member")
+                if (existUser.Role == UserRole.Admin.ToString() || existUser.Role == UserRole.Member.ToString())
                 {
                     throw new Exception("Admin/Member accounts cannot log in .");
                 }
@@ -278,7 +278,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
                     throw new Exception("User account has been deleted.");
                 }
 
-                if (existUser.Role == "Member" || existUser.Role == "Staff")
+                if (existUser.Role == UserRole.Member.ToString() || existUser.Role == UserRole.Staff.ToString())
                 {
                     throw new Exception("Member/Staff accounts cannot log in .");
                 }

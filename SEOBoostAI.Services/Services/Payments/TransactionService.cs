@@ -1,6 +1,6 @@
-﻿using SEOBoostAI.Repository.ModelExtensions;
+﻿using SEOBoostAI.Repository.Enums;
+using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
-using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -92,10 +92,10 @@ namespace SEOBoostAI.Service.Services.Payments
 				UserID = userId,
 				Money = amount,
 				PaymentMethod = paymentMethod,
-				Type = "DEPOSIT",
+				Type = PaymentType.DEPOSIT.ToString(),
 				Description = "Nạp tiền vào ví qua PayOS",
 				GatewayTransactionId = gatewayTransactionId,
-				Status = "PENDING", // Trạng thái quan trọng
+				Status = PaymentStatus.PENDING.ToString(), // Trạng thái quan trọng
 				RequestTime = DateTime.UtcNow,
 				IsDeleted = false
 				// GatewayTransactionId, BankTransId, CompletedTime sẽ được cập nhật bởi Webhook
@@ -122,7 +122,7 @@ namespace SEOBoostAI.Service.Services.Payments
 					throw new Exception($"Giao dịch với mã {gatewayTransactionId} không tồn tại.");
 				}
 
-				if (transaction.Status == "PENDING")
+				if (transaction.Status == PaymentStatus.PENDING.ToString())
 				{
 					transaction.Status = status;
 					transaction.BankTransId = bankTransId;
@@ -194,8 +194,8 @@ namespace SEOBoostAI.Service.Services.Payments
 				Money = totalCost, // Số tiền bị trừ
 				GatewayTransactionId = "U_" + Guid.NewGuid().ToString("N"), // Mã giao dịch nội bộ
 				BankTransId = null,
-				Type = "PURCHASE", // Loại giao dịch Mua hàng
-				Status = "COMPLETED", // Mua bằng Currency của user nên thành công ngay
+				Type = PaymentType.PURCHASE.ToString(), // Loại giao dịch Mua hàng
+				Status = PaymentStatus.COMPLETED.ToString(), // Mua bằng Currency của user nên thành công ngay
 				Description = $"Mua {quantity} lượt {feature.Name}",
 				PaymentMethod = "Account Balance",
 				RequestTime = DateTime.UtcNow,
