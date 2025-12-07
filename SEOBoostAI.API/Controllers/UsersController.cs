@@ -57,7 +57,7 @@ namespace SEOBoostAI.API.Controllers
 
         // GET api/<UsersController>/5
         [HttpGet("profile")]
-        public async Task<IActionResult> GetById()
+        public async Task<IActionResult> GetProfile()
         {
             var userIdString = User.FindFirstValue("user_ID");
             if (!int.TryParse(userIdString, out int userId))
@@ -70,6 +70,18 @@ namespace SEOBoostAI.API.Controllers
                 });
             }
             var user =  await _userService.GetUserByIdAsync(userId);
+            return Ok(new ResultModel<User>
+            {
+                Success = true,
+                Message = "User retrieved successfully.",
+                Data = user
+            });
+        }
+
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> Get(int userId)
+        {
+            var user = await _userService.GetUserByIdAsync(userId);
             return Ok(new ResultModel<User>
             {
                 Success = true,
