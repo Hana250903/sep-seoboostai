@@ -165,7 +165,16 @@ namespace SEOBoostAI.Service.Services.Configurations
         {
             var keys = await _geminiKeyRepository.GetAllActiveKeysAsync();
 
-            var stats = keys.Select(k => new
+            foreach (var key in keys)
+            {
+                // Decrypt API key for display purposes
+                if (!string.IsNullOrEmpty(key.ApiKey))
+                {
+                    key.ApiKey = await _encryptionService.DecryptAsync(key.ApiKey);
+                }
+            }
+
+            var stats = keys.Select(async k => new
             {
                 k.Id,
                 k.ApiKey,
