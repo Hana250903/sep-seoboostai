@@ -18,7 +18,7 @@ namespace SEOBoostAI.Repository.Repositories
 
 		public async Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize)
 		{
-			var query = _context.Set<Transaction>().AsQueryable();
+			var query = _context.Set<Transaction>().OrderByDescending(t => t.CompletedTime).AsQueryable();
 			var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 			var transactions = await query.Skip((currentPage - 1) * pageSize)
@@ -41,7 +41,7 @@ namespace SEOBoostAI.Repository.Repositories
 			var query = _context.Set<Transaction>() // Nhớ dùng .Set<Transaction>()
 				.Where(t => t.UserID == userId
 							&& t.Status == "COMPLETED"  // Chỉ lấy thành công
-							&& t.Type == "DEPOSIT");    // Chỉ lấy nạp tiền
+							&& t.Type == "DEPOSIT");   // Chỉ lấy nạp tiền
 
 			// 2. Đếm tổng số lượng (để tính số trang)
 			var totalItems = await query.CountAsync();
