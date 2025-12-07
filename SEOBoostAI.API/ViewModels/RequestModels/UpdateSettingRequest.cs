@@ -8,7 +8,6 @@ namespace SEOBoostAI.API.ViewModels.RequestModels
         [StringLength(100)]
         public string Key { get; set; }
 
-        // Cho phép giá trị rỗng, nhưng không cho phép null
         [Required]
         public string Value { get; set; }
 
