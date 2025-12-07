@@ -18,7 +18,10 @@ namespace SEOBoostAI.Repository.Repositories
 
 		public async Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize)
 		{
-			var query = _context.Set<Transaction>().OrderByDescending(t => t.CompletedTime).AsQueryable();
+			var query = _context.Set<Transaction>()
+								.OrderByDescending(t => t.CompletedTime)
+								.Where(t => t.Status == "COMPLETED" && t.Type == "DEPOSIT")
+								.AsQueryable();
 			var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 			var transactions = await query.Skip((currentPage - 1) * pageSize)
