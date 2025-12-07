@@ -10,10 +10,17 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
+using static System.Net.WebRequestMethods;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 {
@@ -22,6 +29,14 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         private readonly ISystemConfigService _systemConfigService;
         private readonly GeminiRateLimitHelper _rateLimitHelper;
         private readonly string _url;
+        private readonly string _promptSuggestionAnalysisTaskNewMetrics;
+        private readonly string _promptSuggestionAnalysisTaskOldMetrics;
+        private readonly string _promptSuggestionElement;
+        private readonly string _promptAnalysisMetadata;
+        private readonly double _temperatureSuggestionAnalysis;
+        private readonly double _temperatureSuggestionElement;
+        private readonly double _temperatureAnalysisMetadata;
+
         public GeminiAIService(
             ISystemConfigService systemConfigService,
             GeminiRateLimitHelper rateLimitHelper)
@@ -29,6 +44,16 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             _systemConfigService = systemConfigService;
             _rateLimitHelper = rateLimitHelper;
             _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
+            _promptSuggestionAnalysisTaskNewMetrics = _systemConfigService.GetValue<string>("GeminiPromptSuggestionAnalysisTaskNewMetrics", "");
+            _promptSuggestionAnalysisTaskOldMetrics = _systemConfigService.GetValue<string>("GeminiPromptSuggestionAnalysisTaskOldMetrics", "");
+
+            _promptSuggestionElement = _systemConfigService.GetValue<string>("GeminiPromptSuggestionElement", "");
+
+            _promptAnalysisMetadata = _systemConfigService.GetValue<string>("GeminiPromptAnalysisMetadata", "");
+
+            _temperatureSuggestionAnalysis = _systemConfigService.GetValue<double>("GeminiTemperatureSuggestion", 0.2);
+            _temperatureSuggestionElement = _systemConfigService.GetValue<double>("GeminiTemperatureElement", 0.2);
+            _temperatureAnalysisMetadata = _systemConfigService.GetValue<double>("GeminiTemperatureMetadata", 0.2);
         }
 
         public async Task<AiAssessment> SuggestionAnalysisPerformance(string newMetrics, string oldMetrics)
@@ -36,12 +61,19 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             string dataInputSection;
             string taskInstruction;
 
+            var temperature = _temperatureSuggestionAnalysis;
+
             if (string.IsNullOrEmpty(oldMetrics))
             {
                 // TRƯỜNG HỢP 1: CHỈ CÓ DỮ LIỆU MỚI (Phân tích thông thường)
-                taskInstruction = @"
+                /*taskInstruction = @"Bạn là một chuyên gia phân tích và tối ưu hiệu suất website (Core Web Vitals). 
+    
+                Nhiệm vụ của bạn là:
                     1. Phân tích các chỉ số này và viết một **đánh giá chung** (GeneralAssessment) về tình trạng hiệu suất hiện tại (ví dụ: Tốt, Cần cải thiện, Chậm).
-                    2. Đưa ra các **gợi ý/đề xuất** (Suggestion) để cải thiện các chỉ số yếu kém nhất.";
+                    2. Đưa ra các **gợi ý/đề xuất** (Suggestion) để cải thiện các chỉ số yếu kém nhất.
+
+                Bạn **PHẢI** trả về kết quả **CHỈ** bằng một đối tượng JSON hợp lệ, không có bất kỳ văn bản giải thích nào khác, không dùng markdown code block (```json ... ```). Nội dung bên trong JSON phải bằng tiếng Việt.";*/
+                taskInstruction = _promptSuggestionAnalysisTaskNewMetrics;
 
                 dataInputSection = $@"
                     Dữ liệu PageSpeed:
@@ -50,9 +82,16 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             else
             {
                 // TRƯỜNG HỢP 2: CÓ DỮ LIỆU CŨ (So sánh sự thay đổi)
-                taskInstruction = @"
-                    1. **So sánh** dữ liệu 'MỚI' so với 'CŨ'. Trong phần **GeneralAssessment**, bạn PHẢI nhận xét xem hiệu suất đã **TĂNG** hay **GIẢM**, chỉ ra cụ thể chỉ số nào thay đổi đáng kể (ví dụ: 'Điểm hiệu suất tăng từ 50 lên 70, LCP cải thiện 0.5s').
-                    2. Trong phần **Suggestion**, đưa ra lời khuyên dựa trên sự thay đổi. Nếu hiệu suất giảm, hãy cảnh báo. Nếu tăng nhưng chưa tối ưu, hãy gợi ý bước tiếp theo.";
+                /*taskInstruction = @"
+                    Bạn là một chuyên gia phân tích và tối ưu hiệu suất website (Core Web Vitals). 
+    
+                    Nhiệm vụ của bạn là:
+                        1. **So sánh** dữ liệu 'MỚI' so với 'CŨ'. Trong phần **GeneralAssessment**, bạn PHẢI nhận xét xem hiệu suất đã **TĂNG** hay **GIẢM**, chỉ ra cụ thể chỉ số nào thay đổi đáng kể (ví dụ: 'Điểm hiệu suất tăng từ 50 lên 70, LCP cải thiện 0.5s').
+                        2. Trong phần **Suggestion**, đưa ra lời khuyên dựa trên sự thay đổi. Nếu hiệu suất giảm, hãy cảnh báo. Nếu tăng nhưng chưa tối ưu, hãy gợi ý bước tiếp theo.
+
+                    Bạn **PHẢI** trả về kết quả **CHỈ** bằng một đối tượng JSON hợp lệ, không có bất kỳ văn bản giải thích nào khác, không dùng markdown code block (```json ... ```). Nội dung bên trong JSON phải bằng tiếng Việt.";*/
+
+                taskInstruction = _promptSuggestionAnalysisTaskOldMetrics;
 
                 dataInputSection = $@"
                     Dữ liệu CŨ (Lần trước):
@@ -63,12 +102,8 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             }
 
             // 2. Ghép vào Prompt Template chính
-            string promptTemplate = $@"Bạn là một chuyên gia phân tích và tối ưu hiệu suất website (Core Web Vitals). 
-    
-                Nhiệm vụ của bạn là:
+            string promptTemplate = $@"
                 {taskInstruction}
-
-                Bạn **PHẢI** trả về kết quả **CHỈ** bằng một đối tượng JSON hợp lệ, không có bất kỳ văn bản giải thích nào khác, không dùng markdown code block (```json ... ```). Nội dung bên trong JSON phải bằng tiếng Việt.
 
                 Sử dụng đúng cấu trúc JSON sau:
                 {{
@@ -96,8 +131,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 },
                 GenerationConfig = new GenerationConfig
                 {
-                    //MaxOutputTokens = 8192,
-                    Temperature = 0.2,      // Giữ nhiệt độ thấp để JSON chuẩn
+                    Temperature = temperature,      // Giữ nhiệt độ thấp để JSON chuẩn
                     ResponseMimeType = "application/json" // Bắt buộc Gemini trả về JSON chuẩn (không markdown)
                 }
             };
@@ -150,6 +184,25 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             // Dùng ConcurrentBag để thread-safe khi add kết quả từ nhiều luồng
             var finalResults = new ConcurrentBag<AiElementAnalysis>();
 
+
+            /*Bạn là chuyên gia Audit SEO &Core Web Vitals(LCP, CLS, INP).
+                        Nhiệm vụ: Phân tích danh sách các elements HTML được cung cấp dưới dạng JSON.
+                        Yêu cầu bắt buộc:
+                        1.Ngôn ngữ: TRẢ VỀ 100 % TIẾNG VIỆT.
+                        2.Output format: Chỉ trả về JSON Array hợp lệ.
+                        3.Xử lý logic cho từng loại thẻ:
+                           - `img`: Kiểm tra `alt`, `width`, `height` (tránh CLS), `loading = 'lazy'`.
+                           - `a`: Kiểm tra `href` có hợp lệ, có `aria - label` hoặc text mô tả không.
+                           - `link`: 
+                             +Nếu là CSS/ Font(`rel = 'stylesheet'`, `fonts.googleapis`...): Kiểm tra xem có gây chặn hiển thị(Render blocking) không.Đề xuất `preload` hoặc `preconnect`.
+                             +Kiểm tra tính bảo mật(https).
+                           - `script`: Kiểm tra `async` hoặc `defer` để tránh chặn main-thread.
+                        4.Quy định về nội dung trả về:
+                           -Nếu phát hiện lỗi / thiếu sót: Set `HasSuggestion` = true, `Important` = true(nếu lỗi nghiêm trọng như CLS / LCP), viết `Description` và `AIRecommendation`.
+                           -Nếu thẻ ĐÃ TỐI ƯU(Không lỗi): Set `HasSuggestion` = false.TRONG TRƯỜNG HỢP NÀY, `Description` phải ghi là ""Đã tối ưu chuẩn SEO / Performance""(KHÔNG ĐƯỢC ĐỂ RỖNG HOẶC NULL).*/
+            var promptTemplateBase = _promptSuggestionElement;
+            var temperature = _temperatureSuggestionElement;
+
             var batches = elements.Chunk(50).ToList();
 
             // Cấu hình song song
@@ -168,23 +221,8 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     {
                         string jsonRequest = JsonSerializer.Serialize(batch);
 
-                        string promptTemplate = $@"Bạn là chuyên gia Audit SEO & Core Web Vitals (LCP, CLS, INP).
-            
-                        Nhiệm vụ: Phân tích danh sách các elements HTML được cung cấp dưới dạng JSON.
-            
-                        Yêu cầu bắt buộc:
-                        1. Ngôn ngữ: TRẢ VỀ 100% TIẾNG VIỆT.
-                        2. Output format: Chỉ trả về JSON Array hợp lệ.
-                        3. Xử lý logic cho từng loại thẻ:
-                           - `img`: Kiểm tra `alt`, `width`, `height` (tránh CLS), `loading='lazy'`.
-                           - `a`: Kiểm tra `href` có hợp lệ, có `aria-label` hoặc text mô tả không.
-                           - `link`: 
-                             + Nếu là CSS/Font (`rel='stylesheet'`, `fonts.googleapis`...): Kiểm tra xem có gây chặn hiển thị (Render blocking) không. Đề xuất `preload` hoặc `preconnect`.
-                             + Kiểm tra tính bảo mật (https).
-                           - `script`: Kiểm tra `async` hoặc `defer` để tránh chặn main-thread.
-                        4. Quy định về nội dung trả về:
-                           - Nếu phát hiện lỗi/thiếu sót: Set `HasSuggestion` = true, `Important` = true (nếu lỗi nghiêm trọng như CLS/LCP), viết `Description` và `AIRecommendation`.
-                           - Nếu thẻ ĐÃ TỐI ƯU (Không lỗi): Set `HasSuggestion` = false. TRONG TRƯỜNG HỢP NÀY, `Description` phải ghi là ""Đã tối ưu chuẩn SEO/Performance"" (KHÔNG ĐƯỢC ĐỂ RỖNG HOẶC NULL).
+                        string promptTemplate = $@"
+                        {promptTemplateBase}
 
                         Dữ liệu Input:
                         {jsonRequest}
@@ -224,8 +262,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                         },
                             GenerationConfig = new GenerationConfig
                             {
-                                //MaxOutputTokens = 8192,
-                                Temperature = 0.2,      // Giữ nhiệt độ thấp để JSON chuẩn
+                                Temperature = temperature,      // Giữ nhiệt độ thấp để JSON chuẩn
                                 ResponseMimeType = "application/json" // Bắt buộc Gemini trả về JSON chuẩn (không markdown)
                             }
                         };
@@ -312,22 +349,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 ? JsonSerializer.Deserialize<Dictionary<string, string>>(metaData.OtherMetaData, jsonReadOptions)
                 : new Dictionary<string, string>();
 
-            // Serialize metadata thành JSON để đưa vào prompt
-            var metaDataJson = JsonSerializer.Serialize(new
-            {
-                metaData.Title,
-                metaData.Description,
-                metaData.Keywords,
-                metaData.Charset,
-                metaData.Viewport,
-                metaData.Canonical,
-                metaData.Robots,
-                OpenGraph = openGraphDict,
-                TwitterCard = twitterCardDict,
-                OtherMeta = otherMetaDict
-            }, jsonWriteOptions);
-
-            string promptTemplate = $@"Bạn là chuyên gia SEO và phân tích metadata cho website.
+            /*Bạn là chuyên gia SEO và phân tích metadata cho website.
 
                 **Nhiệm vụ:** Phân tích metadata sau đây và đưa ra đánh giá + gợi ý tối ưu SEO.
 
@@ -365,6 +387,34 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 - Có twitter:card, twitter:title, twitter:description, twitter:image không?
                 - Loại card có phù hợp không? (summary, summary_large_image)
 
+                **Lưu ý quan trọng:**
+                - Chỉ trả về JSON, không có text khác
+                - Không dùng markdown code block (```json)
+                - Nội dung phải 100% tiếng Việt
+                - Chỉ đưa ra suggestions cho các tags có vấn đề hoặc thiếu
+                - Nếu metadata đã tối ưu hoàn toàn, Suggestions có thể rỗng []
+             */
+            var promptTemplateBase = _promptAnalysisMetadata;
+            var temperature = _temperatureAnalysisMetadata;
+
+            // Serialize metadata thành JSON để đưa vào prompt
+            var metaDataJson = JsonSerializer.Serialize(new
+            {
+                metaData.Title,
+                metaData.Description,
+                metaData.Keywords,
+                metaData.Charset,
+                metaData.Viewport,
+                metaData.Canonical,
+                metaData.Robots,
+                OpenGraph = openGraphDict,
+                TwitterCard = twitterCardDict,
+                OtherMeta = otherMetaDict
+            }, jsonWriteOptions);
+
+            string promptTemplate = $@"
+                {promptTemplateBase}
+
                 **Dữ liệu Metadata:**
                 {metaDataJson}
 
@@ -382,14 +432,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                             ""IsImportant"": true/false
                         }}
                     ]
-                }}
-
-                **Lưu ý quan trọng:**
-                - Chỉ trả về JSON, không có text khác
-                - Không dùng markdown code block (```json)
-                - Nội dung phải 100% tiếng Việt
-                - Chỉ đưa ra suggestions cho các tags có vấn đề hoặc thiếu
-                - Nếu metadata đã tối ưu hoàn toàn, Suggestions có thể rỗng []";
+                }}";
 
             var requestData = new GeminiAIRequestModel
             {
@@ -408,7 +451,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 },
                 GenerationConfig = new GenerationConfig
                 {
-                    Temperature = 0.2,      // Nhiệt độ thấp để JSON chuẩn
+                    Temperature = temperature,      // Nhiệt độ thấp để JSON chuẩn
                     ResponseMimeType = "application/json"
                 }
             };

@@ -26,8 +26,8 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
         public async Task<PageSpeedResponse> GetPageSpeedAsync(string url, string strategy)
         {
-            string endpoint = _systemConfigService.GetValue<string>("PageSpeedAPI", "link");
-            var apiKey = _systemConfigService.GetValue<string>("ApiKey", "api");
+            string endpoint = _systemConfigService.GetValue<string>("PageSpeedRestAPI", "link");
+            var apiKey = _systemConfigService.GetValue<string>("PageSpeedAPIKey", "api");
 
             // Xây dựng URL với query parameters
             //var queryParams = new Dictionary<string, string>

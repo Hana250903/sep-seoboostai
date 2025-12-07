@@ -11,8 +11,10 @@ using SEOBoostAI.Service.Ultils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 {
@@ -90,6 +92,12 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             await _unitOfWork.BeginTransactionAsync();
             try
             {
+                // Check limit lần 2(Hard check - Quan trọng để chống hack / spam click)
+                if (!await _userMonthlyFreeQuotaService.CheckLimit(userId, featureId))
+                {
+                    throw new Exception("Bạn vừa hết lượt sử dụng.");
+                }
+
                 await _performanceHistoryRepository.CreateAsync(performanceHistory);
                 await _userMonthlyFreeQuotaService.IncrementUsageCount(userId, featureId);
                 await _unitOfWork.SaveChangesAsync();
