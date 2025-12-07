@@ -16,7 +16,6 @@ public partial class SystemSetting
     public string SettingKey { get; set; }
 
     [Required]
-    [StringLength(255)]
     public string SettingValue { get; set; }
 
     [StringLength(255)]

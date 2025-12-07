@@ -5,7 +5,6 @@ namespace SEOBoostAI.API.ViewModels.RequestModels
     public class UpdateSettingRequest
     {
         [Required]
-        [StringLength(100)]
         public string Key { get; set; }
 
         [Required]
