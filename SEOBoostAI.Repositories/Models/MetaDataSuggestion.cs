@@ -2,11 +2,15 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
 public partial class MetaDataSuggestion
 {
+    [Key]
     public int Id { get; set; }
 
     public int MetaDataAnalysisId { get; set; }
@@ -15,7 +19,10 @@ public partial class MetaDataSuggestion
 
     public DateTime? CreatedAt { get; set; }
 
+    [ForeignKey("MetaDataAnalysisId")]
+    [InverseProperty("MetaDataSuggestions")]
     public virtual MetaDataAnalysis MetaDataAnalysis { get; set; }
 
+    [InverseProperty("MetaDataSuggestion")]
     public virtual ICollection<MetaTagSuggestionDetail> MetaTagSuggestionDetails { get; set; } = new List<MetaTagSuggestionDetail>();
 }

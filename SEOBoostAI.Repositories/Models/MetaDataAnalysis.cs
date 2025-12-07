@@ -2,27 +2,42 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Table("MetaDataAnalysis")]
+[Index("AnalysisCacheID", Name = "IX_MetaDataAnalysis_AnalysisCacheID")]
+[Index("CreatedAt", Name = "IX_MetaDataAnalysis_CreatedAt", AllDescending = true)]
+[Index("UrlHash", Name = "IX_MetaDataAnalysis_UrlHash", IsUnique = true)]
 public partial class MetaDataAnalysis
 {
+    [Key]
     public int Id { get; set; }
 
+    [Required]
     public string Url { get; set; }
 
+    [StringLength(500)]
     public string Title { get; set; }
 
+    [StringLength(500)]
     public string Description { get; set; }
 
     public string Keywords { get; set; }
 
+    [StringLength(50)]
     public string Charset { get; set; }
 
+    [StringLength(200)]
     public string Viewport { get; set; }
 
+    [StringLength(2048)]
     public string Canonical { get; set; }
 
+    [StringLength(100)]
     public string Robots { get; set; }
 
     public string OpenGraphData { get; set; }
@@ -33,11 +48,15 @@ public partial class MetaDataAnalysis
 
     public DateTime? CreatedAt { get; set; }
 
+    [MaxLength(32)]
     public byte[] UrlHash { get; set; }
 
     public int? AnalysisCacheID { get; set; }
 
+    [ForeignKey("AnalysisCacheID")]
+    [InverseProperty("MetaDataAnalyses")]
     public virtual AnalysisCache AnalysisCache { get; set; }
 
+    [InverseProperty("MetaDataAnalysis")]
     public virtual ICollection<MetaDataSuggestion> MetaDataSuggestions { get; set; } = new List<MetaDataSuggestion>();
 }

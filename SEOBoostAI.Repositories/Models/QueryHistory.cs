@@ -2,24 +2,37 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Table("QueryHistory")]
 public partial class QueryHistory
 {
+    [Key]
     public int Id { get; set; }
 
     public int MemberId { get; set; }
 
+    [Required]
+    [StringLength(500)]
     public string OriginalQuestion { get; set; }
 
+    [Required]
     public string FinalAiResponse { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
     public int? AdsSearchRequestId { get; set; }
 
+    [ForeignKey("AdsSearchRequestId")]
+    [InverseProperty("QueryHistories")]
     public virtual AdsSearchRequest AdsSearchRequest { get; set; }
 
+    [ForeignKey("MemberId")]
+    [InverseProperty("QueryHistories")]
     public virtual User Member { get; set; }
 }

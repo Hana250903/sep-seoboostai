@@ -20,7 +20,7 @@ namespace SEOBoostAI.API.Controllers
 
 		// GET: api/<FeaturesController>
 		[HttpGet]
-		[Authorize(Roles = "Member")]
+		[Authorize(Roles = "Member, Admin, Staff")]
 		public async Task<IEnumerable<Feature>> Get()
 		{
 			return await _featureService.GetFeaturesAsync();

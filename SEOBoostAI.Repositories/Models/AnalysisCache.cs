@@ -2,32 +2,51 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Table("AnalysisCache")]
+[Index("NormalizedUrl", Name = "IX_AnalysisCache_NormalizedUrl")]
+[Index("NormalizedUrl", "Strategy", Name = "UQ_AnalysisCache_NormalizedUrl_Strategy", IsUnique = true)]
 public partial class AnalysisCache
 {
+    [Key]
     public int AnalysisCacheID { get; set; }
 
+    [Required]
+    [StringLength(255)]
     public string Url { get; set; }
 
+    [Required]
+    [StringLength(255)]
     public string NormalizedUrl { get; set; }
 
+    [Required]
+    [StringLength(50)]
     public string Strategy { get; set; }
 
+    [Required]
     public string PageSpeedResponse { get; set; }
 
     public string GeneralAssessment { get; set; }
 
     public string Suggestion { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime LastAnalyzedAt { get; set; }
 
+    [InverseProperty("AnalysisCache")]
     public virtual ICollection<AnalysisSnapshot> AnalysisSnapshots { get; set; } = new List<AnalysisSnapshot>();
 
+    [InverseProperty("AnalysisCache")]
     public virtual ICollection<Element> Elements { get; set; } = new List<Element>();
 
+    [InverseProperty("AnalysisCache")]
     public virtual ICollection<MetaDataAnalysis> MetaDataAnalyses { get; set; } = new List<MetaDataAnalysis>();
 
+    [InverseProperty("AnalysisCache")]
     public virtual ICollection<PerformanceHistory> PerformanceHistories { get; set; } = new List<PerformanceHistory>();
 }
