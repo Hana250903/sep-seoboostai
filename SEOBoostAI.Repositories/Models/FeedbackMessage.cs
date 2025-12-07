@@ -2,11 +2,16 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Index("FeedbackID", Name = "IX_FeedbackMessages_FeedbackID")]
 public partial class FeedbackMessage
 {
+    [Key]
     public int MessageID { get; set; }
 
     public int FeedbackID { get; set; }
@@ -15,11 +20,16 @@ public partial class FeedbackMessage
 
     public string Content { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime CreatedAt { get; set; }
 
     public bool IsDeleted { get; set; }
 
+    [ForeignKey("FeedbackID")]
+    [InverseProperty("FeedbackMessages")]
     public virtual Feedback Feedback { get; set; }
 
+    [ForeignKey("SenderID")]
+    [InverseProperty("FeedbackMessages")]
     public virtual User Sender { get; set; }
 }

@@ -2,30 +2,50 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Index("Query", "Geolocation", "Timeframe", "Language", "CreatedAt", Name = "IX_TrendSearches_CacheCheck")]
 public partial class TrendSearch
 {
+    [Key]
     public int Id { get; set; }
 
+    [Required]
+    [StringLength(255)]
     public string Query { get; set; }
 
+    [Required]
+    [StringLength(10)]
+    [Unicode(false)]
     public string Geolocation { get; set; }
 
+    [StringLength(10)]
+    [Unicode(false)]
     public string Language { get; set; }
 
+    [StringLength(50)]
+    [Unicode(false)]
     public string Timeframe { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
+    [InverseProperty("TrendSearch")]
     public virtual ICollection<InterestByRegion> InterestByRegions { get; set; } = new List<InterestByRegion>();
 
+    [InverseProperty("TrendSearch")]
     public virtual ICollection<InterestOverTime> InterestOverTimes { get; set; } = new List<InterestOverTime>();
 
+    [InverseProperty("TrendSearch")]
     public virtual ICollection<RegionComparison> RegionComparisons { get; set; } = new List<RegionComparison>();
 
+    [InverseProperty("TrendSearch")]
     public virtual ICollection<RelatedQuery> RelatedQueries { get; set; } = new List<RelatedQuery>();
 
+    [InverseProperty("TrendSearch")]
     public virtual ICollection<RelatedTopic> RelatedTopics { get; set; } = new List<RelatedTopic>();
 }

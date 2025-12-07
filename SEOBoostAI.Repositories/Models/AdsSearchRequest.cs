@@ -2,20 +2,30 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Index("QueryHash", Name = "IX_AdsSearchRequests_QueryHash")]
 public partial class AdsSearchRequest
 {
+    [Key]
     public int Id { get; set; }
 
+    [Required]
     public string QueryList { get; set; }
 
+    [MaxLength(32)]
     public byte[] QueryHash { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
+    [InverseProperty("AdsSearchRequest")]
     public virtual ICollection<AdsKeywordDatum> AdsKeywordData { get; set; } = new List<AdsKeywordDatum>();
 
+    [InverseProperty("AdsSearchRequest")]
     public virtual ICollection<QueryHistory> QueryHistories { get; set; } = new List<QueryHistory>();
 }

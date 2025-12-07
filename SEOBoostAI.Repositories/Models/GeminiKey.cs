@@ -2,27 +2,40 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Index("IsActive", "RequestsUsedToday", "RateLimitedUntil", Name = "IX_GeminiKeys_GetAvailable")]
 public partial class GeminiKey
 {
+    [Key]
     public int Id { get; set; }
 
+    [Required]
+    [StringLength(600)]
     public string ApiKey { get; set; }
 
+    [StringLength(100)]
     public string KeyName { get; set; }
 
     public bool IsActive { get; set; }
-
+    [Required]
+    [Range(0, 5, ErrorMessage = "Giới hạn của RPM(request per minute) là 5")]
     public int RpmLimit { get; set; }
-
+    [Required]
+    [Range(0, 250000, ErrorMessage = "Giới hạn của TPM(Token per minute) là 250000")]
     public int TpmLimit { get; set; }
-
+    [Required]
+    [Range(0, 20, ErrorMessage = "Giới hạn của RPD(Requests per day) là 20")]
     public int RpdLimit { get; set; }
-
+    [Required]
+    [Range(0, int.MaxValue)]
     public int RequestsUsedToday { get; set; }
-
+    [Required]
+    [Range(0, long.MaxValue)]
     public long TokensUsedToday { get; set; }
 
     public DateTime LastResetDate { get; set; }
