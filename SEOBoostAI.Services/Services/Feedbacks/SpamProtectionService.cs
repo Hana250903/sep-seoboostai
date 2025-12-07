@@ -23,7 +23,7 @@ namespace SEOBoostAI.Service.Services.Feedbacks
         public bool IsUserSpamming(string userId)
         {
             var lastTime = _spamRepo.GetLastMessageTime(userId);
-            var now = DateTime.UtcNow.AddHours(7);
+            var now = DateTime.UtcNow;
 
             if (lastTime.HasValue)
             {

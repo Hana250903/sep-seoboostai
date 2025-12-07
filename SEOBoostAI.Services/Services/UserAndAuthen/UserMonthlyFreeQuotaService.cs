@@ -108,7 +108,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 					var checkMonthly = CheckMonthly(userMonthlyFreeQuota.MonthYear);
 					if (checkMonthly)
 					{
-						var currentMonth = DateTime.UtcNow.AddHours(7).ToString("yyyy-MM");
+						var currentMonth = DateTime.UtcNow.ToString("yyyy-MM");
 						userMonthlyFreeQuota.MonthYear = currentMonth;
                         userMonthlyFreeQuota.UsageCount = 0;
                         await _userMonthlyFreeQuotaRepository.UpdateAsync(userMonthlyFreeQuota);
@@ -174,7 +174,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 			if (userQuota != null && userQuota.UsageCount < userQuota.MonthlyLimit)
 			{
 				userQuota.UsageCount += 1;
-				userQuota.LastUsedAt = DateTime.UtcNow.AddHours(7);
+				userQuota.LastUsedAt = DateTime.UtcNow;
 				await _userMonthlyFreeQuotaRepository.UpdateAsync(userQuota);
 				// Lưu ý: SaveChangesAsync sẽ được gọi ở ContentOptimizationService
 				return;
@@ -204,7 +204,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 			var features = await _featureRepository.GetAllAsync();
 
 			// 2. Lấy Quota Free hiện tại của User
-			var currentMonth = DateTime.UtcNow.AddHours(7).ToString("yyyy-MM");
+			var currentMonth = DateTime.UtcNow.ToString("yyyy-MM");
 
 			var freeQuotas = await _userMonthlyFreeQuotaRepository.GetQuotasByUserId(userId);
 

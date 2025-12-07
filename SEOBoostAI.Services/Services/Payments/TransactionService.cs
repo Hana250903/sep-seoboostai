@@ -96,7 +96,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				Description = "Nạp tiền vào ví qua PayOS",
 				GatewayTransactionId = gatewayTransactionId,
 				Status = "PENDING", // Trạng thái quan trọng
-				RequestTime = DateTime.UtcNow.AddHours(7),
+				RequestTime = DateTime.UtcNow,
 				IsDeleted = false
 				// GatewayTransactionId, BankTransId, CompletedTime sẽ được cập nhật bởi Webhook
 			};
@@ -126,7 +126,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				{
 					transaction.Status = status;
 					transaction.BankTransId = bankTransId;
-					transaction.CompletedTime = DateTime.UtcNow.AddHours(7);
+					transaction.CompletedTime = DateTime.UtcNow;
 					await UpdateAsync(transaction);
 				}
 			}
@@ -198,8 +198,8 @@ namespace SEOBoostAI.Service.Services.Payments
 				Status = "COMPLETED", // Mua bằng Currency của user nên thành công ngay
 				Description = $"Mua {quantity} lượt {feature.Name}",
 				PaymentMethod = "Account Balance",
-				RequestTime = DateTime.UtcNow.AddHours(7),
-				CompletedTime = DateTime.UtcNow.AddHours(7),
+				RequestTime = DateTime.UtcNow,
+				CompletedTime = DateTime.UtcNow,
 				IsDeleted = false,
 				BalanceAfter = user.Currency,
 			};
@@ -214,7 +214,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				TransactionID = transaction.TransactionID, // Link với giao dịch vừa tạo
 				TotalQuantity = quantity,
 				RemainingQuantity = quantity, // (Nếu bạn muốn track riêng)
-				PurchaseDate = DateTime.UtcNow.AddHours(7),
+				PurchaseDate = DateTime.UtcNow,
 				IsDeleted = false
 			};
 

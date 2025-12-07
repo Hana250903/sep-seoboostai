@@ -110,7 +110,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 Url = normalizedUrl,
                 NormalizedUrl = normalizedUrl,
                 Strategy = strategy,
-                LastAnalyzedAt = DateTime.UtcNow.AddHours(7)
+                LastAnalyzedAt = DateTime.UtcNow
             };
 
             var apiResult = await _pageSpeedService.GetPageSpeedAsync(normalizedUrl, strategy);
@@ -183,7 +183,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 AnalysisCacheID = analysisCacheModel.AnalysisCacheID,
                 PageSpeedResponse = analysisCacheModel.PageSpeedResponse,
                 AnalyzedAt = analysisCacheModel.LastAnalyzedAt,
-                ArchivedAt = DateTime.UtcNow.AddHours(7)
+                ArchivedAt = DateTime.UtcNow
             };
 
             try
@@ -228,7 +228,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
             var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(newMetrics), analysisCacheModel.PageSpeedResponse);
 
-            analysisCacheModel.LastAnalyzedAt = DateTime.UtcNow.AddHours(7);
+            analysisCacheModel.LastAnalyzedAt = DateTime.UtcNow;
             analysisCacheModel.PageSpeedResponse = JsonSerializer.Serialize(newMetrics);
             analysisCacheModel.Suggestion = geminiResponse.Suggestion;
             analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
@@ -253,7 +253,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
         public async Task<AnalysisCache> GetOrCreateFreshAnalysisCacheAsync(string normalizedUrl, string strategy)
         {
-            var staleThreshold = DateTime.UtcNow.AddHours(7).Subtract(_cacheDuration);
+            var staleThreshold = DateTime.UtcNow.Subtract(_cacheDuration);
 
             var existingCache = await _analysisCacheRepository.GetByUrlAndStrategyAsync(normalizedUrl, strategy);
 

@@ -73,7 +73,7 @@ namespace SEOBoostAI.Repository.Repositories
             await _context.Set<PerformanceHistory>()
                 .Where(ph => ph.ScanHistoryID == performanceHistoryId)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(ph => ph.ScanTime, DateTime.UtcNow.AddHours(7))
+                    .SetProperty(ph => ph.ScanTime, DateTime.UtcNow)
                 );
         }
     }

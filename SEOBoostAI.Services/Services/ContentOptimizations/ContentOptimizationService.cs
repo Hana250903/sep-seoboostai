@@ -140,7 +140,7 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 				Model = "gemini-2.5-flash",
 				UserRequest = JsonSerializer.Serialize(request, jsonOptions),
 				AIResponse = JsonSerializer.Serialize(aiResponse, jsonOptions),
-				CreatedAt = DateTime.UtcNow.AddHours(7),
+				CreatedAt = DateTime.UtcNow,
 				IsDeleted = false
 			};
 

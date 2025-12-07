@@ -50,7 +50,7 @@ namespace SEOBoostAI.Repository.Repositories
                         .SetProperty(k => k.RequestsUsedToday, 1)
                         .SetProperty(k => k.TokensUsedToday, tokensToAdd)
                         .SetProperty(k => k.LastResetDate, resetDate)
-                        .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+                        .SetProperty(k => k.UpdatedAt, DateTime.UtcNow));
             }
             else
             {
@@ -60,7 +60,7 @@ namespace SEOBoostAI.Repository.Repositories
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(k => k.RequestsUsedToday, k => k.RequestsUsedToday + 1)
                         .SetProperty(k => k.TokensUsedToday, k => k.TokensUsedToday + tokensToAdd)
-                        .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+                        .SetProperty(k => k.UpdatedAt, DateTime.UtcNow));
             }
         }
 
@@ -72,7 +72,7 @@ namespace SEOBoostAI.Repository.Repositories
                     .SetProperty(k => k.RequestsUsedToday, 0) // Set cứng về 0
                     .SetProperty(k => k.TokensUsedToday, 0)   // Set cứng về 0
                     .SetProperty(k => k.LastResetDate, DateTime.UtcNow.Date) // Cập nhật ngày reset
-                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow));
         }
 
         public async Task MarkKeyRateLimitedAsync(int keyId, DateTime until)
@@ -81,7 +81,7 @@ namespace SEOBoostAI.Repository.Repositories
                 .Where(k => k.Id == keyId)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(k => k.RateLimitedUntil, until)
-                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow));
         }
 
         public async Task AdjustTokenUsageAsync(int keyId, int tokenDifference)
@@ -91,7 +91,7 @@ namespace SEOBoostAI.Repository.Repositories
                 .Where(k => k.Id == keyId)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(k => k.TokensUsedToday, k => k.TokensUsedToday + tokenDifference)
-                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow.AddHours(7)));
+                    .SetProperty(k => k.UpdatedAt, DateTime.UtcNow));
         }
 
         public async Task<bool> ExistsAsync(int id)

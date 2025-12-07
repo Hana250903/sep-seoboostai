@@ -63,7 +63,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 {
                     MetaDataAnalysisId = metaDataAnalysisId,
                     GeneralAssessment = aiResult.GeneralAssessment,
-                    CreatedAt = DateTime.UtcNow.AddHours(7)
+                    CreatedAt = DateTime.UtcNow
                 };
 
 
@@ -81,7 +81,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                             Issue = suggestion.Issue,
                             Recommendation = suggestion.Recommendation,
                             IsImportant = suggestion.IsImportant,
-                            CreatedAt = DateTime.UtcNow.AddHours(7)
+                            CreatedAt = DateTime.UtcNow
                         });
                     }
                 }

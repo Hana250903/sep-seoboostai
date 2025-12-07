@@ -31,7 +31,7 @@ namespace SEOBoostAI.Service.Services.Feedbacks
                 FeedbackID = feedbackId,
                 SenderID = senderId,
                 Content = content,
-                CreatedAt = DateTime.UtcNow.AddHours(7),
+                CreatedAt = DateTime.UtcNow,
             };
 
             await _feedbackMessageRepository.CreateAsync(msg);

@@ -58,7 +58,7 @@ namespace SEOBoostAI.API.Controllers
 				}
 
 				// 1. TẠO MÃ ĐƠN HÀNG
-				long orderCode = long.Parse(DateTime.UtcNow.AddHours(7).ToString("yyMMddHHmmss") + new Random().Next(100, 999));
+				long orderCode = long.Parse(DateTime.UtcNow.ToString("yyMMddHHmmss") + new Random().Next(100, 999));
 
 				// 3. TẠO TRANSACTION "PENDING"
 				var newTransaction = await _transactionService.CreatePendingDeposit(

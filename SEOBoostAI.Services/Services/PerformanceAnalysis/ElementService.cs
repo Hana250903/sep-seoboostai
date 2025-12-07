@@ -265,7 +265,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     targetElement.Important = aiResult.Important;
                     targetElement.Description = aiResult.Description;
                     targetElement.AIRecommendation = aiResult.AIRecommendation;
-                    targetElement.UpdatedAt = DateTime.UtcNow.AddHours(7);
+                    targetElement.UpdatedAt = DateTime.UtcNow;
                 }
             }
             try
