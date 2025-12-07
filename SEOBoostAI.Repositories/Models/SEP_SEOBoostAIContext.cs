@@ -470,7 +470,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
         {
             entity.HasKey(e => e.SettingID).HasName("PK_SystemSettings_New");
 
-            entity.HasIndex(e => new { e.SettingKey, e.FeatureID }, "UQ_SystemSettings_Key_Feature").IsUnique();
+            entity.HasIndex(e => e.SettingKey, "UQ_SystemSettings_Key").IsUnique();
 
             entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.LastUpdatedDate)

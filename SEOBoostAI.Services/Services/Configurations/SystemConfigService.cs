@@ -81,6 +81,8 @@ namespace SEOBoostAI.Service.Services.Configurations
         {
             await EnsureLoadedAsync();
 
+            int? normalizedFeatureId = (featureID == 0) ? null : featureID;
+
             using (var scope = _scopeFactory.CreateScope())
             {
                 var configRepo = scope.ServiceProvider.GetRequiredService<ISystemConfigRepository>();
@@ -92,6 +94,7 @@ namespace SEOBoostAI.Service.Services.Configurations
                 {
                     setting.SettingValue = newValue;
                     setting.LastUpdatedDate = DateTime.UtcNow;
+                    setting.FeatureID = normalizedFeatureId;
                     await configRepo.UpdateAsync(setting);
                 }
                 else
@@ -101,7 +104,7 @@ namespace SEOBoostAI.Service.Services.Configurations
                         SettingKey = key,
                         SettingValue = newValue,
                         LastUpdatedDate = DateTime.UtcNow,
-                        FeatureID = featureID == 0 ? null : featureID,
+                        FeatureID = normalizedFeatureId,
                     };
                     await configRepo.CreateAsync(newSetting);
                 }
@@ -114,6 +117,11 @@ namespace SEOBoostAI.Service.Services.Configurations
 
         public Dictionary<string, string> GetAllSettings()
         {
+            if (!_isLoaded)
+            {
+                Task.Run(async () => await EnsureLoadedAsync()).Wait();
+            }
+
             return new Dictionary<string, string>(_settingsCache);
         }
 
@@ -122,7 +130,12 @@ namespace SEOBoostAI.Service.Services.Configurations
             using (var scope = _scopeFactory.CreateScope())
             {
                 var configRepo = scope.ServiceProvider.GetRequiredService<ISystemConfigRepository>();
-                return await configRepo.GetAllSystemSettingsByFeatureIDAsync(featureID);
+                var systemSettings = await configRepo.GetAllSystemSettingsByFeatureIDAsync(featureID);
+                if (systemSettings == null || systemSettings.Count == 0)
+                {
+                    throw new KeyNotFoundException($"No settings found for FeatureID: {featureID}");
+                }
+                return systemSettings;
             }
         }
     }
