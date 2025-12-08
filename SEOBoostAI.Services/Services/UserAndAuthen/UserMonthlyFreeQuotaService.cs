@@ -243,13 +243,10 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 
         public async Task UpdateLimitMonthlyAsync(int newLimit)
         {
-            // 1. Xác định tháng hiện tại (Format phải khớp với lúc tạo record, ví dụ "12-2025")
-            string currentMonth = DateTime.Now.ToString("MM-yyyy");
+            string currentMonth = DateTime.Now.ToString("yyyy-MM");
 
-            // 2. Cập nhật System Setting (Dùng lại service bạn đã gửi)
             await _systemConfigService.UpdateValueAsync("QuotaMonlyLimit", newLimit.ToString(), null);
 
-            // 3. Cập nhật hàng loạt cho user trong bảng Quota
             await _userMonthlyFreeQuotaRepository.UpdateMonthlyLimitBatchAsync(currentMonth, newLimit);
 			await _unitOfWork.SaveChangesAsync();
         }
