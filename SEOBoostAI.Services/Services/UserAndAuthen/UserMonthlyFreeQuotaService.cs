@@ -18,6 +18,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 		private readonly IUserMonthlyFreeQuotaRepository _userMonthlyFreeQuotaRepository;
 		private readonly IPurchasedFeatureRepository _purchasedFeatureRepository;
         private readonly ISystemConfigService _systemConfigService;
+        private readonly int _monthlyLimit;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFeatureRepository _featureRepository;
 
@@ -31,6 +32,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
             _featureRepository = featureRepository;
 			_purchasedFeatureRepository = purchasedFeatureRepository;
             _systemConfigService = systemConfigService;
+			_monthlyLimit = _systemConfigService.GetValue<int>("QuotaMonlyLimit", 0);
         }
 
 		public async Task<PaginationResult<List<UserMonthlyFreeQuota>>> GetUserMonthlyFreeQuotasWithPaginateAsync(int currentPage, int pageSize)
@@ -107,7 +109,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 			try
 			{
 				var userMonthlyFreeQuotas = await _userMonthlyFreeQuotaRepository.GetQuotasByUserId(userId);
-
+				var monthlyLimit = _monthlyLimit;
                 foreach (var userMonthlyFreeQuota in userMonthlyFreeQuotas)
                 {
 					var checkMonthly = CheckMonthly(userMonthlyFreeQuota.MonthYear);
@@ -115,6 +117,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 					{
 						var currentMonth = DateTime.UtcNow.ToString("yyyy-MM");
 						userMonthlyFreeQuota.MonthYear = currentMonth;
+						userMonthlyFreeQuota.MonthlyLimit = monthlyLimit;
                         userMonthlyFreeQuota.UsageCount = 0;
                         await _userMonthlyFreeQuotaRepository.UpdateAsync(userMonthlyFreeQuota);
 					}
