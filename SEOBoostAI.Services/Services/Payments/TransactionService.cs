@@ -19,10 +19,12 @@ namespace SEOBoostAI.Service.Services.Payments
 		private readonly IUserRepository _userRepository;
 		private readonly IPurchasedFeatureRepository _purchasedFeatureRepository;
 		private readonly IUserMonthlyFreeQuotaRepository _userMonthlyFreeQuotaRepository;
+		private readonly ISystemConfigService _systemConfigService;
 		private readonly IUnitOfWork _unitOfWork;
+		private readonly decimal _vatRate;
 		public TransactionService(ITransactionRepository transactionRepository, IUnitOfWork unitOfWork, IUserRepository userRepository,
 			IFeatureRepository featureRepository, IUserMonthlyFreeQuotaRepository userMonthlyFreeQuotaRepository, 
-			IPurchasedFeatureRepository purchasedFeatureRepository)
+			IPurchasedFeatureRepository purchasedFeatureRepository, ISystemConfigService systemConfigService)
 		{
 			_transactionRepository = transactionRepository;
 			_unitOfWork = unitOfWork;
@@ -30,6 +32,8 @@ namespace SEOBoostAI.Service.Services.Payments
 			_userRepository = userRepository;
 			_userMonthlyFreeQuotaRepository = userMonthlyFreeQuotaRepository;
 			_purchasedFeatureRepository = purchasedFeatureRepository;
+			_systemConfigService = systemConfigService;
+			_vatRate = _systemConfigService.GetValue<decimal>("VAT_RATE", 0);
 		}
 		public async Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize)
 		{
@@ -170,7 +174,12 @@ namespace SEOBoostAI.Service.Services.Payments
 			var feature = await _featureRepository.GetFeatureByIdAsync(featureId);
 			if (feature == null) throw new Exception("Tính năng không tồn tại.");
 
-			decimal totalCost = feature.Price * quantity;
+			// 2. Tính toán tiền và thuế 
+			decimal basePrice = feature.Price * quantity;
+			// Tính tiền thuế
+			decimal taxAmount = basePrice * (_vatRate / 100m);
+			// Tổng tiền phải trả
+			decimal totalCost = basePrice + taxAmount;
 
 			// 2. Lấy Currency của người dùng
 			var user = await _userRepository.GetByIdAsync(userId);
@@ -178,12 +187,12 @@ namespace SEOBoostAI.Service.Services.Payments
 			// 3. KIỂM TRA SỐ DƯ
 			if (user.Currency < totalCost)
 			{
-				throw new InvalidOperationException("Số dư trong ví không đủ để thực hiện giao dịch.");
+				throw new InvalidOperationException($"Số dư không đủ. Tổng đơn: {totalCost:N0}đ (Đã bao gồm VAT {_vatRate}%). Số dư hiện tại: {user.Currency:N0}đ.");
 			}
 
 			// --- BẮT ĐẦU GIAO DỊCH (UnitOfWork sẽ đảm bảo tất cả cùng thành công hoặc cùng thất bại) ---
 
-			// 4. Trừ tiền trong User
+			// 4. Trừ tiền
 			user.Currency -= totalCost;
 			await _userRepository.UpdateAsync(user);
 
@@ -196,7 +205,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				BankTransId = null,
 				Type = PaymentType.PURCHASE.ToString(), // Loại giao dịch Mua hàng
 				Status = PaymentStatus.COMPLETED.ToString(), // Mua bằng Currency của user nên thành công ngay
-				Description = $"Mua {quantity} lượt {feature.Name}",
+				Description = $"Mua {quantity} lượt {feature.Name} (Giá: {basePrice:N0}đ + VAT {_vatRate}%: {taxAmount:N0}đ)",
 				PaymentMethod = "Account Balance",
 				RequestTime = DateTime.UtcNow,
 				CompletedTime = DateTime.UtcNow,
@@ -227,6 +236,44 @@ namespace SEOBoostAI.Service.Services.Payments
 		public async Task<Transaction> GetByGatewayTransactionIdAsync(string gatewayTransactionId)
 		{
 			return await _transactionRepository.GetByGatewayTransactionIdAsync(gatewayTransactionId);
+		}
+
+		// Đảm bảo đã inject IUserRepository vào TransactionService
+		public async Task<Transaction> CreateAdminDepositAsync(int userId, decimal amount, string description)
+		{
+			// 1. Tìm User để cộng tiền
+			var user = await _userRepository.GetByIdAsync(userId);
+			if (user == null)
+			{
+				throw new Exception($"Không tìm thấy User có ID: {userId}");
+			}
+
+			// 2. TÍNH TOÁN: Cộng tiền vào ví
+			user.Currency += amount;
+			await _userRepository.UpdateAsync(user);
+
+			// 3. TẠO TRANSACTION (Ghi log lịch sử)
+			var transaction = new Transaction
+			{
+				UserID = userId,
+				Money = amount,
+				GatewayTransactionId = "ADMIN_" + Guid.NewGuid().ToString("N"), // Random ngẫu nhiên
+				PaymentMethod = "Account Balance (by Admin)",
+				Type = PaymentType.DEPOSIT.ToString(),
+				Status = PaymentStatus.COMPLETED.ToString(), // Thành công ngay lập tức
+				Description = string.IsNullOrEmpty(description) ? "Admin nạp tiền thủ công" : description,
+				IsDeleted = false,
+				BalanceAfter = user.Currency,
+				RequestTime = DateTime.UtcNow,
+				CompletedTime = DateTime.UtcNow
+			};
+
+			await _transactionRepository.CreateAsync(transaction);
+
+			// 4. Lưu tất cả thay đổi (User + Transaction) cùng lúc
+			await _unitOfWork.SaveChangesAsync();
+
+			return transaction;
 		}
 	}
 }

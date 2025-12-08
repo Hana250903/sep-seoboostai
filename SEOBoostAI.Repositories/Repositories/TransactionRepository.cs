@@ -20,7 +20,7 @@ namespace SEOBoostAI.Repository.Repositories
 		{
 			var query = _context.Set<Transaction>()
 								.OrderByDescending(t => t.CompletedTime)
-								.Where(t => t.Status == PaymentStatus.COMPLETED.ToString() && t.Type == PaymentType.DEPOSIT.ToString())
+								.Where(t => t.Status == PaymentStatus.COMPLETED.ToString() && t.Type == PaymentType.DEPOSIT.ToString() || t.Type == PaymentType.PURCHASE.ToString())
 								.AsQueryable();
 			var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
@@ -44,7 +44,8 @@ namespace SEOBoostAI.Repository.Repositories
 			var query = _context.Set<Transaction>() // Nhớ dùng .Set<Transaction>()
 				.Where(t => t.UserID == userId
 							&& t.Status == PaymentStatus.COMPLETED.ToString()  // Chỉ lấy thành công
-							&& t.Type == PaymentType.DEPOSIT.ToString());   // Chỉ lấy nạp tiền
+							&& t.Type == PaymentType.DEPOSIT.ToString()
+							&& t.Type == PaymentType.PURCHASE.ToString());   // Chỉ lấy nạp tiền
 
 			// 2. Đếm tổng số lượng (để tính số trang)
 			var totalItems = await query.CountAsync();

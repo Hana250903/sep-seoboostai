@@ -3,7 +3,6 @@ using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
 using SEOBoostAI.Service.Services.Interfaces;
-using SEOBoostAI.Repository.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,18 +16,13 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 	{
 		private readonly IUserRepository _userRepository;
 		private readonly ITransactionRepository _transactionRepository;
-		private readonly ISystemConfigService _systemConfigService;
 		private readonly IUnitOfWork _unitOfWork;
-		private readonly string _VAT_RATE;
 
-
-		public UserService(IUserRepository userRepository, ITransactionRepository transactionRepository, ISystemConfigService systemConfigService, IUnitOfWork unitOfWork)
+		public UserService(IUserRepository userRepository, ITransactionRepository transactionRepository, IUnitOfWork unitOfWork)
 		{
 			_userRepository = userRepository;
 			_transactionRepository = transactionRepository;
-			_systemConfigService = systemConfigService;
 			_unitOfWork = unitOfWork;
-			_VAT_RATE = _systemConfigService.GetValue<string>("VAT", "");
 		}
 
 		public async Task CreateAsync(User user)
@@ -122,14 +116,11 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 
 		public async Task TopUpAsync(int userId, decimal amount, int transactionId)
 		{
-			decimal taxAmount = amount * (decimal.Parse(_VAT_RATE) / 100m);
-			decimal netAmountToWallet = amount - taxAmount;
-
 			var user = await _userRepository.GetByIdAsync(userId);
 			if (user == null) throw new Exception("User không tồn tại");
 
 			//Cộng tiền trực tiếp vào User
-			user.Currency += netAmountToWallet;
+			user.Currency += amount;
 			await _userRepository.UpdateAsync(user);
 
 			//Cập nhật số dư cuối cùng vào Transaction
@@ -137,7 +128,6 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 			if (transaction != null)
 			{
 				transaction.BalanceAfter = user.Currency;
-				transaction.Description = $"{transaction.Description} (VAT {_VAT_RATE}%: {taxAmount:N0}đ)";
 				await _transactionRepository.UpdateAsync(transaction);
 			}
 
