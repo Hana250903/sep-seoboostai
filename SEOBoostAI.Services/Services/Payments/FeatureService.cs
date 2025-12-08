@@ -93,5 +93,24 @@ namespace SEOBoostAI.Service.Services.Payments
 							.ToList()
 			}).ToList();
 		}
+
+		public async Task UpdateFeatureAsync(int id, UpdateFeatureRequest request)
+		{
+			// Tìm Feature trong DB
+			var feature = await _featureRepository.GetByIdAsync(id);
+
+			if (feature == null)
+			{
+				throw new Exception($"Không tìm thấy gói dịch vụ có ID = {id}");
+			}
+
+			//Cập nhật dữ liệu mới
+			feature.Price = request.Price;
+			feature.Description = request.Description;
+
+			//Gọi Repository update & Lưu
+			_featureRepository.UpdateAsync(feature);
+			await _unitOfWork.SaveChangesAsync();
+		}
 	}
 }

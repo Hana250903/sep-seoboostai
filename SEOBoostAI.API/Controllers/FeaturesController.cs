@@ -61,13 +61,22 @@ namespace SEOBoostAI.API.Controllers
         }
 
 		// PUT api/<FeaturesController>/
-		[HttpPut]
+		[HttpPut("{id}")]
 		[Authorize(Roles = "Admin")]
-		public async Task<IActionResult> Put([FromBody] Feature feature)
+		public async Task<IActionResult> Put(int id, [FromBody] UpdateFeatureRequest request)
 		{
-			await _featureService.UpdateAsync(feature);
-			return Ok(feature);
-        }
+			try
+			{
+				if (request.Price < 10000) return BadRequest("Giá tiền không hợp lệ.");
+				await _featureService.UpdateFeatureAsync(id, request);
+
+				return Ok(new { message = "Cập nhật gói dịch vụ thành công!" });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 
 		// DELETE api/<FeaturesController>/5
 		[HttpDelete("{id}")]
