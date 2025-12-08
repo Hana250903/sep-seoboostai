@@ -251,6 +251,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 
             // 3. Cập nhật hàng loạt cho user trong bảng Quota
             await _userMonthlyFreeQuotaRepository.UpdateMonthlyLimitBatchAsync(currentMonth, newLimit);
+			await _unitOfWork.SaveChangesAsync();
         }
     }
 }
