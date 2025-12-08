@@ -14,6 +14,5 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 		Task<List<Feature>> GetAllFeaturesAsync();
 		Task<Feature> GetFeatureByIdAsync(int id);
 		Task<PaginationResult<List<Feature>>> GetFeaturesWithPaginateAsync(int currentPage, int pageSize);
-		Task UpdateBenefitsAsync(int featureId, List<string> newBenefits);
 	}
 }

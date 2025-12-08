@@ -93,18 +93,5 @@ namespace SEOBoostAI.Service.Services.Payments
 							.ToList()
 			}).ToList();
 		}
-
-		public async Task UpdateFeatureBenefitsAsync(int featureId, List<string> benefits)
-		{
-			// 1. Kiểm tra Feature có tồn tại không
-			var feature = await _featureRepository.GetByIdAsync(featureId);
-			if (feature == null) throw new Exception("Gói dịch vụ không tồn tại.");
-
-			// 2. Gọi Repository để cập nhật
-			await _featureRepository.UpdateBenefitsAsync(featureId, benefits);
-
-			// 3. Lưu thay đổi
-			await _unitOfWork.SaveChangesAsync();
-		}
 	}
 }

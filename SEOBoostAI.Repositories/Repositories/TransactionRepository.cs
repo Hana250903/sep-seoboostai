@@ -87,5 +87,46 @@ namespace SEOBoostAI.Repository.Repositories
 				.Where(t => t.TransactionID == transactionId)
 				.ToListAsync();
 		}
+
+		//Hàm tính tổng doanh thu theo khoảng thời gian (dùng cho Overview)
+		public async Task<decimal> GetTotalRevenueAsync(DateTime? fromDate, DateTime? toDate)
+		{
+			var query = _context.Set<Transaction>()
+				.Where(t => t.Type == PaymentType.DEPOSIT.ToString() && t.Status == PaymentStatus.COMPLETED.ToString());
+
+			if (fromDate.HasValue)
+				query = query.Where(t => t.CompletedTime >= fromDate.Value);
+
+			if (toDate.HasValue)
+				query = query.Where(t => t.CompletedTime <= toDate.Value);
+
+			return await query.SumAsync(t => t.Money);
+		}
+
+		//Hàm lấy dữ liệu biểu đồ theo ngày (trong khoảng ngày A đến ngày B)
+		public async Task<List<RevenueChartDto>> GetRevenueChartDataAsync(DateTime fromDate, DateTime toDate)
+		{
+			// Lấy dữ liệu thô trước
+			var transactions = await _context.Set<Transaction>()
+				.Where(t => t.Type == PaymentType.DEPOSIT.ToString() &&
+							t.Status == PaymentStatus.COMPLETED.ToString() &&
+							t.CompletedTime >= fromDate &&
+							t.CompletedTime <= toDate)
+				.Select(t => new { t.CompletedTime, t.Money })
+				.ToListAsync();
+
+			// Xử lý GroupBy ở phía Client (C#) để tránh lỗi translation của EF Core với Date
+			var result = transactions
+				.GroupBy(t => t.CompletedTime.Value.Date) // Nhóm theo ngày
+				.Select(g => new RevenueChartDto
+				{
+					Label = g.Key.ToString("dd/MM/yyyy"),
+					Revenue = g.Sum(x => x.Money)
+				})
+				.OrderBy(x => x.Label)
+				.ToList();
+
+			return result;
+		}
 	}
 }

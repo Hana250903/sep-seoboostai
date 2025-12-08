@@ -77,23 +77,5 @@ namespace SEOBoostAI.API.Controllers
 			await _featureService.DeleteAsync(id);
 			return Ok();
         }
-
-		[HttpPut("{id}/benefits")]
-		[Authorize(Roles = "Admin")]
-		public async Task<IActionResult> UpdateBenefits(int id, [FromBody] UpdateFeatureBenefitsRequest request)
-		{
-			try
-			{
-				if (request.Benefits == null) return BadRequest("Danh sách lợi ích không được để trống.");
-
-				await _featureService.UpdateFeatureBenefitsAsync(id, request.Benefits);
-
-				return Ok(new { message = "Cập nhật quyền lợi gói thành công!" });
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(new { message = ex.Message });
-			}
-		}
 	}
 }
