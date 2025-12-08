@@ -24,6 +24,9 @@ public partial class Feature
     public decimal Price { get; set; }
 
     [InverseProperty("Feature")]
+    public virtual ICollection<FeatureInformation> FeatureInformations { get; set; } = new List<FeatureInformation>();
+
+    [InverseProperty("Feature")]
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
     [InverseProperty("Feature")]
