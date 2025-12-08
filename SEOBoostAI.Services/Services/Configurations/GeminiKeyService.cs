@@ -48,15 +48,6 @@ namespace SEOBoostAI.Service.Services.Configurations
             geminiKey.RequestsUsedToday = 0;
             geminiKey.TokensUsedToday = 0;
 
-            // Set default limits if not provided
-            if (geminiKey.RpmLimit == 0)
-                geminiKey.RpmLimit = 10;
-
-            if (geminiKey.TpmLimit == 0)
-                geminiKey.TpmLimit = 250000;
-
-            if (geminiKey.RpdLimit == 0)
-                geminiKey.RpdLimit = 250;
             try
             {
                 await _geminiKeyRepository.CreateAsync(geminiKey);
