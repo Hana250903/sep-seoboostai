@@ -61,6 +61,16 @@ namespace SEOBoostAI.API.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Post([FromBody] OptimizeRequestDto requestDto)
 		{
+			if (requestDto == null)
+			{
+				return BadRequest(new { message = "Dữ liệu yêu cầu không được để trống." });
+			}
+
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(new { message = "Dữ liệu không hợp lệ.", errors = ModelState });
+			}
+
 			try
 			{
 				// 1. Lấy UserID từ Token (Bảo mật hơn là tin vào requestDto)
