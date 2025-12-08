@@ -53,6 +53,9 @@ public partial class User
     [Column(TypeName = "money")]
     public decimal Currency { get; set; }
 
+    [StringLength(50)]
+    public string TimeZoneId { get; set; }
+
     [InverseProperty("User")]
     public virtual ICollection<ContentOptimization> ContentOptimizations { get; set; } = new List<ContentOptimization>();
 
