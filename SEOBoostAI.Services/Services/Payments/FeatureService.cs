@@ -76,5 +76,35 @@ namespace SEOBoostAI.Service.Services.Payments
 				throw;
 			}
 		}
+
+		public async Task<List<FeatureDto>> GetAllFeaturesAsync()
+		{
+			var features = await _featureRepository.GetAllFeaturesAsync();
+
+			return features.Select(f => new FeatureDto
+			{
+				FeatureID = f.FeatureID,
+				Name = f.Name,
+				Price = f.Price,
+				Description = f.Description,
+				// Chuyển danh sách InformationFeature thành List<string>
+				Benefits = f.FeatureInformations
+							.Select(info => info.InformationFeature)
+							.ToList()
+			}).ToList();
+		}
+
+		public async Task UpdateFeatureBenefitsAsync(int featureId, List<string> benefits)
+		{
+			// 1. Kiểm tra Feature có tồn tại không
+			var feature = await _featureRepository.GetByIdAsync(featureId);
+			if (feature == null) throw new Exception("Gói dịch vụ không tồn tại.");
+
+			// 2. Gọi Repository để cập nhật
+			await _featureRepository.UpdateBenefitsAsync(featureId, benefits);
+
+			// 3. Lưu thay đổi
+			await _unitOfWork.SaveChangesAsync();
+		}
 	}
 }

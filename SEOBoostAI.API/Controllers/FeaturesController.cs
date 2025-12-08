@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -21,9 +22,19 @@ namespace SEOBoostAI.API.Controllers
 		// GET: api/<FeaturesController>
 		[HttpGet]
 		[Authorize(Roles = "Member, Admin, Staff")]
-		public async Task<IEnumerable<Feature>> Get()
+		public async Task<IActionResult> GetAllFeatures()
 		{
-			return await _featureService.GetFeaturesAsync();
+			try
+			{
+				// Gọi Service (Hàm này đã trả về List<FeatureDto>)
+				var features = await _featureService.GetAllFeaturesAsync();
+
+				return Ok(features);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 
 		[HttpGet("{currentPage}/{pageSize}")]
@@ -66,5 +77,23 @@ namespace SEOBoostAI.API.Controllers
 			await _featureService.DeleteAsync(id);
 			return Ok();
         }
+
+		[HttpPut("{id}/benefits")]
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> UpdateBenefits(int id, [FromBody] UpdateFeatureBenefitsRequest request)
+		{
+			try
+			{
+				if (request.Benefits == null) return BadRequest("Danh sách lợi ích không được để trống.");
+
+				await _featureService.UpdateFeatureBenefitsAsync(id, request.Benefits);
+
+				return Ok(new { message = "Cập nhật quyền lợi gói thành công!" });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 	}
 }
