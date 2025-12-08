@@ -79,6 +79,11 @@ namespace SEOBoostAI.API.Controllers
 				return CreatedAtAction(nameof(Get), new { id = result.ContentOptimizationID }, result);
 			}
 			// --- BẮT LỖI NGHIỆP VỤ ---
+			catch (ArgumentException ex)
+			{
+				// Lỗi do nội dung chứa từ cấm hoặc tham số không hợp lệ
+				return BadRequest(new { message = ex.Message, errorCode = "SENSITIVE_CONTENT" });
+			}
 			catch (InvalidOperationException ex)
 			{
 				return StatusCode(403, new { message = ex.Message, errorCode = "QUOTA_EXCEEDED" });
