@@ -53,7 +53,7 @@ public partial class GeminiKey
     /// <example>32000</example>
     [Required]
     [Range(0, 250000, ErrorMessage = "Giới hạn của TPM(Token per minute) là từ 0 đến 250000")]
-    [DefaultValue(250000)]
+    [DefaultValue(32000)]
     public int TpmLimit { get; set; }
 
     /// <summary>

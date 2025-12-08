@@ -32,6 +32,8 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
     public virtual DbSet<Feature> Features { get; set; }
 
+    public virtual DbSet<FeatureInformation> FeatureInformations { get; set; }
+
     public virtual DbSet<Feedback> Feedbacks { get; set; }
 
     public virtual DbSet<FeedbackMessage> FeedbackMessages { get; set; }
@@ -144,6 +146,17 @@ public partial class SEP_SEOBoostAIContext : DbContext
         modelBuilder.Entity<Feature>(entity =>
         {
             entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A29205A444C");
+        });
+
+        modelBuilder.Entity<FeatureInformation>(entity =>
+        {
+            entity.HasKey(e => e.InformationID).HasName("PK__FeatureI__C93C35D0D8F38EE6");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.Feature).WithMany(p => p.FeatureInformations)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Information_Feature");
         });
 
         modelBuilder.Entity<Feedback>(entity =>

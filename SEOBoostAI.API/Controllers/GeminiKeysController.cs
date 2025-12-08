@@ -67,8 +67,30 @@ namespace SEOBoostAI.API.Controllers
             }
         }
 
-        // POST: api/gemini-keys
+        /// <summary>
+        /// Tạo mới một Gemini Key.
+        /// </summary>
+        /// <remarks>
+        /// Dùng để thêm một API Key mới vào hệ thống. 
+        /// 
+        /// Mẫu request body:
+        /// 
+        ///     POST /api/GeminiKey
+        ///     {
+        ///        "apiKey": "AIzaSyD...",
+        ///        "keyName": "Key cho Marketing",
+        ///        "rpmLimit": 60
+        ///     }
+        ///     
+        /// </remarks>
+        /// <param name="geminiKey">Đối tượng GeminiKey cần tạo</param>
+        /// <returns>Đối tượng GeminiKey vừa được tạo kèm ID</returns>
+        /// <response code="201">Tạo thành công</response>
+        /// <response code="400">Dữ liệu không hợp lệ hoặc lỗi server</response>
         [HttpPost]
+        [Produces("application/json")] // Chỉ định format trả về
+        [ProducesResponseType(typeof(GeminiKey), StatusCodes.Status201Created)] // Mô tả code 201
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)] // Mô tả code 400
         public async Task<ActionResult<GeminiKey>> CreateKey([FromBody] GeminiKey geminiKey)
         {
             try

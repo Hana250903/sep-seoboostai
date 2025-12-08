@@ -47,16 +47,8 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 				{
 					if (userContentLower.Contains(word))
 					{
-						// CHẶN NGAY LẬP TỨC
-						return new AiOptimizationResponse
-						{
-							OptimizedContent = $"Yêu cầu bị từ chối: Nội dung chứa từ khóa nhạy cảm hoặc vi phạm chính sách ('{word}').",
-							Comparison = new ComparisonData
-							{
-								Original = new ScoreData(),
-								Optimized = new ScoreData()
-							}
-						};
+						// CHẶN NGAY LẬP TỨC VÀ NÉM RA LỖI (ĐỂ KHÔNG LƯU DB)
+						throw new ArgumentException($"Yêu cầu bị từ chối: Nội dung chứa từ khóa nhạy cảm hoặc vi phạm chính sách ('{word}'). Vui lòng loại bỏ và thử lại.");
 					}
 				}
 			}

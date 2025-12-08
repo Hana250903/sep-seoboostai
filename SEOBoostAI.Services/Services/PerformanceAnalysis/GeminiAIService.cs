@@ -37,6 +37,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         private readonly double _temperatureSuggestionElement;
         private readonly double _temperatureAnalysisMetadata;
 
+
         public GeminiAIService(
             ISystemConfigService systemConfigService,
             GeminiRateLimitHelper rateLimitHelper)

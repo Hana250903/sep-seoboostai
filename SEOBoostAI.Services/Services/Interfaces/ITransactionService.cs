@@ -23,5 +23,8 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task<PaginationResult<List<PaymentHistoryDto>>> GetUserPaymentHistoryAsync(int userId, int currentPage, int pageSize);
 		Task PurchaseFeatureAsync(int userId, int featureId, int quantity);
 		Task<Transaction> GetByGatewayTransactionIdAsync(string gatewayTransactionId);
+
+		//Admin nạp tiền thủ công
+		Task<Transaction> CreateAdminDepositAsync(int userId, decimal amount, string description);
 	}
 }

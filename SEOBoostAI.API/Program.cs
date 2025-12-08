@@ -45,6 +45,12 @@ builder.Services.AddSwaggerGen(c =>
                         new string[]{}
                     }
                 });
+    // Tìm file XML documentation
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+
+    // Bảo Swagger dùng file đó để hiển thị comment
+    c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddAuthentication(options =>

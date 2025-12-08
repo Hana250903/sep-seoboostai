@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SEOBoostAI.API.ViewModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -61,5 +62,37 @@ namespace SEOBoostAI.API.Controllers
 			await _transactionService.DeleteAsync(id);
 			return Ok();
         }
+
+		[HttpPost("admin-deposit")]
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> AdminDeposit([FromBody] AdminDepositRequest request)
+		{
+			try
+			{
+				// Validate cơ bản
+				if (request.Money <= 10000)
+				{
+					return BadRequest(new { message = "Số tiền nạp phải lớn hơn 10000." });
+				}
+
+				// Gọi Service xử lý
+				var transaction = await _transactionService.CreateAdminDepositAsync(
+					request.UserId,
+					request.Money,
+					request.Description
+				);
+
+				return Ok(new
+				{
+					message = "Nạp tiền thành công!",
+					newBalance = transaction.BalanceAfter, // Trả về số dư mới
+					transactionId = transaction.TransactionID
+				});
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 	}
 }
