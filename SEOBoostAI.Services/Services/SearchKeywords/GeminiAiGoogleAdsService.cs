@@ -16,12 +16,18 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
         // Thêm Logger để bạn soi lỗi
         private readonly ILogger<GeminiAiGoogleAdsService> _logger;
 
+        private readonly string _promptEvaluateAdsKeywords;
+
+
         public GeminiAiGoogleAdsService(ISystemConfigService systemConfigService, GeminiRateLimitHelper geminiRateLimitHelper, ILogger<GeminiAiGoogleAdsService> logger)
         {
             _systemConfigService = systemConfigService;
             _geminiRateLimitHelper = geminiRateLimitHelper;
             _logger = logger;
             _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
+
+            _promptEvaluateAdsKeywords = _systemConfigService.GetValue<string>("GeminiPromptEvaluateAdsKeyword", "");
+
         }
 
         public async Task<List<AdsEvaluationItem>> EvaluateAdsKeywordsAsync(string aiAdvice, List<AdsPlannerItemDto> adsData)
@@ -31,6 +37,8 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
 
             string adsDataJson = JsonSerializer.Serialize(dataToSend);
 
+            string promptEvaluateAdsKeywords = _promptEvaluateAdsKeywords;
+
             // === PROMPT MỚI: YÊU CẦU LỌC VÀ GIỚI HẠN ===
             string promptTemplate = $@"Bạn là một chuyên gia Google Ads (SEM).
             
@@ -39,21 +47,7 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
             2. **Dữ liệu thô:** Danh sách {dataToSend.Count} từ khóa bên dưới:
             {adsDataJson}
 
-            **NHIỆM VỤ (LỌC & CHỌN):**
-            1.  Đánh giá tất cả các từ khóa dựa trên Volume, Cạnh tranh, Giá thầu và Chiến lược.
-            2.  **CHỌN LỌC:** Chỉ giữ lại những từ khóa thực sự tiềm năng (`IsPotential = true`). Loại bỏ những từ khóa kém hiệu quả.
-            3.  **GIỚI HẠN:** Danh sách kết quả trả về **TỐI ĐA 25 TỪ KHÓA** tốt nhất.
-
-            **QUY TẮC ĐẦU RA:**
-            -   CHỈ trả về những từ khóa được chọn (`IsPotential` luôn là `true`).
-            -   Message: Giải thích cực ngắn (dưới 15 từ) tại sao từ khóa này tốt.
-
-            **OUTPUT (JSON ARRAY ONLY):**
-            Trả về MỘT mảng JSON duy nhất. Không giải thích thêm.
-            [
-              {{ ""Keyword"": ""..."", ""IsPotential"": true, ""Message"": ""Volume cao, giá rẻ..."" }},
-              ... (Tối đa 25 mục)
-            ]";
+            {_promptEvaluateAdsKeywords}";
             // ==============================================
 
             var requestData = new GeminiAIRequestModel
