@@ -63,7 +63,7 @@ namespace SEOBoostAI.Service.Services.Configurations
 
         public async Task<GeminiKey> GetAvailableKeyAsync()
         {
-            var maxWaitTime = TimeSpan.FromSeconds(10);
+            var maxWaitTime = TimeSpan.FromSeconds(50);
             var startTime = DateTime.UtcNow;
             while (true)
             {

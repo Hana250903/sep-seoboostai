@@ -55,7 +55,9 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
         public async Task<PerformanceHistory> AnalysisPerformanceHistoryAsync(int userId, string url, string strategy, int featureId)
         {
-            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
+            string urlToProcess = ValidateAndPreProcessUrl(url);
+
+            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(urlToProcess);
             if (string.IsNullOrEmpty(normalizedUrl))
             {
                 throw new Exception("URL không hợp lệ.");
@@ -69,7 +71,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             bool canAnalyze = await _userMonthlyFreeQuotaService.CheckLimit(userId, featureId);
             if (!canAnalyze)
             {
-                throw new Exception("Bạn đã hết lượt sử dụng miễn phí cho tính năng này trong tháng.");
+                throw new Exception("Bạn đã hết lượt sử dụng miễn phí trong tháng này và lượt mua.");
             }
 
             var analysisCache = await _analysisCacheService.GetOrCreateFreshAnalysisCacheAsync(normalizedUrl, strategy);
@@ -95,7 +97,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 // Check limit lần 2(Hard check - Quan trọng để chống hack / spam click)
                 if (!await _userMonthlyFreeQuotaService.CheckLimit(userId, featureId))
                 {
-                    throw new Exception("Bạn vừa hết lượt sử dụng.");
+                    throw new Exception("Bạn đã hết lượt sử dụng miễn phí trong tháng này và lượt mua.");
                 }
 
                 await _performanceHistoryRepository.CreateAsync(performanceHistory);
@@ -152,6 +154,42 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 await _unitOfWork.RollbackTransactionAsync();
                 throw; // Nếu lỗi bất kỳ đâu, Database không thay đổi gì cả -> An toàn tuyệt đối
             }
+        }
+
+        private string ValidateAndPreProcessUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                throw new Exception("URL không được để trống.");
+            }
+
+            string urlToProcess = url.Trim();
+
+            // 1. Tự động thêm https nếu người dùng nhập thiếu (VD: google.com -> https://google.com)
+            bool hasScheme = urlToProcess.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                             urlToProcess.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
+            if (!hasScheme)
+            {
+                urlToProcess = "https://" + urlToProcess;
+            }
+
+            // 2. Kiểm tra cấu trúc URL
+            if (!Uri.TryCreate(urlToProcess, UriKind.Absolute, out Uri validatedUri))
+            {
+                throw new Exception("Cấu trúc URL không hợp lệ.");
+            }
+
+            // 3. Chặn Localhost và Loopback IP (Bảo mật)
+            if (validatedUri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                validatedUri.Host == "127.0.0.1" ||
+                validatedUri.Host == "::1")
+            {
+                throw new Exception("Hệ thống không hỗ trợ phân tích Localhost hoặc địa chỉ nội bộ.");
+            }
+
+            // Trả về URL đã chuẩn form (có http/https) để truyền vào hàm Normalize sau này
+            return urlToProcess;
         }
     }
 }

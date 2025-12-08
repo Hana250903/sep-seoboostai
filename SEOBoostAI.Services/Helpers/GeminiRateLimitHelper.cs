@@ -70,7 +70,7 @@ namespace SEOBoostAI.Service.Helpers
                     if (retryCount >= maxRetries)
                     {
                         throw new InvalidOperationException(
-                            $"Đã retry {maxRetries} lần nhưng vẫn gặp rate limit. Vui lòng thử lại sau.", ex);
+                            $"Đã retry {maxRetries} lần nhưng vẫn gặp rate limit. Vui lòng thử lại sau 1 phút.", ex);
                     }
 
                     // Chờ một chút trước khi retry

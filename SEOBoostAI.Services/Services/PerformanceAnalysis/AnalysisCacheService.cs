@@ -159,10 +159,8 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             return analysisCacheModel;
         }
 
-        public async Task<AnalysisCache> ReAnalyzeInternalAsync(string url, string strategy)
+        public async Task<AnalysisCache> ReAnalyzeInternalAsync(string normalizedUrl, string strategy)
         {
-            string normalizedUrl = _compareUrlString.NormalizeUrlForComparison(url);
-
             if (string.IsNullOrEmpty(normalizedUrl))
             {
                 throw new Exception("URL không hợp lệ.");
@@ -174,7 +172,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             {
                 // Nếu không tìm thấy (ví dụ: đã bị xóa), thì không thể "Re-Analyze".
                 // Hoặc bạn có thể chọn gọi hàm CreateAsync tại đây nếu muốn.
-                throw new Exception($"Không tìm thấy AnalysisCache để cập nhật cho URL: {url} và Strategy: {strategy}");
+                throw new Exception($"Không tìm thấy AnalysisCache để cập nhật cho URL: {normalizedUrl} và Strategy: {strategy}");
             }
 
             //Create AnalysisSnapshot from existing AnalysisCache
@@ -237,7 +235,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             await _metaDataAnalysisRepository.DeleteMetaDataAnalysesForCacheAsync(analysisCacheModel.AnalysisCacheID);
 
             analysisCacheModel.Elements = new List<Element>();
-            var newElements = await _elementService.AnalyzeFullPageAsync(url);
+            var newElements = await _elementService.AnalyzeFullPageAsync(normalizedUrl);
 
             foreach (var item in newElements.Elements)
             {

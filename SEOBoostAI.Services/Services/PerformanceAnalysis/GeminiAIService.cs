@@ -275,7 +275,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                             async (urlWithKey) =>
                             {
                                 using HttpClient client = new HttpClient();
-                                client.Timeout = TimeSpan.FromMinutes(5); // Tăng timeout lên 120 giây cho các request lớn
+                                client.Timeout = TimeSpan.FromMinutes(5); // Tăng timeout lên 5 phút cho các request lớn
 
                                 string json = JsonSerializer.Serialize(requestData);
                                 var content = new StringContent(json, Encoding.UTF8, "application/json");

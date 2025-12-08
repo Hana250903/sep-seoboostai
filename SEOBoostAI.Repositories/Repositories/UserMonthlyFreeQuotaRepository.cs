@@ -67,5 +67,14 @@ namespace SEOBoostAI.Repository.Repositories
 				.FirstOrDefaultAsync(u => u.UserID == userId && u.FeatureID == featureId);
 			return userMonthlyFreeQuota;
         }
+
+        public async Task UpdateMonthlyLimitBatchAsync(string monthYear, int newLimit)
+        {
+            // Sử dụng ExecuteUpdateAsync để update trực tiếp trên SQL (Bulk Update)
+            // Không cần kéo dữ liệu về RAM -> Tránh treo server
+            await _context.UserMonthlyFreeQuotas
+                .Where(x => x.MonthYear == monthYear && !x.IsDeleted)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.MonthlyLimit, newLimit));
+        }
     }
 }

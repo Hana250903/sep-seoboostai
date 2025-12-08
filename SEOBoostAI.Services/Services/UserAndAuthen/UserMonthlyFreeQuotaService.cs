@@ -3,6 +3,7 @@ using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
 using SEOBoostAI.Repository.Repositories.Interfaces;
 using SEOBoostAI.Repository.UnitOfWork;
+using SEOBoostAI.Service.Services.Configurations;
 using SEOBoostAI.Service.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -16,17 +17,21 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 	{
 		private readonly IUserMonthlyFreeQuotaRepository _userMonthlyFreeQuotaRepository;
 		private readonly IPurchasedFeatureRepository _purchasedFeatureRepository;
-		private readonly IUnitOfWork _unitOfWork;
+        private readonly ISystemConfigService _systemConfigService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IFeatureRepository _featureRepository;
 
         public UserMonthlyFreeQuotaService(IUserMonthlyFreeQuotaRepository userMonthlyFreeQuotaRepository, 
-			IUnitOfWork unitOfWork, IFeatureRepository featureRepository, IPurchasedFeatureRepository purchasedFeatureRepository)
+			IUnitOfWork unitOfWork, IFeatureRepository featureRepository, IPurchasedFeatureRepository purchasedFeatureRepository,
+			ISystemConfigService systemConfigService
+            )
 		{
 			_userMonthlyFreeQuotaRepository = userMonthlyFreeQuotaRepository;
 			_unitOfWork = unitOfWork;
             _featureRepository = featureRepository;
 			_purchasedFeatureRepository = purchasedFeatureRepository;
-		}
+            _systemConfigService = systemConfigService;
+        }
 
 		public async Task<PaginationResult<List<UserMonthlyFreeQuota>>> GetUserMonthlyFreeQuotasWithPaginateAsync(int currentPage, int pageSize)
 		{
@@ -235,5 +240,17 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 
 			return result;
 		}
-	}
+
+        public async Task UpdateLimitMonthlyAsync(int newLimit)
+        {
+            // 1. Xác định tháng hiện tại (Format phải khớp với lúc tạo record, ví dụ "12-2025")
+            string currentMonth = DateTime.Now.ToString("MM-yyyy");
+
+            // 2. Cập nhật System Setting (Dùng lại service bạn đã gửi)
+            await _systemConfigService.UpdateValueAsync("QuotaMonlyLimit", newLimit.ToString(), null);
+
+            // 3. Cập nhật hàng loạt cho user trong bảng Quota
+            await _userMonthlyFreeQuotaRepository.UpdateMonthlyLimitBatchAsync(currentMonth, newLimit);
+        }
+    }
 }

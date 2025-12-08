@@ -15,14 +15,9 @@ namespace SEOBoostAI.Service.Ultils
     {
         public string NormalizeUrlForComparison(string url)
         {
-            if (string.IsNullOrWhiteSpace(url))
-                return string.Empty;
-
-            // Đảm bảo URI là tuyệt đối (fallback về http)
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
             {
-                if (!Uri.TryCreate("http://" + url, UriKind.Absolute, out uri))
-                    return url.Trim().ToLowerInvariant(); // Fallback nếu không thể phân tích
+                return url.Trim().ToLowerInvariant();
             }
 
             // Scheme và host chuẩn hóa về chữ thường
