@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -21,9 +22,19 @@ namespace SEOBoostAI.API.Controllers
 		// GET: api/<FeaturesController>
 		[HttpGet]
 		[Authorize(Roles = "Member, Admin, Staff")]
-		public async Task<IEnumerable<Feature>> Get()
+		public async Task<IActionResult> GetAllFeatures()
 		{
-			return await _featureService.GetFeaturesAsync();
+			try
+			{
+				// Gọi Service (Hàm này đã trả về List<FeatureDto>)
+				var features = await _featureService.GetAllFeaturesAsync();
+
+				return Ok(features);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 
 		[HttpGet("{currentPage}/{pageSize}")]

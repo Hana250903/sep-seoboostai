@@ -47,7 +47,7 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
             2. **Dữ liệu thô:** Danh sách {dataToSend.Count} từ khóa bên dưới:
             {adsDataJson}
 
-            {_promptEvaluateAdsKeywords}";
+            {promptEvaluateAdsKeywords}";
             // ==============================================
 
             var requestData = new GeminiAIRequestModel
