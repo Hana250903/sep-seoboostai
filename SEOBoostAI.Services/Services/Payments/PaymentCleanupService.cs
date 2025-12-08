@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SEOBoostAI.Repository.Enums;
 
 namespace SEOBoostAI.Service.Services.Payments
 {
@@ -25,7 +26,7 @@ namespace SEOBoostAI.Service.Services.Payments
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 		{
-			_logger.LogInformation("Payment Cleanup Service đã khởi động...");
+			_logger.LogInformation("Payment Cleanup Service have start...");
 
 			while (!stoppingToken.IsCancellationRequested)
 			{
@@ -42,7 +43,7 @@ namespace SEOBoostAI.Service.Services.Payments
 						// --- BẮT ĐẦU LOGIC QUÉT DỌN ---
 						var timeThreshold = DateTime.UtcNow.AddMinutes(-15);
 
-						// Giả sử bạn đã viết hàm GetExpiredPendingTransactionsAsync trong Repo
+						//Bạn đã viết hàm GetExpiredPendingTransactionsAsync trong Repo
 						// Nếu chưa có thì dùng: .Where(x => x.Status == "PENDING" && x.RequestTime < timeThreshold)
 						var pendingTransactions = await transactionRepository.GetExpiredPendingTransactionsAsync(timeThreshold);
 
@@ -50,7 +51,7 @@ namespace SEOBoostAI.Service.Services.Payments
 						{
 							foreach (var trans in pendingTransactions)
 							{
-								trans.Status = "CANCELED";
+								trans.Status = PaymentStatus.CANCELED.ToString();
 								trans.Description += " [Auto-cancel by System]";
 								trans.CompletedTime = DateTime.UtcNow;
 

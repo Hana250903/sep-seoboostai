@@ -17,6 +17,8 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 		private readonly ISystemConfigService _systemConfigService;
         private readonly GeminiRateLimitHelper _geminiRateLimitHelper;
 		private readonly string _url;
+		private readonly string _sensitiveWordsRaw;
+		private readonly string _promtGeminiContentOptimization;
 
 		// Constructor để nhận các dependencies
 		public GeminiContentOptimizer(ISystemConfigService systemConfigService, GeminiRateLimitHelper geminiRateLimitHelper)
@@ -24,12 +26,14 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 			_systemConfigService = systemConfigService;
             _geminiRateLimitHelper = geminiRateLimitHelper;
             _url = _systemConfigService.GetValue<string>("GeminiUrl", "");
+			_sensitiveWordsRaw = _systemConfigService.GetValue<string>("SensitiveWordsBlacklist", "");
+			_promtGeminiContentOptimization = _systemConfigService.GetValue<string>("GeminiContentOptimizationPrompt", "");
 		}
 
 		public async Task<AiOptimizationResponse> OptimizeContentAsync(OptimizeRequestDto request)
 		{
 			// --- 1. LỌC TỪ CẤM (BLACKLIST) ---
-			string sensitiveWordsRaw = _systemConfigService.GetValue<string>("SensitiveWords", "");
+			string sensitiveWordsRaw = _sensitiveWordsRaw;
 
 			if (!string.IsNullOrEmpty(sensitiveWordsRaw))
 			{
@@ -59,7 +63,7 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 
 			string citationText = request.IncludeCitation ? "Có, hãy thêm các trích dẫn chất lượng cao để hỗ trợ luận điểm." : "Không, đừng thêm trích dẫn bên ngoài.";
 
-			string rawPrompt = $$"""
+			/*string rawPrompt = $$"""
                 Bạn là hệ thống AI chuyên phân tích và tối ưu hóa SEO (AI Content Analyzer).
                 Bạn hoạt động theo các quy tắc bảo mật và định dạng nghiêm ngặt sau đây.
 
@@ -122,7 +126,9 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
                   "summary": "..."
                 }
                 ```
-                """;
+                """;*/
+
+			string rawPrompt = _promtGeminiContentOptimization;
 
 			string promptTemplate = rawPrompt
 				.Replace("[[KEYWORD]]", request.Keyword)
