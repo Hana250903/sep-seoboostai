@@ -50,6 +50,8 @@ public partial class Transaction
     [Column(TypeName = "decimal(18, 2)")]
     public decimal? BalanceAfter { get; set; }
 
+    public long OrderCode { get; set; }
+
     [InverseProperty("Transaction")]
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
