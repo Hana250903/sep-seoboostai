@@ -18,7 +18,7 @@ namespace SEOBoostAI.API.Infrastructure
 
         public async Task SendMessageToRoom(string feedbackIdStr, string message)
         {
-            var userIdClaim = Context.User?.FindFirstValue("User_ID");
+            var userIdClaim = Context.User?.FindFirstValue("user_ID");
             var userName = Context.User?.FindFirstValue("fullname") ?? "Anonymous";
 
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int senderId))
