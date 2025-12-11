@@ -94,5 +94,24 @@ namespace SEOBoostAI.API.Controllers
 				return BadRequest(new { message = ex.Message });
 			}
 		}
+
+		[HttpGet("{id}/receipt")]
+		public async Task<IActionResult> GetReceipt(int id)
+		{
+			try
+			{
+				// Lấy UserID và Role từ Token để check quyền
+				var userIdString = User.FindFirst("user_ID")?.Value;
+				var userId = int.Parse(userIdString);
+				var role = User.FindFirst("role")?.Value;
+
+				var receipt = await _transactionService.GetReceiptAsync(id, userId, role);
+				return Ok(receipt);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 	}
 }

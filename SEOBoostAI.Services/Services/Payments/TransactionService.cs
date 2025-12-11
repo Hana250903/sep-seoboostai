@@ -33,7 +33,7 @@ namespace SEOBoostAI.Service.Services.Payments
 			_userMonthlyFreeQuotaRepository = userMonthlyFreeQuotaRepository;
 			_purchasedFeatureRepository = purchasedFeatureRepository;
 			_systemConfigService = systemConfigService;
-			_vatRate = _systemConfigService.GetValue<decimal>("VAT_RATE", 0);
+			_vatRate = _systemConfigService.GetValue<decimal>("VAT", 0);
 		}
 		public async Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize)
 		{
@@ -89,7 +89,7 @@ namespace SEOBoostAI.Service.Services.Payments
 		}
 
 		// HÀM MỚI CHO PAYOS
-		public async Task<Transaction> CreatePendingDeposit(int userId, decimal amount, string paymentMethod, string gatewayTransactionId)
+		public async Task<Transaction> CreatePendingDeposit(int userId, decimal amount, string paymentMethod, string gatewayTransactionId, long orderCode)
 		{
 			var newTransaction = new Transaction
 			{
@@ -101,7 +101,8 @@ namespace SEOBoostAI.Service.Services.Payments
 				GatewayTransactionId = gatewayTransactionId,
 				Status = PaymentStatus.PENDING.ToString(), // Trạng thái quan trọng
 				RequestTime = DateTime.UtcNow,
-				IsDeleted = false
+				IsDeleted = false,
+				OrderCode = orderCode
 				// GatewayTransactionId, BankTransId, CompletedTime sẽ được cập nhật bởi Webhook
 			};
 
@@ -196,6 +197,8 @@ namespace SEOBoostAI.Service.Services.Payments
 			user.Currency -= totalCost;
 			await _userRepository.UpdateAsync(user);
 
+			long orderCode = long.Parse(DateTime.UtcNow.ToString("yyMMddHHmmss") + new Random().Next(100, 999));
+
 			// 5. Tạo Transaction ghi nhận việc trừ tiền
 			var transaction = new Transaction
 			{
@@ -211,6 +214,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				CompletedTime = DateTime.UtcNow,
 				IsDeleted = false,
 				BalanceAfter = user.Currency,
+				OrderCode = orderCode
 			};
 			await _transactionRepository.CreateAsync(transaction);
 			// Lưu ý: Phải SaveChanges 1 lần ở đây để lấy TransactionID cho bảng PurchasedFeatures
@@ -238,7 +242,7 @@ namespace SEOBoostAI.Service.Services.Payments
 			return await _transactionRepository.GetByGatewayTransactionIdAsync(gatewayTransactionId);
 		}
 
-		// Đảm bảo đã inject IUserRepository vào TransactionService
+
 		public async Task<Transaction> CreateAdminDepositAsync(int userId, decimal amount, string description)
 		{
 			// 1. Tìm User để cộng tiền
@@ -274,6 +278,69 @@ namespace SEOBoostAI.Service.Services.Payments
 			await _unitOfWork.SaveChangesAsync();
 
 			return transaction;
+		}
+
+		public async Task<PaymentReceiptDto> GetReceiptAsync(int transactionId, int currentUserId, string userRole)
+		{
+			// 1. Lấy dữ liệu từ Repo
+			var trans = await _transactionRepository.GetTransactionDetailAsync(transactionId);
+
+			if (trans == null) throw new Exception("Không tìm thấy giao dịch.");
+
+			// 2. Bảo mật: Chỉ chủ sở hữu hoặc Admin mới được xem hóa đơn này
+			if (userRole != UserRole.Admin.ToString() && trans.UserID != currentUserId)
+			{
+				throw new Exception("Bạn không có quyền xem hóa đơn này.");
+			}
+
+			// 3. Xử lý tên dịch vụ và tính toán 
+			string serviceName = "";
+			string description = "";
+			decimal totalAmount = trans.Money;
+			decimal subTotal = Math.Round(totalAmount / (1 + _vatRate / 100m), 0);
+			decimal vatAmount = totalAmount - subTotal;
+
+
+			if (trans.Type == PaymentType.DEPOSIT.ToString())
+			{
+				serviceName = "Nạp tiền vào tài khoản";
+				description = trans.Description;
+			}
+
+			if(trans.Type == PaymentType.PURCHASE.ToString()) // PURCHASE
+			{
+				// Bạn có thể lấy description
+				serviceName = "Mua dịch vụ";
+				description = trans.Description;
+
+				if (_vatRate > 0)
+				{
+					subTotal = Math.Round(totalAmount / (1 + _vatRate / 100m), 0);
+					vatAmount = totalAmount - subTotal;
+				}
+			}
+
+			// 5. Map sang DTO
+			return new PaymentReceiptDto
+			{
+				TransactionCode = trans.OrderCode.ToString(), 
+				Status = trans.Status,
+				PaymentDate = trans.CompletedTime ?? trans.RequestTime,
+
+				PayerName = trans.User.FullName,
+				PayerEmail = trans.User.Email,
+
+				PaymentMethod = trans.PaymentMethod,
+				BankName = "Chuyển khoản ngân hàng",
+
+				ServiceName = serviceName,
+				Description = description,
+				Amount = subTotal, // Tạm tính
+
+				VatRate = _vatRate,
+				VatAmount = vatAmount,
+				TotalAmount = totalAmount // Tổng cộng
+			};
 		}
 	}
 }

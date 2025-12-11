@@ -45,7 +45,7 @@ namespace SEOBoostAI.Repository.Repositories
 				.Where(t => t.UserID == userId
 							&& t.Status == PaymentStatus.COMPLETED.ToString()  // Chỉ lấy thành công
 							&& t.Type == PaymentType.DEPOSIT.ToString()
-							&& t.Type == PaymentType.PURCHASE.ToString());   // Chỉ lấy nạp tiền
+							|| t.Type == PaymentType.PURCHASE.ToString());   // Chỉ lấy nạp tiền
 
 			// 2. Đếm tổng số lượng (để tính số trang)
 			var totalItems = await query.CountAsync();
@@ -71,13 +71,14 @@ namespace SEOBoostAI.Repository.Repositories
 
 		public async Task<Transaction> GetByGatewayTransactionIdAsync(string gatewayTransactionId)
 		{
-			return await _context.Set<Transaction>().FirstOrDefaultAsync(t => t.GatewayTransactionId == gatewayTransactionId);
+			return await _context.Set<Transaction>().OrderByDescending(t => t.RequestTime).FirstOrDefaultAsync(t => t.GatewayTransactionId == gatewayTransactionId);
 		}
 
 		public async Task<List<Transaction>> GetExpiredPendingTransactionsAsync(DateTime threshold)
 		{
 			return await _context.Set<Transaction>()
 				.Where(t => t.Status == PaymentStatus.PENDING.ToString() && t.RequestTime < threshold)
+				.OrderByDescending(t => t.RequestTime)
 				.ToListAsync();
 		}
 
@@ -85,6 +86,7 @@ namespace SEOBoostAI.Repository.Repositories
 		{
 			return await _context.Set<Transaction>()
 				.Where(t => t.TransactionID == transactionId)
+				.OrderByDescending(t => t.RequestTime)
 				.ToListAsync();
 		}
 
@@ -92,6 +94,7 @@ namespace SEOBoostAI.Repository.Repositories
 		public async Task<decimal> GetTotalRevenueAsync(DateTime? fromDate, DateTime? toDate)
 		{
 			var query = _context.Set<Transaction>()
+				.OrderByDescending(t => t.CompletedTime)
 				.Where(t => t.Type == PaymentType.DEPOSIT.ToString() && t.Status == PaymentStatus.COMPLETED.ToString());
 
 			if (fromDate.HasValue)
@@ -127,6 +130,14 @@ namespace SEOBoostAI.Repository.Repositories
 				.ToList();
 
 			return result;
+		}
+
+		public async Task<Transaction> GetTransactionDetailAsync(int transactionId)
+		{
+			return await _context.Set<Transaction>()
+				.OrderByDescending(t => t.RequestTime)
+				.Include(t => t.User)
+				.FirstOrDefaultAsync(t => t.TransactionID == transactionId);
 		}
 	}
 }
