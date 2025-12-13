@@ -16,13 +16,11 @@ public partial class Element
     public int AnalysisCacheID { get; set; }
 
     [StringLength(50)]
-    public string TagName { get; set; }
+    public string AuditId { get; set; }
 
-    public string InnerText { get; set; }
+    public string Title { get; set; }
 
-    public string OuterHTML { get; set; }
-
-    public bool Important { get; set; }
+    public string ExtractedEvidenceJson { get; set; }
 
     public bool HasSuggestion { get; set; }
 

@@ -10,7 +10,6 @@ namespace SEOBoostAI.Repository.Models;
 
 [Table("AnalysisCache")]
 [Index("NormalizedUrl", Name = "IX_AnalysisCache_NormalizedUrl")]
-[Index("NormalizedUrl", "Strategy", Name = "UQ_AnalysisCache_NormalizedUrl_Strategy", IsUnique = true)]
 public partial class AnalysisCache
 {
     [Key]
@@ -38,14 +37,17 @@ public partial class AnalysisCache
     [Column(TypeName = "datetime")]
     public DateTime LastAnalyzedAt { get; set; }
 
+    [StringLength(100)]
+    public string RepoOwner { get; set; }
+
+    [StringLength(100)]
+    public string RepoName { get; set; }
+
     [InverseProperty("AnalysisCache")]
     public virtual ICollection<AnalysisSnapshot> AnalysisSnapshots { get; set; } = new List<AnalysisSnapshot>();
 
     [InverseProperty("AnalysisCache")]
     public virtual ICollection<Element> Elements { get; set; } = new List<Element>();
-
-    [InverseProperty("AnalysisCache")]
-    public virtual ICollection<MetaDataAnalysis> MetaDataAnalyses { get; set; } = new List<MetaDataAnalysis>();
 
     [InverseProperty("AnalysisCache")]
     public virtual ICollection<PerformanceHistory> PerformanceHistories { get; set; } = new List<PerformanceHistory>();

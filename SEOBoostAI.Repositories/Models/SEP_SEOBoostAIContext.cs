@@ -44,12 +44,6 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
     public virtual DbSet<InterestOverTime> InterestOverTimes { get; set; }
 
-    public virtual DbSet<MetaDataAnalysis> MetaDataAnalyses { get; set; }
-
-    public virtual DbSet<MetaDataSuggestion> MetaDataSuggestions { get; set; }
-
-    public virtual DbSet<MetaTagSuggestionDetail> MetaTagSuggestionDetails { get; set; }
-
     public virtual DbSet<PerformanceHistory> PerformanceHistorys { get; set; }
 
     public virtual DbSet<PurchasedFeature> PurchasedFeatures { get; set; }
@@ -204,35 +198,6 @@ public partial class SEP_SEOBoostAIContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC0705FA47E4");
 
             entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestOverTimes).HasConstraintName("FK__InterestO__Trend__0F624AF8");
-        });
-
-        modelBuilder.Entity<MetaDataAnalysis>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__MetaData__3214EC07A1EF1E13");
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.UrlHash).HasComputedColumnSql("(CONVERT([varbinary](32),hashbytes('SHA2_256',[Url])))", false);
-
-            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.MetaDataAnalyses).HasConstraintName("FK_MetaDataAnalysis_AnalysisCache");
-        });
-
-        modelBuilder.Entity<MetaDataSuggestion>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__MetaData__3214EC07247ED252");
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-
-            entity.HasOne(d => d.MetaDataAnalysis).WithMany(p => p.MetaDataSuggestions).HasConstraintName("FK__MetaDataS__MetaD__40F9A68C");
-        });
-
-        modelBuilder.Entity<MetaTagSuggestionDetail>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__MetaTagS__3214EC07E5ED0CCA");
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.IsImportant).HasDefaultValue(false);
-
-            entity.HasOne(d => d.MetaDataSuggestion).WithMany(p => p.MetaTagSuggestionDetails).HasConstraintName("FK__MetaTagSu__MetaD__45BE5BA9");
         });
 
         modelBuilder.Entity<PerformanceHistory>(entity =>
