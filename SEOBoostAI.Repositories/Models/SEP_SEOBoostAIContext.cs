@@ -298,6 +298,7 @@ public partial class SEP_SEOBoostAIContext : DbContext
         {
             entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4B17E6CEDD");
 
+            entity.Property(e => e.Quantity).HasDefaultValue(1);
             entity.Property(e => e.RequestTime).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Status).HasDefaultValue("PENDING");
 

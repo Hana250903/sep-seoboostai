@@ -52,6 +52,8 @@ public partial class Transaction
 
     public long OrderCode { get; set; }
 
+    public int Quantity { get; set; }
+
     [InverseProperty("Transaction")]
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
