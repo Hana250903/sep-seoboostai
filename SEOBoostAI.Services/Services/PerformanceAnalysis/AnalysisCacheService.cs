@@ -19,33 +19,27 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
     public class AnalysisCacheService : IAnalysisCacheService
     {
         private readonly IAnalysisCacheRepository _analysisCacheRepository;
-        private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPageSpeedService _pageSpeedService;
         private readonly IElementService _elementService;
         private readonly ILogger<AnalysisCacheService> _logger;
         private readonly IGeminiAIService _geminiAIService;
-        private readonly ICompareUrlString _compareUrlString;
         private readonly IAnalysisSnapshotRepository _analysisSnapshotRepository;
-        private readonly IMetaDataAnalysisRepository _metaDataAnalysisRepository;
-        private readonly TimeSpan _cacheDuration = TimeSpan.FromDays(7);
+        private readonly IPuppeteerAuditService _puppeteerAuditService;
 
         public AnalysisCacheService(IAnalysisCacheRepository analysisCacheRepository, IUserRepository userRepository,
             IUnitOfWork unitOfWork, IPageSpeedService pageSpeedService, IElementService elementService,
             ILogger<AnalysisCacheService> logger, IGeminiAIService geminiAIService,
-            ICompareUrlString compareUrlString, IAnalysisSnapshotRepository analysisSnapshotRepository,
-            IMetaDataAnalysisRepository metaDataAnalysisRepository)
+            IAnalysisSnapshotRepository analysisSnapshotRepository, IPuppeteerAuditService puppeteerAuditService)
         {
             _analysisCacheRepository = analysisCacheRepository;
-            _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _pageSpeedService = pageSpeedService;
             _elementService = elementService;
             _logger = logger;
             _geminiAIService = geminiAIService;
-            _compareUrlString = compareUrlString;
             _analysisSnapshotRepository = analysisSnapshotRepository;
-            _metaDataAnalysisRepository = metaDataAnalysisRepository;
+            _puppeteerAuditService = puppeteerAuditService;
         }
 
         public async Task CreateAsync(AnalysisCache analysisCache)
@@ -140,8 +134,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 LCP: lighthouse.Audits?.Lcp?.NumericValue,
                 CLS: lighthouse.Audits?.Cls?.NumericValue,
                 TBT: lighthouse.Audits?.Tbt?.NumericValue,
-                SpeedIndex: lighthouse.Audits?.Si?.NumericValue,
-                TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
+                SpeedIndex: lighthouse.Audits?.Si?.NumericValue
             );
 
             var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(metrics), null);
@@ -150,10 +143,9 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             analysisCacheModel.Suggestion = geminiResponse.Suggestion;
             analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
 
-            var elements = await _elementService.AnalyzeFullPageAsync(normalizedUrl);
+            var elements = await _puppeteerAuditService.RunAuditAsync(normalizedUrl, strategy);
 
-            analysisCacheModel.Elements = elements.Elements;
-            analysisCacheModel.MetaDataAnalyses = new List<MetaDataAnalysis> { elements.MetaDataAnalysis };
+            analysisCacheModel.Elements = elements;
 
             await _analysisCacheRepository.CreateAsync(analysisCacheModel);
             return analysisCacheModel;
@@ -220,8 +212,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 LCP: lighthouse.Audits?.Lcp?.NumericValue,
                 CLS: lighthouse.Audits?.Cls?.NumericValue,
                 TBT: lighthouse.Audits?.Tbt?.NumericValue,
-                SpeedIndex: lighthouse.Audits?.Si?.NumericValue,
-                TimeToInteractive: lighthouse.Audits?.Tti?.NumericValue
+                SpeedIndex: lighthouse.Audits?.Si?.NumericValue
             );
 
             var geminiResponse = await _geminiAIService.SuggestionAnalysisPerformance(JsonSerializer.Serialize(newMetrics), analysisCacheModel.PageSpeedResponse);
@@ -232,43 +223,18 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             analysisCacheModel.GeneralAssessment = geminiResponse.GeneralAssessment;
 
             await _elementService.DeleteElementsForCacheAsync(analysisCacheModel.AnalysisCacheID);
-            await _metaDataAnalysisRepository.DeleteMetaDataAnalysesForCacheAsync(analysisCacheModel.AnalysisCacheID);
 
             analysisCacheModel.Elements = new List<Element>();
-            var newElements = await _elementService.AnalyzeFullPageAsync(normalizedUrl);
+            var newElements = await _puppeteerAuditService.RunAuditAsync(normalizedUrl, strategy);
 
-            foreach (var item in newElements.Elements)
+            foreach (var item in newElements)
             {
                 analysisCacheModel.Elements.Add(item);
             }
 
-            analysisCacheModel.MetaDataAnalyses = new List<MetaDataAnalysis> { newElements.MetaDataAnalysis };
-
             await _analysisCacheRepository.UpdateAsync(analysisCacheModel);
 
             return analysisCacheModel;
-        }
-
-        public async Task<AnalysisCache> GetOrCreateFreshAnalysisCacheAsync(string normalizedUrl, string strategy)
-        {
-            var staleThreshold = DateTime.UtcNow.Subtract(_cacheDuration);
-
-            var existingCache = await _analysisCacheRepository.GetByUrlAndStrategyAsync(normalizedUrl, strategy);
-
-            if (existingCache == null)
-            {
-                _logger.LogInformation($"Cache MISS. Tạo mới cache cho: {normalizedUrl}");
-                return await AnalyzeInternalAsync(normalizedUrl, strategy);
-            }
-
-            if (existingCache.LastAnalyzedAt < staleThreshold)
-            {
-                _logger.LogInformation($"Cache STALE. Chạy lại phân tích cho: {normalizedUrl}");
-                return await ReAnalyzeInternalAsync(normalizedUrl, strategy);
-            }
-
-            _logger.LogInformation($"Cache HIT. Trả về cache có sẵn cho: {normalizedUrl}");
-            return existingCache;
         }
 
         public async Task<AnalysisResultModel> GetAnalysisResultAsync(int analysisCacheId)
@@ -295,8 +261,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     LcpChange = Math.Round((currentMetrics.LCP ?? 0) - (previousMetrics.LCP ?? 0), 2),
                     ClsChange = Math.Round((currentMetrics.CLS ?? 0) - (previousMetrics.CLS ?? 0), 3), // CLS thường lấy 3 số
                     TbtChange = Math.Round((currentMetrics.TBT ?? 0) - (previousMetrics.TBT ?? 0), 0), // TBT thường là số nguyên ms
-                    SiChange = Math.Round((currentMetrics.SpeedIndex ?? 0) - (previousMetrics.SpeedIndex ?? 0), 2),
-                    TtiChange = Math.Round((currentMetrics.TimeToInteractive ?? 0) - (previousMetrics.TimeToInteractive ?? 0), 2)
+                    SiChange = Math.Round((currentMetrics.SpeedIndex ?? 0) - (previousMetrics.SpeedIndex ?? 0), 2)
                 };
             }
             return result;

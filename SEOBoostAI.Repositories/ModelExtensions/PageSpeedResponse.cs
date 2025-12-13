@@ -71,7 +71,6 @@ namespace SEOBoostAI.Repository.ModelExtensions
         double? LCP,
         double? CLS,
         double? TBT,
-        double? SpeedIndex,
-        double? TimeToInteractive
+        double? SpeedIndex
     );
 }

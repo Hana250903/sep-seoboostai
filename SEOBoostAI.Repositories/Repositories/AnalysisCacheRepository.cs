@@ -47,5 +47,11 @@ namespace SEOBoostAI.Repository.Repositories
 		{
 			return await _context.Set<AnalysisCache>().Include(e => e.Elements).FirstOrDefaultAsync(ac => ac.NormalizedUrl == normalizedUrl && ac.Strategy == strategy);
 		}
+
+        public async Task<AnalysisCache?> GetByNormalizedUrlAndStrategyAsync(string normalizedUrl, string strategy)
+        {
+            return await _context.Set<AnalysisCache>()
+                .FirstOrDefaultAsync(ac => ac.NormalizedUrl == normalizedUrl && ac.Strategy == strategy);
+        }
     }
 }

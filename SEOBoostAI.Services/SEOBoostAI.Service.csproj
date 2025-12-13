@@ -18,6 +18,9 @@
 		<PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
 		<PackageReference Include="Selenium.WebDriver" Version="4.35.0" />
+		<PackageReference Include="PuppeteerSharp" Version="20.0.0" />
+		<PackageReference Include="Octokit" Version="14.0.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -12,6 +12,7 @@ using SEOBoostAI.Service.Helpers;
 using SEOBoostAI.Service.Services.Configurations;
 using SEOBoostAI.Service.Services.ContentOptimizations;
 using SEOBoostAI.Service.Services.Feedbacks;
+using SEOBoostAI.Service.Services.GithubServices;
 using SEOBoostAI.Service.Services.Interfaces;
 using SEOBoostAI.Service.Services.Payments;
 using SEOBoostAI.Service.Services.PerformanceAnalysis;
@@ -42,9 +43,6 @@ namespace SEOBoostAI.API
             services.AddScoped<IPurchasedFeatureRepository, PurchasedFeatureRepository>();
             services.AddScoped<IFeedbackMessageRepository, FeedbackMessageRepository>();
             services.AddScoped<ISpamCacheRepository, SpamCacheRepository>();
-            services.AddScoped<IMetaDataAnalysisRepository, MetaDataAnalysisRepository>();
-            services.AddScoped<IMetaDataSuggestionRepository, MetaDataSuggestionRepository>();
-            services.AddScoped<IMetaTagSuggestionDetailRepository, MetaTagSuggestionDetailRepository>();
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IElementService, ElementService>();
@@ -68,7 +66,6 @@ namespace SEOBoostAI.API
             services.AddScoped<IChatNotifier, SignalRChatNotifier>();
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<ISpamProtectionService, SpamProtectionService>();
-            services.AddScoped<IMetaDataAnalysisService, MetaDataAnalysisService>();
             services.AddScoped<IEncryptionService, EncryptionService>();
             services.AddScoped<IPdfService, PdfService>();
 
@@ -93,6 +90,12 @@ namespace SEOBoostAI.API
             services.AddScoped<IGeminiKeyService, GeminiKeyService>();
             services.AddSingleton<IGeminiRateLimitManager, GeminiRateLimitManager>();
             services.AddTransient<GeminiRateLimitHelper>();
+
+            // Puppeteer + GitHub Integration Services (AutoFix)
+            services.AddScoped<IPuppeteerAuditService, PuppeteerAuditService>();
+            services.AddScoped<IGitHubIntegrationService, GitHubIntegrationService>();
+            services.AddScoped<IGeminiFixService, GeminiFixService>();
+            services.AddScoped<IAutoFixService, AutoFixService>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICompareUrlString, CompareUrlString>();

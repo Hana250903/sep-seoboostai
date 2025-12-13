@@ -71,18 +71,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[MetaDataAnalysis]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[MetaDataSuggestions]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[MetaTagSuggestionDetails]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[PerformanceHistorys]",
          "ObjectType": 0
       },

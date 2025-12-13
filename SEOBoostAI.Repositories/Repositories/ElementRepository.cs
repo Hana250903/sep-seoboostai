@@ -54,5 +54,12 @@ namespace SEOBoostAI.Repository.Repositories
                   .Where(e => e.AnalysisCacheID == analysisCacheId)
                   .ExecuteDeleteAsync();
         }
+
+        public async Task<List<Element>> GetElementsByAnalysisCacheIdAsync(int analysisCacheId)
+        {
+            return await _context.Set<Element>()
+                .Where(e => e.AnalysisCacheID == analysisCacheId)
+                .ToListAsync();
+        }
     }
 }

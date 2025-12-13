@@ -63,18 +63,13 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 throw new Exception("URL không hợp lệ.");
             }
 
-            if (await _performanceHistoryRepository.CheckUserHasUrl(userId, normalizedUrl, strategy))
-            {
-                return await _performanceHistoryRepository.GetByUserIdAndUrlAsync(userId, normalizedUrl, strategy);
-            }
-
             bool canAnalyze = await _userMonthlyFreeQuotaService.CheckLimit(userId, featureId);
             if (!canAnalyze)
             {
                 throw new Exception("Bạn đã hết lượt sử dụng miễn phí trong tháng này và lượt mua.");
             }
 
-            var analysisCache = await _analysisCacheService.GetOrCreateFreshAnalysisCacheAsync(normalizedUrl, strategy);
+            var analysisCache = await _analysisCacheService.AnalyzeInternalAsync(normalizedUrl, strategy);
 
             var performanceHistory = new PerformanceHistory
             {

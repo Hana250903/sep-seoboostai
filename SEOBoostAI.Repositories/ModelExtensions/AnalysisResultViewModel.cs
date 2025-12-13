@@ -10,6 +10,5 @@ namespace SEOBoostAI.Repository.ModelExtensions
     public class AnalysisResultViewModel
     {
         public List<Element> Elements { get; set; }
-        public MetaDataAnalysis MetaDataAnalysis { get; set; }
     }
 }

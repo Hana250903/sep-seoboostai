@@ -18,7 +18,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task DeleteAsync(int id);
         Task<AnalysisCache> AnalyzeInternalAsync(string normalizedUrl, string strategy);
         Task<AnalysisCache> ReAnalyzeInternalAsync(string normalizedUrl, string strategy);
-        Task<AnalysisCache> GetOrCreateFreshAnalysisCacheAsync(string url, string strategy);
         Task<AnalysisResultModel> GetAnalysisResultAsync(int analysisCacheId);
     }
 }
