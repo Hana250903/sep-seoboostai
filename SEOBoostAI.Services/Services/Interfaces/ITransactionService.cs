@@ -18,7 +18,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task DeleteAsync(int id);
 
 		// HÀM MỚI CHO PAYOS
-		Task<Transaction> CreatePendingDeposit(int walletId, decimal amount, string paymentMethod, string gatewayTransactionId);
+		Task<Transaction> CreatePendingDeposit(int walletId, decimal amount, string paymentMethod, string gatewayTransactionId, long orderCode);
 		Task UpdateTransactionStatusAsync(string gatewayTransactionId, string status, string gatewayTransId, string bankTransId);
 		Task<PaginationResult<List<PaymentHistoryDto>>> GetUserPaymentHistoryAsync(int userId, int currentPage, int pageSize);
 		Task PurchaseFeatureAsync(int userId, int featureId, int quantity);
@@ -26,5 +26,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 
 		//Admin nạp tiền thủ công
 		Task<Transaction> CreateAdminDepositAsync(int userId, decimal amount, string description);
+
+		Task<PaymentReceiptDto> GetReceiptAsync(int transactionId, int currentUserId, string userRole);
 	}
 }

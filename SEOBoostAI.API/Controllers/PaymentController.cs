@@ -66,7 +66,8 @@ namespace SEOBoostAI.API.Controllers
 					userId,
 					request.Amount,
 					"PayOS",
-					null // GatewayTransactionId sẽ cập nhật sau
+					null ,// GatewayTransactionId sẽ cập nhật sau
+					orderCode
 				);
 
 				var expiredAt = (int)DateTimeOffset.UtcNow.AddMinutes(10).ToUnixTimeSeconds();

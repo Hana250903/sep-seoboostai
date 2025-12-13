@@ -18,5 +18,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 		Task<List<Transaction>> GetTransactionsByIdAsync(int transactionId);
 		Task<decimal> GetTotalRevenueAsync(DateTime? fromDate, DateTime? toDate);
 		Task<List<RevenueChartDto>> GetRevenueChartDataAsync(DateTime fromDate, DateTime toDate);
+		Task<Transaction> GetTransactionDetailAsync(int transactionId);
 	}
 }
