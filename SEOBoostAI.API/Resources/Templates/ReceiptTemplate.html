@@ -1,0 +1,233 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <title>Hóa đơn GTGT</title>
+    <style>
+        /* Cấu hình chung */
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            font-size: 13px;
+            color: #444;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .invoice-box {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            background-color: #fff;
+        }
+
+        /* Header */
+        .header-table {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+            .header-table td {
+                vertical-align: top;
+            }
+
+        .company-logo img {
+            max-width: 150px;
+            max-height: 80px;
+        }
+
+        .invoice-title-block {
+            text-align: right;
+        }
+
+        .invoice-title {
+            font-size: 30px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        .invoice-status {
+            display: inline-block;
+            background: #27ae60;
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        /* Thông tin Khách hàng (Đã bỏ Nhà cung cấp) */
+        .info-table {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .info-header {
+            font-weight: bold;
+            color: #2980b9;
+            text-transform: uppercase;
+            font-size: 11px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 5px;
+            display: block;
+            padding-bottom: 3px;
+        }
+
+        /* Bảng chi tiết */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+            .items-table th {
+                background-color: #2980b9;
+                color: white;
+                padding: 12px 10px; /* Tăng padding header */
+                text-align: left;
+                font-size: 12px;
+                text-transform: uppercase;
+            }
+
+            .items-table td {
+                padding: 12px 10px;
+                border-bottom: 1px solid #eee;
+            }
+
+            .items-table tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* Phần tổng tiền (Đã chỉnh khoảng cách) */
+        .total-table {
+            width: 45%; /* Tăng độ rộng bảng tổng để số liệu không bị ép */
+            border-collapse: collapse;
+            margin-left: auto;
+        }
+
+            .total-table td {
+                padding: 10px 15px; /* Tăng padding để các dòng cách xa nhau ra */
+                border-bottom: 1px solid #eee;
+            }
+
+        .total-label {
+            font-weight: 600;
+            color: #666;
+            text-align: right;
+        }
+
+        .total-value {
+            text-align: right;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .grand-total td {
+            background-color: #2980b9;
+            color: #fff;
+            font-size: 16px;
+            padding: 15px; /* Padding lớn hơn cho dòng tổng cuối */
+            border: none;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-box">
+        <table class="header-table">
+            <tr>
+                <td class="company-logo">
+                    <img src="{{LogoBase64}}" alt="SEOBoostAI" />
+                </td>
+                <td class="invoice-title-block">
+                    <h1 class="invoice-title">HÓA ĐƠN GTGT</h1>
+                    <div class="invoice-status">ĐÃ THANH TOÁN</div>
+                    <div style="margin-top: 10px; color: #555;">
+                        Mã đơn: <strong>#{{TransactionCode}}</strong><br>
+                        Ngày: {{PaymentDate}}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="info-table">
+            <tr>
+                <td style="width: 100%;">
+                    <span class="info-header">Khách hàng</span>
+                    <strong>{{CustomerName}}</strong><br>
+                    Email: {{CustomerEmail}}
+                </td>
+            </tr>
+        </table>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 35%;">Diễn giải</th>
+                    <th class="text-center" style="width: 10%;">Số lượng</th>
+                    <th class="text-right" style="width: 15%;">Giá gốc</th>
+                    <th class="text-right" style="width: 10%;">VAT (%)</th>
+                    <th class="text-right" style="width: 15%;">Tiền thuế</th>
+                    <th class="text-right" style="width: 15%;">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <strong>{{ServiceName}}</strong><br>
+                        <small style="color: #777;">{{Description}}</small>
+                    </td>
+                    <td class="text-center">{{Quantity}}</td>
+
+                    <td class="text-right">{{Amount}} đ</td>
+                    <td class="text-right">{{VatRate}}%</td>
+                    <td class="text-right">{{VatAmount}} đ</td>
+                    <td class="text-right">{{TotalAmount}} đ</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="total-table">
+            <tr>
+                <td class="total-label">Cộng tiền hàng:</td>
+                <td class="total-value">{{Amount}} đ</td>
+            </tr>
+            <tr>
+                <td class="total-label">Tiền thuế GTGT:</td>
+                <td class="total-value">{{VatAmount}} đ</td>
+            </tr>
+            <tr class="grand-total">
+                <td class="total-label" style="color: #fff;">TỔNG THANH TOÁN:</td>
+                <td class="total-value">{{TotalAmount}} đ</td>
+            </tr>
+        </table>
+
+        <div class="footer">
+            <p>Cảm ơn quý khách đã sử dụng dịch vụ của SEOBoostAI.</p>
+            <p>Biên lai điện tử được xuất tự động. Vui lòng liên hệ feedback nếu cần hỗ trợ.</p>
+        </div>
+    </div>
+</body>
+</html>

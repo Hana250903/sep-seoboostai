@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DinkToPdf;
+using DinkToPdf.Contracts;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SEOBoostAI.API.Infrastructure;
 using SEOBoostAI.Repository.GenericRepository;
@@ -68,9 +70,10 @@ namespace SEOBoostAI.API
             services.AddScoped<ISpamProtectionService, SpamProtectionService>();
             services.AddScoped<IMetaDataAnalysisService, MetaDataAnalysisService>();
             services.AddScoped<IEncryptionService, EncryptionService>();
+            services.AddScoped<IPdfService, PdfService>();
 
-            // test xong xóa ( 3 dòng dưới )
-            services.AddScoped<IAdsPlannerService, AdsPlannerService>();
+			// test xong xóa ( 3 dòng dưới )
+			services.AddScoped<IAdsPlannerService, AdsPlannerService>();
             services.AddScoped<IAdsSearchRequestRepository, AdsSearchRequestRepository>();
             services.AddScoped<IAdsKeywordDatumRepository, AdsKeywordDatumRepository>();
             services.AddScoped<IGeminiAiGoogleAdsService, GeminiAiGoogleAdsService>();
@@ -94,7 +97,8 @@ namespace SEOBoostAI.API
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICompareUrlString, CompareUrlString>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-            services.AddDbContext<SEP_SEOBoostAIContext>(options =>
+			services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+			services.AddDbContext<SEP_SEOBoostAIContext>(options =>
             {
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
             });

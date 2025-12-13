@@ -24,6 +24,7 @@ namespace SEOBoostAI.Repository.ModelExtensions
 		// 4. Line Items (Chi tiết đơn hàng)
 		public string ServiceName { get; set; }     // Tên gói hoặc "Nạp tiền"
 		public string Description { get; set; }     // Mô tả phụ
+		public int Quantity { get; set; }          // Số lượng
 		public decimal Amount { get; set; }         // Số tiền gốc
 
 		// 5. Totals

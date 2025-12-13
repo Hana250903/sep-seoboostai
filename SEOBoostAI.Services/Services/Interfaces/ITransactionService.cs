@@ -12,6 +12,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 	{
 		Task<List<Transaction>> GetTransactionsAsync();
 		Task<PaginationResult<List<Transaction>>> GetTransactionsWithPaginateAsync(int currentPage, int pageSize);
+		Task<PaginationResult<List<Transaction>>> GetTransactionsByUserWithPaginateAsync(int currentPage, int pageSize);
 		Task<Transaction> GetTransactionByIdAsync(int id);
 		Task CreateAsync(Transaction transaction);
 		Task UpdateAsync(Transaction transaction);

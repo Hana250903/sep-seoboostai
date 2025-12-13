@@ -40,14 +40,14 @@ namespace SEOBoostAI.Repository.Repositories
 
 		public async Task<PaginationResult<List<Transaction>>> GetSuccessfulDepositsByUserIdAsync(int userId, int currentPage, int pageSize)
 		{
-			// 1. Tạo Query cơ bản (Chưa chạy lệnh SQL)
-			var query = _context.Set<Transaction>() // Nhớ dùng .Set<Transaction>()
+			// 1. Tạo Query cơ bản
+			var query = _context.Set<Transaction>()
 				.Where(t => t.UserID == userId
-							&& t.Status == PaymentStatus.COMPLETED.ToString()  // Chỉ lấy thành công
+							&& t.Status == PaymentStatus.COMPLETED.ToString()
 							&& t.Type == PaymentType.DEPOSIT.ToString()
-							|| t.Type == PaymentType.PURCHASE.ToString());   // Chỉ lấy nạp tiền
+							|| t.Type == PaymentType.PURCHASE.ToString());
 
-			// 2. Đếm tổng số lượng (để tính số trang)
+			// 2. Đếm tổng số lượng
 			var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 

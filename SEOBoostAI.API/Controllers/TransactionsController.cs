@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.API.ViewModels;
+using SEOBoostAI.Repository.Enums;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -13,10 +14,12 @@ namespace SEOBoostAI.API.Controllers
 	public class TransactionsController : ControllerBase
 	{
 		private readonly ITransactionService _transactionService;
+		private readonly IPdfService _pdfService;
 
-		public TransactionsController(ITransactionService transactionService)
+		public TransactionsController(ITransactionService transactionService, IPdfService pdfService)
 		{
 			_transactionService = transactionService;
+			_pdfService = pdfService;
 		}
 
 		// GET: api/<TransactionsController>
@@ -30,6 +33,30 @@ namespace SEOBoostAI.API.Controllers
 		public async Task<PaginationResult<List<Transaction>>> Get(int currentPage, int pageSize)
 		{
 			return await _transactionService.GetTransactionsWithPaginateAsync(currentPage, pageSize);
+		}
+
+		[HttpGet("history/{currentPage}/{pageSize}")]
+		public async Task<IActionResult> GetTransactionByUser(int currentPage, int pageSize)
+		{
+			try
+			{
+				// 1. Lấy UserID từ Token
+				var userIdString = User.FindFirst("user_ID")?.Value;
+				if (string.IsNullOrEmpty(userIdString))
+				{
+					return Unauthorized("User ID not found.");
+				}
+				var userId = int.Parse(userIdString);
+
+				// 2. Gọi Service lấy dữ liệu
+				var result = await _transactionService.GetUserPaymentHistoryAsync(userId, currentPage, pageSize);
+
+				return Ok(new { data = result });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 
 		// GET api/<TransactionsController>/5
@@ -107,6 +134,39 @@ namespace SEOBoostAI.API.Controllers
 
 				var receipt = await _transactionService.GetReceiptAsync(id, userId, role);
 				return Ok(receipt);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
+
+		[HttpGet("{id}/receipt/download")]
+		public async Task<IActionResult> DownloadReceipt(int id)
+		{
+			try
+			{
+				// 1. Lấy User ID từ Token
+				var userIdClaim = User.FindFirst("user_ID");
+				if (userIdClaim == null) return Unauthorized("Token không hợp lệ");
+				var userId = int.Parse(userIdClaim.Value);
+
+				// 2. Lấy dữ liệu hóa đơn (DTO)
+				var receiptData = await _transactionService.GetReceiptAsync(id, userId, UserRole.Member.ToString());
+
+				// 3. Xác định đường dẫn file Template
+				// (Controller xác định đường dẫn vì nó biết về môi trường Hosting)
+				var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Templates", "ReceiptTemplate.html");
+
+				// 4. Gọi Service để tạo PDF
+				byte[] pdfFile = _pdfService.GenerateReceiptPdf(receiptData, path);
+
+				// 5. Trả về file
+				return File(pdfFile, "application/pdf", $"HoaDon_{receiptData.TransactionCode}.pdf");
+			}
+			catch (FileNotFoundException ex)
+			{
+				return StatusCode(500, "Lỗi server: Không tìm thấy mẫu hóa đơn.");
 			}
 			catch (Exception ex)
 			{

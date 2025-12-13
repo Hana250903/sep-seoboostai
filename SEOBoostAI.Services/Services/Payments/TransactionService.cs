@@ -39,6 +39,10 @@ namespace SEOBoostAI.Service.Services.Payments
 		{
 			return await _transactionRepository.GetTransactionsWithPaginateAsync(currentPage, pageSize);
 		}
+		public async Task<PaginationResult<List<Transaction>>> GetTransactionsByUserWithPaginateAsync(int currentPage, int pageSize)
+		{
+			return await _transactionRepository.GetTransactionsWithPaginateAsync(currentPage, pageSize);
+		}
 		public async Task<Transaction> GetTransactionByIdAsync(int id)
 		{
 			return await _transactionRepository.GetByIdAsync(id);
@@ -102,7 +106,8 @@ namespace SEOBoostAI.Service.Services.Payments
 				Status = PaymentStatus.PENDING.ToString(), // Trạng thái quan trọng
 				RequestTime = DateTime.UtcNow,
 				IsDeleted = false,
-				OrderCode = orderCode
+				OrderCode = orderCode,
+				Quantity = 1
 				// GatewayTransactionId, BankTransId, CompletedTime sẽ được cập nhật bởi Webhook
 			};
 
@@ -214,7 +219,8 @@ namespace SEOBoostAI.Service.Services.Payments
 				CompletedTime = DateTime.UtcNow,
 				IsDeleted = false,
 				BalanceAfter = user.Currency,
-				OrderCode = orderCode
+				OrderCode = orderCode,
+				Quantity = quantity
 			};
 			await _transactionRepository.CreateAsync(transaction);
 			// Lưu ý: Phải SaveChanges 1 lần ở đây để lấy TransactionID cho bảng PurchasedFeatures
@@ -300,11 +306,10 @@ namespace SEOBoostAI.Service.Services.Payments
 			decimal subTotal = Math.Round(totalAmount / (1 + _vatRate / 100m), 0);
 			decimal vatAmount = totalAmount - subTotal;
 
-
 			if (trans.Type == PaymentType.DEPOSIT.ToString())
 			{
 				serviceName = "Nạp tiền vào tài khoản";
-				description = trans.Description;
+				description = trans.Description;	
 			}
 
 			if(trans.Type == PaymentType.PURCHASE.ToString()) // PURCHASE
@@ -335,6 +340,7 @@ namespace SEOBoostAI.Service.Services.Payments
 
 				ServiceName = serviceName,
 				Description = description,
+				Quantity = trans.Quantity,
 				Amount = subTotal, // Tạm tính
 
 				VatRate = _vatRate,
