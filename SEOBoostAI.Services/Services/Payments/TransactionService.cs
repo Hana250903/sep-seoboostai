@@ -156,6 +156,7 @@ namespace SEOBoostAI.Service.Services.Payments
 			{
 				TransactionId = t.TransactionID,
 				Amount = t.Money,
+				BalanceAfter = (decimal)t.BalanceAfter, // Giả sử tất cả đều là VND
 				Description = t.Description,
 				Status = t.Status,
 				PaymentDate = t.CompletedTime,
