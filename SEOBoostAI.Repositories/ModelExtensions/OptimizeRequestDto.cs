@@ -13,6 +13,7 @@ namespace SEOBoostAI.Repository.ModelExtensions
 		public string Keyword { get; set; }
 		[Required(ErrorMessage = "Nội dung không được để trống")]
 		[MinLength(10, ErrorMessage = "Nội dung quá ngắn (tối thiểu 10 ký tự)")]
+		[MaxLength(1000, ErrorMessage ="Nội dung không được quá 1000 ký tự")]
 		public string Content { get; set; }
 		public string ContentLength { get; set; }
 		public int OptimizationLevel { get; set; }
