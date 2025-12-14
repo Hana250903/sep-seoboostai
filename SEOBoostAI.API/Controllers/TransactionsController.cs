@@ -5,6 +5,7 @@ using SEOBoostAI.Repository.Enums;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
+using System.Security.Claims;
 
 namespace SEOBoostAI.API.Controllers
 {
@@ -151,8 +152,11 @@ namespace SEOBoostAI.API.Controllers
 				if (userIdClaim == null) return Unauthorized("Token không hợp lệ");
 				var userId = int.Parse(userIdClaim.Value);
 
+				var roleClaim = User.FindFirst(ClaimTypes.Role) ?? User.FindFirst("role");
+				var userRole = roleClaim?.Value ?? UserRole.Member.ToString();
+
 				// 2. Lấy dữ liệu hóa đơn (DTO)
-				var receiptData = await _transactionService.GetReceiptAsync(id, userId, UserRole.Member.ToString());
+				var receiptData = await _transactionService.GetReceiptAsync(id, userId, userRole);
 
 				// 3. Xác định đường dẫn file Template
 				// (Controller xác định đường dẫn vì nó biết về môi trường Hosting)
