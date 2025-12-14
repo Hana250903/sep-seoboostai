@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using SEOBoostAI.Service.Services.Interfaces;
 
-namespace SEOBoostAI.API.Infrastructure
+namespace SEOBoostAI.API.Hubs
 {
     public class SignalRChatNotifier : IChatNotifier
     {

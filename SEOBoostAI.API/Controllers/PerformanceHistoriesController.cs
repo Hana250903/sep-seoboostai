@@ -5,7 +5,7 @@ using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
-using SEOBoostAI.Service.Ultils;
+using SEOBoostAI.Service.Utils;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -19,12 +19,10 @@ namespace SEOBoostAI.API.Controllers
     public class PerformanceHistoriesController : ControllerBase
     {
         private readonly IPerformanceHistoryService _performanceHistoryService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public PerformanceHistoriesController(IPerformanceHistoryService performanceHistoryService, ICurrentUserService currentUserService)
+        public PerformanceHistoriesController(IPerformanceHistoryService performanceHistoryService)
         {
             _performanceHistoryService = performanceHistoryService;
-            _currentUserService = currentUserService;
         }
 
         // GET: api/<PerformanceHistoriesController>

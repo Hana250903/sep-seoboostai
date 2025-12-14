@@ -646,31 +646,82 @@ namespace SEOBoostAI.Service.Services.GithubServices
             var currentUser = await _client.User.Current();
             string forkOwner = currentUser.Login;
 
+            // 1. Kiểm tra xem fork đã tồn tại chưa
             Octokit.Repository? fork = null;
+            bool forkExists = false;
+
             try
             {
                 fork = await _client.Repository.Get(forkOwner, repo);
-                if (!fork.Fork || fork.Parent?.FullName != $"{owner}/{repo}")
-                    fork = null;
-            }
-            catch (NotFoundException) { }
-
-            if (fork == null)
-            {
-                Console.WriteLine($"[FORK PR] Creating fork...");
-                fork = await _client.Repository.Forks.Create(owner, repo, new NewRepositoryFork());
-                await Task.Delay(5000);
-
-                for (int i = 0; i < 10; i++)
+                // Kiểm tra đây có phải là fork của repo gốc không
+                if (fork != null && fork.Fork && fork.Parent?.FullName == $"{owner}/{repo}")
                 {
+                    forkExists = true;
+                    Console.WriteLine($"[FORK PR] ✓ Fork đã tồn tại: {forkOwner}/{repo}");
+                }
+                else if (fork != null)
+                {
+                    // Repo tồn tại nhưng không phải fork của repo gốc
+                    Console.WriteLine($"[FORK PR] ⚠ Repo {forkOwner}/{repo} tồn tại nhưng không phải fork của {owner}/{repo}");
+                    throw new Exception($"Bạn đã có repo '{repo}' nhưng nó không phải fork của {owner}/{repo}. Vui lòng đổi tên hoặc xóa repo đó.");
+                }
+            }
+            catch (NotFoundException)
+            {
+                // Expected - fork chưa tồn tại
+                Console.WriteLine($"[FORK PR] Fork chưa tồn tại, sẽ tạo mới...");
+            }
+
+            // 2. Tạo fork mới nếu chưa tồn tại
+            if (!forkExists)
+            {
+                try
+                {
+                    Console.WriteLine($"[FORK PR] Đang tạo fork...");
+                    fork = await _client.Repository.Forks.Create(owner, repo, new NewRepositoryFork());
+                    Console.WriteLine($"[FORK PR] Fork đã được tạo, đợi GitHub xử lý...");
+                    
+                    // Đợi GitHub tạo xong fork
+                    await Task.Delay(5000);
+
+                    // Retry lấy fork info
+                    for (int i = 0; i < 10; i++)
+                    {
+                        try
+                        {
+                            fork = await _client.Repository.Get(forkOwner, repo);
+                            if (fork != null)
+                            {
+                                Console.WriteLine($"[FORK PR] ✓ Fork sẵn sàng: {fork.HtmlUrl}");
+                                break;
+                            }
+                        }
+                        catch
+                        {
+                            Console.WriteLine($"[FORK PR] Đợi fork... (attempt {i + 1}/10)");
+                            await Task.Delay(2000);
+                        }
+                    }
+                }
+                catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity)
+                {
+                    // Lỗi 422 - có thể fork đã tồn tại nhưng check trước đó không thấy
+                    Console.WriteLine($"[FORK PR] 422 - Có thể fork đã tồn tại, thử lấy lại...");
                     try
                     {
                         fork = await _client.Repository.Get(forkOwner, repo);
-                        if (fork != null) break;
+                        if (fork != null && fork.Fork)
+                        {
+                            Console.WriteLine($"[FORK PR] ✓ Tìm thấy fork có sẵn: {forkOwner}/{repo}");
+                        }
+                        else
+                        {
+                            throw new Exception($"Không thể tạo hoặc tìm fork: {ex.Message}");
+                        }
                     }
-                    catch
+                    catch (NotFoundException)
                     {
-                        await Task.Delay(2000);
+                        throw new Exception($"Lỗi 422 nhưng không tìm thấy fork: {ex.Message}");
                     }
                 }
             }

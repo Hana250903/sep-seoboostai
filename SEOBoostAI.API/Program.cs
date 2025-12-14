@@ -3,8 +3,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SEOBoostAI.API;
-using SEOBoostAI.API.Infrastructure;
-using SEOBoostAI.API.Mappers;
+using SEOBoostAI.API.Hubs;
 using SEOBoostAI.Service.Services.Interfaces;
 using SEOBoostAI.Service.Services.Payments;
 using System.Text;
@@ -122,7 +121,6 @@ builder.Services.AddHostedService<PaymentCleanupService>();
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
-builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 //Add Http Client
 builder.Services.AddHttpClient();

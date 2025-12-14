@@ -3,7 +3,7 @@ using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
 using System.Security.Claims;
 
-namespace SEOBoostAI.API.Infrastructure
+namespace SEOBoostAI.API.Hubs
 {
     public class ChatHub : Hub
     {

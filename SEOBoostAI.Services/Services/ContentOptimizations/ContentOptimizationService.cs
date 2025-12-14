@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Azure.Core;
+﻿using Azure.Core;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.ModelExtensions.GeminiAIModel;
 using SEOBoostAI.Repository.Models;
@@ -26,14 +25,12 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IGeminiContentOptimizer _geminiService;
 		private readonly IUserMonthlyFreeQuotaService _userMonthlyFreeQuotaService;
-		private readonly IMapper _mapper;
 
 		public ContentOptimizationService(
 			IContentOptimizationRepository contentOptimizationRepository, 
 			IUserRepository userRepository, IFeatureRepository featureRepository,
 			IUserMonthlyFreeQuotaService userMonthlyFreeQuotaService,
-			IUnitOfWork unitOfWork, IGeminiContentOptimizer geminiService,
-			IMapper mapper)
+			IUnitOfWork unitOfWork, IGeminiContentOptimizer geminiService)
 		{
 			_contentOptimizationRepository = contentOptimizationRepository;
 			_featureRepository = featureRepository;
@@ -41,7 +38,50 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 			_userMonthlyFreeQuotaService = userMonthlyFreeQuotaService;
 			_unitOfWork = unitOfWork;
 			_geminiService = geminiService;
-			_mapper = mapper;
+		}
+
+		/// <summary>
+		/// Maps a ContentOptimization entity to ContentOptimizationDto
+		/// </summary>
+		private ContentOptimizationDto MapToDto(ContentOptimization src)
+		{
+			var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+			
+			AiOptimizationResponse? aiData = null;
+			if (!string.IsNullOrEmpty(src.AIResponse))
+			{
+				try
+				{
+					aiData = JsonSerializer.Deserialize<AiOptimizationResponse>(src.AIResponse, jsonOptions);
+				}
+				catch
+				{
+					aiData = null;
+				}
+			}
+
+			OptimizeRequestDto? userRequest = null;
+			if (!string.IsNullOrEmpty(src.UserRequest))
+			{
+				try
+				{
+					userRequest = JsonSerializer.Deserialize<OptimizeRequestDto>(src.UserRequest, jsonOptions);
+				}
+				catch
+				{
+					userRequest = null;
+				}
+			}
+
+			return new ContentOptimizationDto
+			{
+				ContentOptimizationID = src.ContentOptimizationID,
+				UserID = src.UserID,
+				Model = src.Model,
+				AiData = aiData,
+				UserRequest = userRequest,
+				CreatedAt = src.CreatedAt
+			};
 		}
 
 		public async Task DeleteAsync(int id)
@@ -69,7 +109,7 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 			}
 
 			// Map sang DTO
-			return _mapper.Map<List<ContentOptimizationDto>>(entities);
+			return entities.Select(MapToDto).ToList();
 		}
 
 		public async Task<List<ContentOptimizationDto>> GetContentOptimizationsAsync()
@@ -77,14 +117,14 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 			var entities = await _contentOptimizationRepository.GetAllAsync();
 
 			var sortedEntities = entities.OrderByDescending(co => co.CreatedAt);
-			return _mapper.Map<List<ContentOptimizationDto>>(sortedEntities);
+			return sortedEntities.Select(MapToDto).ToList();
 		}
 
 		public async Task<PaginationResult<List<ContentOptimizationDto>>> GetContentOptimizationsWithPaginateAsync(SearchTransactionRequest searchRequest, int userId)
 		{
 			var paginateResult = await _contentOptimizationRepository.GetContentOptimizationWithPaginateAsync(searchRequest, userId);
 
-			var dtos = _mapper.Map<List<ContentOptimizationDto>>(paginateResult.Items);
+			var dtos = paginateResult.Items.Select(MapToDto).ToList();
 
 			// Tạo lại kết quả phân trang với DTO
 			return new PaginationResult<List<ContentOptimizationDto>>
@@ -154,7 +194,7 @@ namespace SEOBoostAI.Service.Services.ContentOptimizations
 
 				await _unitOfWork.SaveChangesAsync(); // Lưu cả 2 việc (tạo bài viết + trừ lượt) cùng lúc
 
-				return _mapper.Map<ContentOptimizationDto>(newOptimization);
+				return MapToDto(newOptimization);
 			}
 			catch (Exception ex)
 			{

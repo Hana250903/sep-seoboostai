@@ -8,7 +8,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEOBoostAI.Service.Ultils
+namespace SEOBoostAI.Service.Utils
 {
     public class GenerateJWTToken
     {

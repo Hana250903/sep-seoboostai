@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Service.Services.Interfaces;
-using SEOBoostAI.Service.Ultils;
 using System.Security.Claims;
 
 namespace SEOBoostAI.API.Controllers
@@ -14,12 +13,10 @@ namespace SEOBoostAI.API.Controllers
     public class QueryHistoryController : ControllerBase
     {
         private readonly ITrendSearchService _trendSearchService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public QueryHistoryController(ITrendSearchService trendSearchService, ICurrentUserService currentUserService)
+        public QueryHistoryController(ITrendSearchService trendSearchService)
         {
             _trendSearchService = trendSearchService;
-            _currentUserService = currentUserService;
         }
 
         // GET: api/query-histories?CurrentPage=1&PageSize=10

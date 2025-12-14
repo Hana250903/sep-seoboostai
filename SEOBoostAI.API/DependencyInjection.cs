@@ -2,7 +2,7 @@
 using DinkToPdf.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using SEOBoostAI.API.Infrastructure;
+using SEOBoostAI.API.Hubs;
 using SEOBoostAI.Repository.GenericRepository;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Repository.Repositories;
@@ -18,7 +18,7 @@ using SEOBoostAI.Service.Services.Payments;
 using SEOBoostAI.Service.Services.PerformanceAnalysis;
 using SEOBoostAI.Service.Services.SearchKeywords;
 using SEOBoostAI.Service.Services.UserAndAuthen;
-using SEOBoostAI.Service.Ultils;
+using SEOBoostAI.Service.Utils;
 using System.Configuration;
 
 namespace SEOBoostAI.API
@@ -82,7 +82,6 @@ namespace SEOBoostAI.API
             services.AddScoped<ITrendSearchService, TrendSearchService>(); 
             services.AddScoped<IQueryHistoryRepository, QueryHistoryRepository>();
             services.AddScoped<ITrendSearchesRepository, TrendSearchesRepository>();
-            services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             // Gemini Rate Limit Management
             services.AddScoped<IGeminiKeyRepository, GeminiKeyRepository>();

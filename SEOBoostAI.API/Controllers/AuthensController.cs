@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.Service.Services.Interfaces;
-using SEOBoostAI.Service.Ultils;
+using SEOBoostAI.Service.Utils;
+using System.Security.Claims;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -11,12 +12,10 @@ namespace SEOBoostAI.API.Controllers
     public class AuthensController : ControllerBase
     {
         private readonly IAuthenService _authenService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public AuthensController(IAuthenService authenService, ICurrentUserService currentUserService)
+        public AuthensController(IAuthenService authenService)
         {
             _authenService = authenService;
-            _currentUserService = currentUserService;
         }
 
         [HttpPost("login-member")]
@@ -78,9 +77,13 @@ namespace SEOBoostAI.API.Controllers
         {
             try
             {
-                var user = _currentUserService.GetUserId();
+                var userIdString = User.FindFirstValue("user_ID");
+                if (!int.TryParse(userIdString, out int userId))
+                {
+                    return Unauthorized();
+                }
 
-                var result = await _authenService.LogOut(refreshToken, user);
+                var result = await _authenService.LogOut(refreshToken, userId);
 
                 return Ok(result);
 
