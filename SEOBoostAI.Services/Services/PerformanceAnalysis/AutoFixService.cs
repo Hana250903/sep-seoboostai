@@ -211,14 +211,26 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     string prUrl;
                     string prMessage = $"AI Auto-Fix: {response.FixedCount} issues in {fileFixMap.Count} files";
 
-                    if (req.UseForkPR)
+                    // Lấy username của GitHub token owner để so sánh
+                    string tokenOwner = await _git.GetCurrentUserLoginAsync();
+                    bool isOwnerSameAsTokenOwner = !string.IsNullOrEmpty(tokenOwner) && 
+                        tokenOwner.Equals(req.RepoOwner, StringComparison.OrdinalIgnoreCase);
+
+                    if (isOwnerSameAsTokenOwner)
                     {
-                        Console.WriteLine($"[BATCH FIX] Using Fork-based PR...");
+                        // RepoOwner trùng với Token Owner -> dùng Direct PR (có write access)
+                        Console.WriteLine($"[BATCH FIX] Owner '{req.RepoOwner}' = Token Owner '{tokenOwner}' -> Using Direct PR...");
+                        prUrl = await _git.CreateBatchPullRequestAsync(req.RepoOwner, req.RepoName, fileFixMap, prMessage);
+                    }
+                    else if (req.UseForkPR || !isOwnerSameAsTokenOwner)
+                    {
+                        // RepoOwner khác Token Owner -> phải Fork trước
+                        Console.WriteLine($"[BATCH FIX] Owner '{req.RepoOwner}' ≠ Token Owner '{tokenOwner}' -> Using Fork-based PR...");
                         prUrl = await _git.ForkAndCreatePullRequestAsync(req.RepoOwner, req.RepoName, fileFixMap, prMessage);
                     }
                     else
                     {
-                        Console.WriteLine($"[BATCH FIX] Using Direct PR...");
+                        Console.WriteLine($"[BATCH FIX] Using Direct PR (UseForkPR=false)...");
                         prUrl = await _git.CreateBatchPullRequestAsync(req.RepoOwner, req.RepoName, fileFixMap, prMessage);
                     }
 
@@ -228,7 +240,8 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 {
                     Console.WriteLine($"[BATCH FIX] PR Error: {ex.Message}");
 
-                    if (!req.UseForkPR && ex.Message.Contains("403"))
+                    // Fallback: nếu Direct PR thất bại (403, 404) -> thử Fork PR
+                    if (ex.Message.Contains("403") || ex.Message.Contains("404") || ex.Message.Contains("Not Found"))
                     {
                         Console.WriteLine($"[BATCH FIX] Fallback to Fork-based PR...");
                         try

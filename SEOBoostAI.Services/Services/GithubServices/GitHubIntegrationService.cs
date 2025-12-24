@@ -12,15 +12,16 @@ namespace SEOBoostAI.Service.Services.GithubServices
     public class GitHubIntegrationService : IGitHubIntegrationService
     {
         private readonly GitHubClient _client;
+        private readonly string _token;
         private static readonly Dictionary<string, RepoStructure> _repoStructureCache = new();
 
-        public GitHubIntegrationService(IConfiguration config)
+        public GitHubIntegrationService(ISystemConfigService systemConfigService)
         {
             _client = new GitHubClient(new ProductHeaderValue("SEOBoostAI"));
-            var token = config["GitHub:Token"];
-            if (!string.IsNullOrEmpty(token))
+            _token = systemConfigService.GetValue<string>("GitHubToken", "");
+            if (!string.IsNullOrEmpty(_token))
             {
-                _client.Credentials = new Credentials(token);
+                _client.Credentials = new Credentials(_token);
             }
         }
 
@@ -594,6 +595,24 @@ namespace SEOBoostAI.Service.Services.GithubServices
         {
             string cacheKey = $"{owner}/{repo}";
             return _repoStructureCache.TryGetValue(cacheKey, out var cached) ? cached : null;
+        }
+
+        #endregion
+
+        #region User Methods
+
+        public async Task<string> GetCurrentUserLoginAsync()
+        {
+            try
+            {
+                var currentUser = await _client.User.Current();
+                return currentUser.Login;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GitHub] Error getting current user: {ex.Message}");
+                return string.Empty;
+            }
         }
 
         #endregion

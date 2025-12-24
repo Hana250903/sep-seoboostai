@@ -48,5 +48,10 @@ namespace SEOBoostAI.Service.Services.Interfaces
         /// Fork repo rồi tạo cross-repo PR
         /// </summary>
         Task<string> ForkAndCreatePullRequestAsync(string owner, string repo, Dictionary<string, string> fileContents, string message);
+
+        /// <summary>
+        /// Lấy username của GitHub token owner (để so sánh với RepoOwner)
+        /// </summary>
+        Task<string> GetCurrentUserLoginAsync();
     }
 }
