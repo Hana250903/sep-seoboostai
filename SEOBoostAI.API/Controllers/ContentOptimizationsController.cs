@@ -61,6 +61,16 @@ namespace SEOBoostAI.API.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Post([FromBody] OptimizeRequestDto requestDto)
 		{
+			if (requestDto == null)
+			{
+				return BadRequest(new { message = "Dữ liệu yêu cầu không được để trống." });
+			}
+
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(new { message = "Dữ liệu không hợp lệ.", errors = ModelState });
+			}
+
 			try
 			{
 				// 1. Lấy UserID từ Token (Bảo mật hơn là tin vào requestDto)
@@ -79,6 +89,11 @@ namespace SEOBoostAI.API.Controllers
 				return CreatedAtAction(nameof(Get), new { id = result.ContentOptimizationID }, result);
 			}
 			// --- BẮT LỖI NGHIỆP VỤ ---
+			catch (ArgumentException ex)
+			{
+				// Lỗi do nội dung chứa từ cấm hoặc tham số không hợp lệ
+				return BadRequest(new { message = ex.Message, errorCode = "SENSITIVE_CONTENT" });
+			}
 			catch (InvalidOperationException ex)
 			{
 				return StatusCode(403, new { message = ex.Message, errorCode = "QUOTA_EXCEEDED" });

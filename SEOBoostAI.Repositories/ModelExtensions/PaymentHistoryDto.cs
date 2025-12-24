@@ -10,6 +10,7 @@ namespace SEOBoostAI.Repository.ModelExtensions
 	{
 		public int TransactionId { get; set; }
 		public decimal Amount { get; set; }
+		public decimal BalanceAfter { get; set; }
 		public string Description { get; set; }
 		public string Status { get; set; }
 		public DateTime? PaymentDate { get; set; } // Lấy CompletedTime

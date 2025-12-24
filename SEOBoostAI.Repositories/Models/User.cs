@@ -2,21 +2,34 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Index("UserName", Name = "UQ_Users_UserName", IsUnique = true)]
 public partial class User
 {
+    [Key]
     public int UserID { get; set; }
 
+    [Required]
+    [StringLength(255)]
     public string UserName { get; set; }
 
+    [StringLength(255)]
     public string Password { get; set; }
 
+    [Required]
+    [StringLength(255)]
     public string FullName { get; set; }
 
+    [Required]
+    [StringLength(255)]
     public string Email { get; set; }
 
+    [StringLength(50)]
     public string Role { get; set; }
 
     public string Avatar { get; set; }
@@ -27,25 +40,40 @@ public partial class User
 
     public string RefreshToken { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime? UpdatedAt { get; set; }
 
     public bool IsBanned { get; set; }
 
     public bool IsDeleted { get; set; }
 
+    [Column(TypeName = "money")]
+    public decimal Currency { get; set; }
+
+    [StringLength(50)]
+    public string TimeZoneId { get; set; }
+
+    [InverseProperty("User")]
     public virtual ICollection<ContentOptimization> ContentOptimizations { get; set; } = new List<ContentOptimization>();
 
+    [InverseProperty("Sender")]
     public virtual ICollection<FeedbackMessage> FeedbackMessages { get; set; } = new List<FeedbackMessage>();
 
+    [InverseProperty("User")]
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
+    [InverseProperty("User")]
     public virtual ICollection<PerformanceHistory> PerformanceHistories { get; set; } = new List<PerformanceHistory>();
 
+    [InverseProperty("Member")]
     public virtual ICollection<QueryHistory> QueryHistories { get; set; } = new List<QueryHistory>();
 
-    public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
+    [InverseProperty("User")]
+    public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 
-    public virtual Wallet Wallet { get; set; }
+    [InverseProperty("User")]
+    public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
 }

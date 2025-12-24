@@ -2,16 +2,34 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
+[Index("SettingKey", Name = "UQ_SystemSettings_Key", IsUnique = true)]
 public partial class SystemSetting
 {
+    [Required]
+    [StringLength(100)]
     public string SettingKey { get; set; }
 
+    [Required]
     public string SettingValue { get; set; }
 
+    [StringLength(255)]
     public string Description { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime? LastUpdatedDate { get; set; }
+
+    public int? FeatureID { get; set; }
+
+    [Key]
+    public int SettingID { get; set; }
+
+    [ForeignKey("FeatureID")]
+    [InverseProperty("SystemSettings")]
+    public virtual Feature Feature { get; set; }
 }

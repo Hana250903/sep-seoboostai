@@ -32,6 +32,8 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
     public virtual DbSet<Feature> Features { get; set; }
 
+    public virtual DbSet<FeatureInformation> FeatureInformations { get; set; }
+
     public virtual DbSet<Feedback> Feedbacks { get; set; }
 
     public virtual DbSet<FeedbackMessage> FeedbackMessages { get; set; }
@@ -64,8 +66,6 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
     public virtual DbSet<UserMonthlyFreeQuota> UserMonthlyFreeQuotas { get; set; }
 
-    public virtual DbSet<Wallet> Wallets { get; set; }
-
     public static string GetConnectionString(string connectionStringName)
     {
         var config = new ConfigurationBuilder()
@@ -80,172 +80,106 @@ public partial class SEP_SEOBoostAIContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseSqlServer(GetConnectionString("DefaultConnection")).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 
-//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//        => optionsBuilder.UseSqlServer("Data Source=HANAYUKI;Initial Catalog=SEP_SEOBoostAI;Persist Security Info=True;User ID=sa;Password=12345;Encrypt=False");
+    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+    //        => optionsBuilder.UseSqlServer("Data Source=HANAYUKI;Initial Catalog=SEP_SEOBoostAI;Persist Security Info=True;User ID=sa;Password=12345;Encrypt=False");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AdsKeywordDatum>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__AdsKeywo__3214EC07347CCCB7");
+            entity.HasKey(e => e.Id).HasName("PK__AdsKeywo__3214EC0745668EE9");
 
-            entity.Property(e => e.AvgSearchVolume).HasMaxLength(50);
-            entity.Property(e => e.Competition).HasMaxLength(50);
-            entity.Property(e => e.HighBid).HasMaxLength(50);
-            entity.Property(e => e.Keyword).HasMaxLength(255);
-            entity.Property(e => e.LowBid).HasMaxLength(50);
-
-            entity.HasOne(d => d.AdsSearchRequest).WithMany(p => p.AdsKeywordData)
-                .HasForeignKey(d => d.AdsSearchRequestId)
-                .HasConstraintName("FK__AdsKeywor__AdsSe__2CF2ADDF");
+            entity.HasOne(d => d.AdsSearchRequest).WithMany(p => p.AdsKeywordData).HasConstraintName("FK__AdsKeywor__AdsSe__2739D489");
         });
 
         modelBuilder.Entity<AdsSearchRequest>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__AdsSearc__3214EC07D619DBDD");
+            entity.HasKey(e => e.Id).HasName("PK__AdsSearc__3214EC071E236965");
 
-            entity.HasIndex(e => e.QueryHash, "IX_AdsSearchRequests_QueryHash");
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.QueryHash)
-                .HasMaxLength(32)
                 .HasComputedColumnSql("(CONVERT([binary](32),hashbytes('SHA2_256',CONVERT([varbinary](max),[QueryList]))))", true)
                 .IsFixedLength();
-            entity.Property(e => e.QueryList).IsRequired();
         });
 
         modelBuilder.Entity<AnalysisCache>(entity =>
         {
-            entity.HasKey(e => e.AnalysisCacheID).HasName("PK__Analysis__64960DCD987565BA");
+            entity.HasKey(e => e.AnalysisCacheID).HasName("PK__Analysis__64960DCD15D9ED48");
 
-            entity.ToTable("AnalysisCache");
-
-            entity.HasIndex(e => e.NormalizedUrl, "IX_AnalysisCache_NormalizedUrl");
-
-            entity.HasIndex(e => new { e.NormalizedUrl, e.Strategy }, "UQ_AnalysisCache_NormalizedUrl_Strategy").IsUnique();
-
-            entity.Property(e => e.LastAnalyzedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.NormalizedUrl)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.PageSpeedResponse).IsRequired();
-            entity.Property(e => e.Strategy)
-                .IsRequired()
-                .HasMaxLength(50);
-            entity.Property(e => e.Url)
-                .IsRequired()
-                .HasMaxLength(255);
+            entity.Property(e => e.LastAnalyzedAt).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<AnalysisSnapshot>(entity =>
         {
-            entity.HasKey(e => e.SnapshotID).HasName("PK__Analysis__664F570B0713B35F");
+            entity.HasKey(e => e.SnapshotID).HasName("PK__Analysis__664F570B525CA303");
 
-            entity.ToTable("AnalysisSnapshot");
+            entity.Property(e => e.ArchivedAt).HasDefaultValueSql("(getdate())");
 
-            entity.Property(e => e.AnalyzedAt).HasColumnType("datetime");
-            entity.Property(e => e.ArchivedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-
-            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.AnalysisSnapshots)
-                .HasForeignKey(d => d.AnalysisCacheID)
-                .HasConstraintName("FK_AnalysisSnapshot_AnalysisCache");
+            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.AnalysisSnapshots).HasConstraintName("FK_AnalysisSnapshot_AnalysisCache");
         });
 
         modelBuilder.Entity<ContentOptimization>(entity =>
         {
-            entity.HasKey(e => e.ContentOptimizationID).HasName("PK__ContentO__27E3172DA928431C");
+            entity.HasKey(e => e.ContentOptimizationID).HasName("PK__ContentO__27E3172DAC4FFF96");
 
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Model).HasMaxLength(50);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.User).WithMany(p => p.ContentOptimizations)
-                .HasForeignKey(d => d.UserID)
-                .OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(d => d.User).WithMany(p => p.ContentOptimizations).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<Element>(entity =>
         {
-            entity.HasKey(e => e.ElementID).HasName("PK__Elements__A429723A2769C642");
+            entity.HasKey(e => e.ElementID).HasName("PK__Elements__A429723A72479341");
 
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Description).HasMaxLength(255);
-            entity.Property(e => e.TagName).HasMaxLength(50);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.Elements)
-                .HasForeignKey(d => d.AnalysisCacheID)
-                .HasConstraintName("FK_Elements_AnalysisCache");
+            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.Elements).HasConstraintName("FK_Elements_AnalysisCache");
         });
 
         modelBuilder.Entity<Feature>(entity =>
         {
-            entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A29550637FF");
+            entity.HasKey(e => e.FeatureID).HasName("PK__Features__82230A29205A444C");
+        });
 
-            entity.Property(e => e.Description).HasMaxLength(255);
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.Price).HasColumnType("decimal(10, 2)");
+        modelBuilder.Entity<FeatureInformation>(entity =>
+        {
+            entity.HasKey(e => e.InformationID).HasName("PK__FeatureI__C93C35D0D8F38EE6");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.Feature).WithMany(p => p.FeatureInformations)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Information_Feature");
         });
 
         modelBuilder.Entity<Feedback>(entity =>
         {
-            entity.HasKey(e => e.FeedbackID).HasName("PK__Feedback__6A4BEDF683F51149");
+            entity.HasKey(e => e.FeedbackID).HasName("PK__Feedback__6A4BEDF628D67B9C");
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Feedbacks_CreatedAt")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Description).HasMaxLength(255);
-            entity.Property(e => e.Status).HasMaxLength(255);
-            entity.Property(e => e.Topic).HasMaxLength(255);
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Feedbacks_CreatedAt");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Feedbacks_UpdatedAt")
-                .HasColumnType("datetime");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Feedbacks).HasForeignKey(d => d.UserID);
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Feedbacks_UpdatedAt");
         });
 
         modelBuilder.Entity<FeedbackMessage>(entity =>
         {
-            entity.HasKey(e => e.MessageID).HasName("PK__Feedback__C87C037CDA68ECF9");
+            entity.HasKey(e => e.MessageID).HasName("PK__Feedback__C87C037C8B3C78B3");
 
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.Feedback).WithMany(p => p.FeedbackMessages).HasForeignKey(d => d.FeedbackID);
-
-            entity.HasOne(d => d.Sender).WithMany(p => p.FeedbackMessages)
-                .HasForeignKey(d => d.SenderID)
-                .OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(d => d.Sender).WithMany(p => p.FeedbackMessages).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<GeminiKey>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__GeminiKe__3214EC078AB6D8F7");
+            entity.HasKey(e => e.Id).HasName("PK__GeminiKe__3214EC0720171F8C");
 
-            entity.HasIndex(e => new { e.IsActive, e.RequestsUsedToday, e.RateLimitedUntil }, "IX_GeminiKeys_GetAvailable");
-
-            entity.Property(e => e.ApiKey)
-                .IsRequired()
-                .HasMaxLength(500);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.KeyName).HasMaxLength(100);
             entity.Property(e => e.LastResetDate).HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.RpdLimit).HasDefaultValue(250);
             entity.Property(e => e.RpmLimit).HasDefaultValue(10);
@@ -254,283 +188,112 @@ public partial class SEP_SEOBoostAIContext : DbContext
 
         modelBuilder.Entity<InterestByRegion>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07DB7AB306");
+            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07887292DF");
 
-            entity.ToTable("InterestByRegion");
-
-            entity.HasIndex(e => e.TrendSearchId, "IX_InterestByRegion_TrendSearchId");
-
-            entity.Property(e => e.Latitude).HasColumnType("decimal(10, 8)");
-            entity.Property(e => e.LocationName)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Longitude).HasColumnType("decimal(11, 8)");
-
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestByRegions)
-                .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__InterestB__Trend__7A672E12");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestByRegions).HasConstraintName("FK__InterestB__Trend__160F4887");
         });
 
         modelBuilder.Entity<InterestOverTime>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC07ADD5B3AB");
+            entity.HasKey(e => e.Id).HasName("PK__Interest__3214EC0705FA47E4");
 
-            entity.ToTable("InterestOverTime");
-
-            entity.HasIndex(e => e.TrendSearchId, "IX_InterestOverTime_TrendSearchId");
-
-            entity.Property(e => e.DateRange).HasMaxLength(100);
-            entity.Property(e => e.Query)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestOverTimes)
-                .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__InterestO__Trend__73BA3083");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.InterestOverTimes).HasConstraintName("FK__InterestO__Trend__0F624AF8");
         });
 
         modelBuilder.Entity<PerformanceHistory>(entity =>
         {
-            entity.HasKey(e => e.ScanHistoryID).HasName("PK__Performa__3AC3D457BFD7070E");
+            entity.HasKey(e => e.ScanHistoryID).HasName("PK__Performa__3AC3D457691F772A");
 
-            entity.Property(e => e.ScanTime)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+            entity.Property(e => e.ScanTime).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.PerformanceHistories)
-                .HasForeignKey(d => d.AnalysisCacheID)
-                .HasConstraintName("FK_History_AnalysisCache");
+            entity.HasOne(d => d.AnalysisCache).WithMany(p => p.PerformanceHistories).HasConstraintName("FK_History_AnalysisCache");
 
-            entity.HasOne(d => d.User).WithMany(p => p.PerformanceHistories)
-                .HasForeignKey(d => d.UserID)
-                .HasConstraintName("FK_History_Users");
+            entity.HasOne(d => d.User).WithMany(p => p.PerformanceHistories).HasConstraintName("FK_History_Users");
         });
 
         modelBuilder.Entity<PurchasedFeature>(entity =>
         {
-            entity.HasKey(e => e.PurchasedFeatureID).HasName("PK__Purchase__2DD96E5346F1FBC8");
+            entity.HasKey(e => e.PurchasedFeatureID).HasName("PK__Purchase__2DD96E5316949213");
 
-            entity.Property(e => e.PurchaseDate)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-
-            entity.HasOne(d => d.Feature).WithMany(p => p.PurchasedFeatures).HasForeignKey(d => d.FeatureID);
-
-            entity.HasOne(d => d.Transaction).WithMany(p => p.PurchasedFeatures).HasForeignKey(d => d.TransactionID);
+            entity.Property(e => e.PurchaseDate).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<QueryHistory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__QueryHis__3214EC07F309A1E5");
+            entity.HasKey(e => e.Id).HasName("PK__QueryHis__3214EC079826C96A");
 
-            entity.ToTable("QueryHistory");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.FinalAiResponse).IsRequired();
-            entity.Property(e => e.OriginalQuestion)
-                .IsRequired()
-                .HasMaxLength(500);
-
-            entity.HasOne(d => d.AdsSearchRequest).WithMany(p => p.QueryHistories)
-                .HasForeignKey(d => d.AdsSearchRequestId)
-                .HasConstraintName("FK_QueryHistory_AdsSearchRequests");
+            entity.HasOne(d => d.AdsSearchRequest).WithMany(p => p.QueryHistories).HasConstraintName("FK_QueryHistory_AdsSearchRequests");
 
             entity.HasOne(d => d.Member).WithMany(p => p.QueryHistories)
-                .HasForeignKey(d => d.MemberId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__QueryHist__Membe__04E4BC85");
+                .HasConstraintName("FK__QueryHist__Membe__208CD6FA");
         });
 
         modelBuilder.Entity<RegionComparison>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RegionCo__3214EC079E881035");
+            entity.HasKey(e => e.Id).HasName("PK__RegionCo__3214EC07C373517D");
 
-            entity.ToTable("RegionComparison");
-
-            entity.HasIndex(e => e.TrendSearchId, "IX_RegionComparison_TrendSearchId");
-
-            entity.Property(e => e.LocationName)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Query)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RegionComparisons)
-                .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__RegionCom__Trend__01142BA1");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RegionComparisons).HasConstraintName("FK__RegionCom__Trend__1CBC4616");
         });
 
         modelBuilder.Entity<RelatedQuery>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RelatedQ__3214EC07A0DD2BD6");
+            entity.HasKey(e => e.Id).HasName("PK__RelatedQ__3214EC07E657F408");
 
-            entity.HasIndex(e => e.TrendSearchId, "IX_RelatedQueries_TrendSearchId");
-
-            entity.Property(e => e.Category)
-                .IsRequired()
-                .HasMaxLength(10)
-                .IsUnicode(false);
-            entity.Property(e => e.Query)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedQueries)
-                .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__RelatedQu__Trend__7D439ABD");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedQueries).HasConstraintName("FK__RelatedQu__Trend__18EBB532");
         });
 
         modelBuilder.Entity<RelatedTopic>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RelatedT__3214EC079041BCA3");
+            entity.HasKey(e => e.Id).HasName("PK__RelatedT__3214EC077742A1AA");
 
-            entity.HasIndex(e => e.TrendSearchId, "IX_RelatedTopics_TrendSearchId");
-
-            entity.Property(e => e.Category)
-                .IsRequired()
-                .HasMaxLength(10)
-                .IsUnicode(false);
-            entity.Property(e => e.GoogleTrendsLink).HasColumnType("text");
-            entity.Property(e => e.TopicTitle)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.TopicType).HasMaxLength(255);
-            entity.Property(e => e.ValueString)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-
-            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedTopics)
-                .HasForeignKey(d => d.TrendSearchId)
-                .HasConstraintName("FK__RelatedTo__Trend__76969D2E");
+            entity.HasOne(d => d.TrendSearch).WithMany(p => p.RelatedTopics).HasConstraintName("FK__RelatedTo__Trend__123EB7A3");
         });
 
         modelBuilder.Entity<SystemSetting>(entity =>
         {
-            entity.HasKey(e => e.SettingKey).HasName("PK__SystemSe__01E719AC3204330A");
+            entity.HasKey(e => e.SettingID).HasName("PK_SystemSettings_New");
 
-            entity.Property(e => e.SettingKey).HasMaxLength(100);
-            entity.Property(e => e.Description).HasMaxLength(255);
-            entity.Property(e => e.LastUpdatedDate)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.SettingValue)
-                .IsRequired()
-                .HasMaxLength(255);
+            entity.Property(e => e.LastUpdatedDate).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<Transaction>(entity =>
         {
-            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4B993679C2");
+            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4B17E6CEDD");
 
-            entity.HasIndex(e => e.GatewayTransactionId, "UQ__Transact__CAD5B8E62A6E5D36").IsUnique();
+            entity.Property(e => e.Quantity).HasDefaultValue(1);
+            entity.Property(e => e.RequestTime).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Status).HasDefaultValue("PENDING");
 
-            entity.Property(e => e.BankTransId).HasMaxLength(100);
-            entity.Property(e => e.CompletedTime).HasColumnType("datetime");
-            entity.Property(e => e.Description).HasMaxLength(255);
-            entity.Property(e => e.GatewayTransactionId).HasMaxLength(100);
-            entity.Property(e => e.Money).HasColumnType("money");
-            entity.Property(e => e.PaymentMethod).HasMaxLength(50);
-            entity.Property(e => e.RequestTime)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Status)
-                .IsRequired()
-                .HasMaxLength(20)
-                .HasDefaultValue("PENDING");
-            entity.Property(e => e.Type)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            entity.HasOne(d => d.Wallet).WithMany(p => p.Transactions).HasForeignKey(d => d.WalletID);
+            entity.HasOne(d => d.User).WithMany(p => p.Transactions).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<TrendSearch>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TrendSea__3214EC071F6417D2");
+            entity.HasKey(e => e.Id).HasName("PK__TrendSea__3214EC07BEAA6EF6");
 
-            entity.HasIndex(e => new { e.Query, e.Geolocation, e.Timeframe, e.Language, e.CreatedAt }, "IX_TrendSearches_CacheCheck");
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Geolocation)
-                .IsRequired()
-                .HasMaxLength(10)
-                .IsUnicode(false);
-            entity.Property(e => e.Language)
-                .HasMaxLength(10)
-                .IsUnicode(false);
-            entity.Property(e => e.Query)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Timeframe)
-                .HasMaxLength(50)
-                .IsUnicode(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserID).HasName("PK__Users__1788CCACF38CE183");
+            entity.HasKey(e => e.UserID).HasName("PK__Users__1788CCAC9D5C8781");
 
-            entity.HasIndex(e => e.UserName, "UQ__Users__C9F28456CBB7C042").IsUnique();
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Email)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.FullName)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Password).HasMaxLength(255);
-            entity.Property(e => e.Role).HasMaxLength(50);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
-            entity.Property(e => e.UserName)
-                .IsRequired()
-                .HasMaxLength(255);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
         });
 
         modelBuilder.Entity<UserMonthlyFreeQuota>(entity =>
         {
-            entity.HasKey(e => e.UserMonthlyFreeQuotaID).HasName("PK__UserMont__3A7DB1E073E6B6D5");
+            entity.HasKey(e => e.UserMonthlyFreeQuotaID).HasName("PK__UserMont__3A7DB1E096195171");
 
-            entity.HasIndex(e => new { e.UserID, e.FeatureID, e.MonthYear }, "UQ_UserMonthlyQuota").IsUnique();
-
-            entity.Property(e => e.LastUsedAt).HasColumnType("datetime");
-            entity.Property(e => e.MonthYear)
-                .IsRequired()
-                .HasMaxLength(7)
-                .IsUnicode(false)
-                .IsFixedLength();
+            entity.Property(e => e.MonthYear).IsFixedLength();
             entity.Property(e => e.MonthlyLimit).HasDefaultValue(3);
 
-            entity.HasOne(d => d.Feature).WithMany(p => p.UserMonthlyFreeQuota)
-                .HasForeignKey(d => d.FeatureID)
-                .HasConstraintName("FK_UserMonthlyFreeQuota_Features_FeatureID");
+            entity.HasOne(d => d.Feature).WithMany(p => p.UserMonthlyFreeQuota).HasConstraintName("FK_UserMonthlyFreeQuota_Features_FeatureID");
 
-            entity.HasOne(d => d.User).WithMany(p => p.UserMonthlyFreeQuota)
-                .HasForeignKey(d => d.UserID)
-                .HasConstraintName("FK_UserMonthlyFreeQuota_Users_UserID");
-        });
-
-        modelBuilder.Entity<Wallet>(entity =>
-        {
-            entity.HasKey(e => e.WalletID).HasName("PK__Wallets__84D4F92ED4EECF78");
-
-            entity.HasIndex(e => e.UserID, "UQ__Wallets__1788CCADA5787B24").IsUnique();
-
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Currency).HasColumnType("money");
-            entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnType("datetime");
-
-            entity.HasOne(d => d.User).WithOne(p => p.Wallet).HasForeignKey<Wallet>(d => d.UserID);
+            entity.HasOne(d => d.User).WithMany(p => p.UserMonthlyFreeQuota).HasConstraintName("FK_UserMonthlyFreeQuota_Users_UserID");
         });
 
         OnModelCreatingPartial(modelBuilder);

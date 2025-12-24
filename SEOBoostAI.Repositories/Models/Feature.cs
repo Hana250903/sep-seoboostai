@@ -2,20 +2,36 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
 public partial class Feature
 {
+    [Key]
     public int FeatureID { get; set; }
 
+    [Required]
+    [StringLength(100)]
     public string Name { get; set; }
 
+    [StringLength(255)]
     public string Description { get; set; }
 
+    [Column(TypeName = "decimal(10, 2)")]
     public decimal Price { get; set; }
 
+    [InverseProperty("Feature")]
+    public virtual ICollection<FeatureInformation> FeatureInformations { get; set; } = new List<FeatureInformation>();
+
+    [InverseProperty("Feature")]
     public virtual ICollection<PurchasedFeature> PurchasedFeatures { get; set; } = new List<PurchasedFeature>();
 
+    [InverseProperty("Feature")]
+    public virtual ICollection<SystemSetting> SystemSettings { get; set; } = new List<SystemSetting>();
+
+    [InverseProperty("Feature")]
     public virtual ICollection<UserMonthlyFreeQuota> UserMonthlyFreeQuota { get; set; } = new List<UserMonthlyFreeQuota>();
 }

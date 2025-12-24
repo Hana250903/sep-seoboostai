@@ -3,10 +3,9 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SEOBoostAI.API;
-using SEOBoostAI.API.Infrastructure;
-using SEOBoostAI.API.Mappers;
-using SEOBoostAI.Service.BackgroundServices;
+using SEOBoostAI.API.Hubs;
 using SEOBoostAI.Service.Services.Interfaces;
+using SEOBoostAI.Service.Services.Payments;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.Azure.SignalR;
@@ -47,6 +46,12 @@ builder.Services.AddSwaggerGen(c =>
                         new string[]{}
                     }
                 });
+    // Tìm file XML documentation
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+
+    // Bảo Swagger dùng file đó để hiển thị comment
+    c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddAuthentication(options =>
@@ -66,6 +71,21 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["JWT:ValidAudience"],
         ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"]))
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            // Nếu request đến Hub và có token trong query string
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chatHub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -99,11 +119,10 @@ builder.Services.AddSingleton(provider =>
 	return new Net.payOS.PayOS(clientId, apiKey, checksumKey);
 });
 
-builder.Services.AddHostedService<SEOBoostAI.Service.BackgroundServices.PaymentCleanupService>();
+builder.Services.AddHostedService<PaymentCleanupService>();
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
-builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 //Add Http Client
 builder.Services.AddHttpClient();

@@ -5,7 +5,7 @@ using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
-using SEOBoostAI.Service.Ultils;
+using SEOBoostAI.Service.Utils;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -19,24 +19,22 @@ namespace SEOBoostAI.API.Controllers
     public class PerformanceHistoriesController : ControllerBase
     {
         private readonly IPerformanceHistoryService _performanceHistoryService;
-        private readonly ICurrentUserService _currentUserService;
 
-        public PerformanceHistoriesController(IPerformanceHistoryService performanceHistoryService, ICurrentUserService currentUserService)
+        public PerformanceHistoriesController(IPerformanceHistoryService performanceHistoryService)
         {
             _performanceHistoryService = performanceHistoryService;
-            _currentUserService = currentUserService;
         }
 
         // GET: api/<PerformanceHistoriesController>
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] PerformanceHistoryRequestModel performanceHistoryRequestModel)
+        public async Task<IActionResult> Get([FromQuery] PerformanceHistoryGetAllRequestModel performanceHistoryGetAllRequestModel)
         {
             var userIdString = User.FindFirstValue("user_ID");
             if (!int.TryParse(userIdString, out int userId))
             {
                 return Unauthorized();
             }
-            var result = await _performanceHistoryService.GetPerformanceHistorysWithPagination(performanceHistoryRequestModel.CurrentPage, performanceHistoryRequestModel.PageSize, userId);
+            var result = await _performanceHistoryService.GetPerformanceHistorysWithPagination(performanceHistoryGetAllRequestModel.CurrentPage, performanceHistoryGetAllRequestModel.PageSize, userId);
             return Ok(new ResultModel<PaginationResult<List<PerformanceHistory>>>
             {
                 Success = true,
@@ -70,7 +68,7 @@ namespace SEOBoostAI.API.Controllers
 
         // POST api/<PerformanceHistoriesController>
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] PerformanceHistoryViewModel performanceHistoryViewModel)
+        public async Task<IActionResult> Post([FromBody] PerformanceHistoryRequestModel performanceHistoryViewModel)
         {
             var userIdString = User.FindFirstValue("user_ID");
             if (!int.TryParse(userIdString, out int userId))

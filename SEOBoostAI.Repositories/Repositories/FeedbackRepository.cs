@@ -51,7 +51,7 @@ namespace SEOBoostAI.Repository.Repositories
 
         public async Task UpdateFeedback(Feedback feedback)
 		{
-			feedback.UpdatedAt = DateTime.UtcNow.AddHours(7);
+			feedback.UpdatedAt = DateTime.UtcNow;
             _context.Set<Feedback>().Update(feedback);
         }
     }

@@ -21,5 +21,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task<bool> CheckLimit(int userId, int featureId);
 		Task IncrementUsageCount(int userId, int featureId);
 		Task<List<UserQuotaDto>> GetUserQuotaInfoAsync(int userId);
-	}
+        Task UpdateLimitMonthlyAsync(int newLimit);
+    }
 }

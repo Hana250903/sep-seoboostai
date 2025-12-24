@@ -2,22 +2,25 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEOBoostAI.Repository.Models;
 
 public partial class Element
 {
+    [Key]
     public int ElementID { get; set; }
 
     public int AnalysisCacheID { get; set; }
 
-    public string TagName { get; set; }
+    [StringLength(50)]
+    public string AuditId { get; set; }
 
-    public string InnerText { get; set; }
+    public string Title { get; set; }
 
-    public string OuterHTML { get; set; }
-
-    public bool Important { get; set; }
+    public string ExtractedEvidenceJson { get; set; }
 
     public bool HasSuggestion { get; set; }
 
@@ -25,11 +28,15 @@ public partial class Element
 
     public string Description { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime? CreatedAt { get; set; }
 
+    [Column(TypeName = "datetime")]
     public DateTime? UpdatedAt { get; set; }
 
     public bool IsDeleted { get; set; }
 
+    [ForeignKey("AnalysisCacheID")]
+    [InverseProperty("Elements")]
     public virtual AnalysisCache AnalysisCache { get; set; }
 }

@@ -14,5 +14,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
         Task<PaginationResult<List<AnalysisCache>>> GetAnalysisCachesWithPaginateAsync(int currentPage, int pageSize);
         Task<AnalysisCache> GetAnalysisCacheAsync(int id);
         Task<AnalysisCache> GetByUrlAndStrategyAsync(string normalizedUrl, string strategy);
+        Task<AnalysisCache?> GetByNormalizedUrlAndStrategyAsync(string normalizedUrl, string strategy);
     }
 }

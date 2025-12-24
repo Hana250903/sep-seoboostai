@@ -16,5 +16,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task CreateAsync(Feature feature);
 		Task UpdateAsync(Feature feature);
 		Task DeleteAsync(int id);
+		Task<List<FeatureDto>> GetAllFeaturesAsync();
+		Task UpdateFeatureAsync(int id, UpdateFeatureRequest request);
 	}
 }

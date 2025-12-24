@@ -15,5 +15,6 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 		Task CreateAsync(int userId);
 		Task<List<UserMonthlyFreeQuota>> GetQuotasByUserId(int userId);
 		Task<UserMonthlyFreeQuota> GetQuotaByUserIdAndFeatureId(int userId, int featureId);
+        Task UpdateMonthlyLimitBatchAsync(string monthYear, int newLimit);
     }
 }

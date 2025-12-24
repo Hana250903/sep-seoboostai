@@ -36,8 +36,14 @@ namespace SEOBoostAI.Repository.Repositories
         public async Task CreateAsync(int userId)
 		{
 			var features = _context.Set<Feature>().ToList();
-
+			var limitSetting = await _context.Set<SystemSetting>().FirstOrDefaultAsync(s => s.SettingKey == "QuotaMonlyLimit");
             var userMonthlyFreeQuotas = new List<UserMonthlyFreeQuota>();
+
+            int defaultLimit = 0;
+            if (limitSetting != null && int.TryParse(limitSetting.SettingValue, out int parsedLimit))
+            {
+                defaultLimit = parsedLimit;
+            }
 
             foreach (var feature in features)
             {
@@ -45,7 +51,7 @@ namespace SEOBoostAI.Repository.Repositories
                 {
                     UserID = userId,
                     FeatureID = feature.FeatureID,
-                    MonthlyLimit = 3,
+                    MonthlyLimit = defaultLimit,
                     MonthYear = DateTime.Now.ToString("yyyy-MM"),
                     UsageCount = 0,
                     IsDeleted = false,
@@ -67,5 +73,33 @@ namespace SEOBoostAI.Repository.Repositories
 				.FirstOrDefaultAsync(u => u.UserID == userId && u.FeatureID == featureId);
 			return userMonthlyFreeQuota;
         }
-    }
+
+        public async Task UpdateMonthlyLimitBatchAsync(string monthYear, int newLimit)
+        {
+			var userMonthlyFreeQuotas = await _context.Set<UserMonthlyFreeQuota>().Where(q => q.MonthYear == monthYear).ToListAsync();
+
+			var newUserMonthlyFreeQuotas = new List<UserMonthlyFreeQuota>();
+            foreach (var quota in userMonthlyFreeQuotas)
+			{
+				newUserMonthlyFreeQuotas.Add(new UserMonthlyFreeQuota
+				{
+					UserMonthlyFreeQuotaID = quota.UserMonthlyFreeQuotaID,
+					UserID = quota.UserID,
+					FeatureID = quota.FeatureID,
+					MonthYear = quota.MonthYear,
+					MonthlyLimit = newLimit,
+					UsageCount = quota.UsageCount,
+					LastUsedAt = quota.LastUsedAt,
+					IsDeleted = quota.IsDeleted
+				});
+            }
+			_context.UpdateRange(newUserMonthlyFreeQuotas);
+
+            // Sử dụng ExecuteUpdateAsync để update trực tiếp trên SQL (Bulk Update)
+            // Không cần kéo dữ liệu về RAM -> Tránh treo server
+            //        await _context.UserMonthlyFreeQuotas
+            //        .Where(x => x.MonthYear == monthYear && !x.IsDeleted)
+            //        .ExecuteUpdateAsync(s => s.SetProperty(p => p.MonthlyLimit, newLimit));
+        }
+	}
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -8,7 +9,7 @@ namespace SEOBoostAI.API.Controllers
 {
 	[Route("api/features")]
 	[ApiController]
-	[Authorize(Roles = "Admin")]
+	[Authorize]
 	public class FeaturesController : ControllerBase
 	{
 		private readonly IFeatureService _featureService;
@@ -20,9 +21,20 @@ namespace SEOBoostAI.API.Controllers
 
 		// GET: api/<FeaturesController>
 		[HttpGet]
-		public async Task<IEnumerable<Feature>> Get()
+		[Authorize(Roles = "Member, Admin, Staff")]
+		public async Task<IActionResult> GetAllFeatures()
 		{
-			return await _featureService.GetFeaturesAsync();
+			try
+			{
+				// Gọi Service (Hàm này đã trả về List<FeatureDto>)
+				var features = await _featureService.GetAllFeaturesAsync();
+
+				return Ok(features);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 
 		[HttpGet("{currentPage}/{pageSize}")]
@@ -33,6 +45,7 @@ namespace SEOBoostAI.API.Controllers
 
 		// GET api/<FeaturesController>/5
 		[HttpGet("{id}")]
+		[Authorize(Roles = "Admin, Staff")]
 		public async Task<Feature> Get(int id)
 		{
 			return await _featureService.GetFeatureByIdAsync(id);
@@ -40,6 +53,7 @@ namespace SEOBoostAI.API.Controllers
 
 		// POST api/<FeaturesController>
 		[HttpPost]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> Post([FromBody] Feature feature)
 		{
 			await _featureService.CreateAsync(feature);
@@ -47,15 +61,26 @@ namespace SEOBoostAI.API.Controllers
         }
 
 		// PUT api/<FeaturesController>/
-		[HttpPut]
-		public async Task<IActionResult> Put([FromBody] Feature feature)
+		[HttpPut("{id}")]
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> Put(int id, [FromBody] UpdateFeatureRequest request)
 		{
-			await _featureService.UpdateAsync(feature);
-			return Ok(feature);
-        }
+			try
+			{
+				if (request.Price < 10000) return BadRequest("Giá tiền không hợp lệ.");
+				await _featureService.UpdateFeatureAsync(id, request);
+
+				return Ok(new { message = "Cập nhật gói dịch vụ thành công!" });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 
 		// DELETE api/<FeaturesController>/5
 		[HttpDelete("{id}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> Delete(int id)
 		{
 			await _featureService.DeleteAsync(id);

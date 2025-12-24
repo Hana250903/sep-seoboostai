@@ -15,5 +15,9 @@ namespace SEOBoostAI.Repository.Repositories.Interfaces
 		Task<PaginationResult<List<Transaction>>> GetSuccessfulDepositsByUserIdAsync(int userId, int currentPage, int pageSize);
 		Task<Transaction> GetByGatewayTransactionIdAsync(string gatewayTransactionId);
 		Task<List<Transaction>> GetExpiredPendingTransactionsAsync(DateTime threshold);
+		Task<List<Transaction>> GetTransactionsByIdAsync(int transactionId);
+		Task<decimal> GetTotalRevenueAsync(DateTime? fromDate, DateTime? toDate);
+		Task<List<RevenueChartDto>> GetRevenueChartDataAsync(DateTime fromDate, DateTime toDate);
+		Task<Transaction> GetTransactionDetailAsync(int transactionId);
 	}
 }

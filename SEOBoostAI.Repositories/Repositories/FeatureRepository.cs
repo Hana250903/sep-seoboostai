@@ -17,7 +17,7 @@ namespace SEOBoostAI.Repository.Repositories
 
 		public async Task<PaginationResult<List<Feature>>> GetFeaturesWithPaginateAsync(int currentPage, int pageSize)
 		{
-			var query = _context.Set<Feature>().AsQueryable();
+			var query = _context.Set<Feature>().Include(f => f.FeatureInformations).AsQueryable();
 			var totalItems = await query.CountAsync();
 			var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
 			var features = await query.Skip((currentPage - 1) * pageSize)
@@ -37,6 +37,13 @@ namespace SEOBoostAI.Repository.Repositories
 		public async Task<Feature> GetFeatureByIdAsync(int id)
 		{
 			return await _context.Set<Feature>().FirstOrDefaultAsync(f => f.FeatureID == id);
+		}
+
+		public async Task<List<Feature>> GetAllFeaturesAsync()
+		{
+			return await _context.Set<Feature>()
+				.Include(f => f.FeatureInformations) // Lấy kèm thông tin chi tiết
+				.ToListAsync();
 		}
 	}
 }

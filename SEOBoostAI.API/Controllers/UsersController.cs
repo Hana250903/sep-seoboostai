@@ -5,6 +5,7 @@ using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
 using SEOBoostAI.Service.Services;
 using SEOBoostAI.Service.Services.Interfaces;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -55,10 +56,38 @@ namespace SEOBoostAI.API.Controllers
         }
 
         // GET api/<UsersController>/5
-        [HttpGet("{id}")]
-        public async Task<User> Get(int id)
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetProfile()
         {
-            return await _userService.GetUserByIdAsync(id);
+            var userIdString = User.FindFirstValue("user_ID");
+            if (!int.TryParse(userIdString, out int userId))
+            {
+                return Unauthorized(new ResultModel<User>
+                {
+                    Success = false,
+                    Message = "Invalid user ID.",
+                    Data = null
+                });
+            }
+            var user =  await _userService.GetUserByIdAsync(userId);
+            return Ok(new ResultModel<User>
+            {
+                Success = true,
+                Message = "User retrieved successfully.",
+                Data = user
+            });
+        }
+
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> Get(int userId)
+        {
+            var user = await _userService.GetUserByIdAsync(userId);
+            return Ok(new ResultModel<User>
+            {
+                Success = true,
+                Message = "User retrieved successfully.",
+                Data = user
+            });
         }
 
         // POST api/<UsersController>

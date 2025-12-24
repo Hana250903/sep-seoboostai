@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Service.Services.Interfaces;
-using SEOBoostAI.Service.Ultils;
 using System.Security.Claims;
 
 namespace SEOBoostAI.API.Controllers
@@ -13,16 +12,13 @@ namespace SEOBoostAI.API.Controllers
     public class TrendSearchController : ControllerBase
     {
         private readonly ITrendSearchService _trendSearchService;
-        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<TrendSearchController> _logger;
 
         public TrendSearchController(
             ITrendSearchService trendSearchService,
-            ICurrentUserService currentUserService,
             ILogger<TrendSearchController> logger)
         {
             _trendSearchService = trendSearchService;
-            _currentUserService = currentUserService;
             _logger = logger;
         }
 
@@ -65,7 +61,11 @@ namespace SEOBoostAI.API.Controllers
         {
             try
             {
-                var userId = _currentUserService.GetUserId(); // Lấy ID thật
+                var userIdString = User.FindFirstValue("user_ID");
+                if (!int.TryParse(userIdString, out int userId))
+                {
+                    return Unauthorized();
+                }
                 var result = await _trendSearchService.GetAdsKeywordsDetailAsync(
                     historyId,
                     userId,

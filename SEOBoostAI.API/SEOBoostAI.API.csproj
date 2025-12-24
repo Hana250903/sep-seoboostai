@@ -4,9 +4,13 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile></DocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="DinkToPdf" Version="1.0.8" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.5" />
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
 		<PackageReference Include="Microsoft.Azure.SignalR" Version="1.32.0" />
@@ -34,6 +38,12 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\SEOBoostAI.Services\SEOBoostAI.Service.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="libwkhtmltox.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 </Project>

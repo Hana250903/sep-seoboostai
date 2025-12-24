@@ -87,5 +87,25 @@ namespace SEOBoostAI.API.Controllers
 				return BadRequest(new { message = ex.Message });
 			}
 		}
-	}
+
+        [HttpPut("update-monthly-limit")]
+        public async Task<IActionResult> UpdateMonthlyLimit([FromBody] int newLimit)
+        {
+            if (newLimit < 0)
+            {
+                return BadRequest("Limit must be greater than or equal to 0.");
+            }
+
+            try
+            {
+                await _userMonthlyFreeQuotaService.UpdateLimitMonthlyAsync(newLimit);
+                return Ok(new { Message = "Đã cập nhật thành công giới hạn hàng tháng cho tất cả người dùng và cấu hình hệ thống." });
+            }
+            catch (Exception ex)
+            {
+                // Log error here
+                return StatusCode(500, new { Message = "Internal Server Error", Detail = ex.Message });
+            }
+        }
+    }
 }

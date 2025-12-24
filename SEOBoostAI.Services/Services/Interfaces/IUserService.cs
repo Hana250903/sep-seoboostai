@@ -18,5 +18,9 @@ namespace SEOBoostAI.Service.Services.Interfaces
         Task DeleteAsync(int id);
         Task<User> UpdateUserToStaff(int userId);
         Task<List<User>> BanAndUnbanUser(List<int> listUserId);
-    }
+		// Hàm nạp tiền
+		Task TopUpAsync(int userId, decimal amount, int transactionId);
+		// Hàm trừ tiền
+		Task<bool> DeductBalanceAsync(int userId, decimal amount);
+	}
 }

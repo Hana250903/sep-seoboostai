@@ -37,9 +37,7 @@ namespace SEOBoostAI.Repository.Repositories
 		{
 			// Tìm gói mua cũ nhất (FIFO) mà còn lượt sử dụng (RemainingQuantity > 0)
 			return await _context.Set<PurchasedFeature>()
-				.Include(p => p.Transaction)
-				.ThenInclude(t => t.Wallet)
-				.Where(p => p.Transaction.Wallet.UserID == userId
+				.Where(p => p.Transaction.UserID == userId
 							&& p.FeatureID == featureId
 							&& p.RemainingQuantity > 0)
 				.OrderBy(p => p.PurchaseDate) // Dùng gói cũ trước
@@ -49,12 +47,10 @@ namespace SEOBoostAI.Repository.Repositories
 		public async Task<int> GetTotalRemainingByFeatureAsync(int userId, int featureId)
 		{
 			return await _context.Set<PurchasedFeature>()
-				.Include(p => p.Transaction)
-				.ThenInclude(t => t.Wallet)
-				.Where(p => p.Transaction.Wallet.UserID == userId
-							&& p.FeatureID == featureId
-							&& p.RemainingQuantity > 0)
-				.SumAsync(p => p.RemainingQuantity);
+			.Where(p => p.Transaction.UserID == userId
+						&& p.FeatureID == featureId
+						&& p.RemainingQuantity > 0)
+			.SumAsync(p => p.RemainingQuantity);
 		}
 	}
 }

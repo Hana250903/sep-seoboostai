@@ -15,7 +15,7 @@ namespace SEOBoostAI.Service.Services.Interfaces
 		Task CreateAsync(Repository.Models.Feedback feedback);
 		Task UpdateAsync(Repository.Models.Feedback feedback);
 		Task DeleteAsync(int id);
-		Task<List<Feedback>> GetFeedbacksByUserIdAsync(int userId);
+		Task<List<Repository.Models.Feedback>> GetFeedbacksByUserIdAsync(int userId);
 
     }
 }

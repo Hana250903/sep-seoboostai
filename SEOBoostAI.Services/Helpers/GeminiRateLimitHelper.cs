@@ -16,6 +16,11 @@ namespace SEOBoostAI.Service.Helpers
         }
 
         /// <summary>
+        /// Expose RateLimitManager để GeminiAIService có thể gọi UpdateActualTokensAsync
+        /// </summary>
+        public IGeminiRateLimitManager RateLimitManager => _rateLimitManager;
+
+        /// <summary>
         /// Ước tính số tokens từ text (1 token ≈ 4 characters)
         /// </summary>
         public int EstimateTokens(string text)
@@ -27,10 +32,12 @@ namespace SEOBoostAI.Service.Helpers
 
         /// <summary>
         /// Execute Gemini API request với rate limit handling và auto retry
+        /// Returns tuple: (result, keyId, estimatedTokens) để caller có thể update actual tokens
         /// </summary>
-        public async Task<T> ExecuteWithRateLimitAsync<T>(
+        public async Task<(T result, int keyId, int estimatedTokens)> ExecuteWithRateLimitAsync<T>(
             string baseUrl,
             Func<string, Task<T>> apiCallFunc,
+            int estimatedTokens,
             int maxRetries = 3)
         {
             int retryCount = 0;
@@ -47,10 +54,11 @@ namespace SEOBoostAI.Service.Helpers
                     // Thực thi API call
                     var result = await apiCallFunc(fullUrl);
 
-                    // Nếu thành công, ghi nhận usage (estimate basic 100 tokens)
-                    await _rateLimitManager.RecordUsageAsync(availableKey.Id, 100);
+                    // Nếu thành công, ghi nhận usage
+                    await _rateLimitManager.RecordUsageAsync(availableKey.Id, estimatedTokens);
 
-                    return result;
+                    // Return cả keyId và estimatedTokens để caller có thể update actual tokens
+                    return (result, availableKey.Id, estimatedTokens);
                 }
                 catch (HttpRequestException ex) when (availableKey != null &&
                     (ex.StatusCode == (HttpStatusCode)429 || ex.StatusCode == (HttpStatusCode)428))
@@ -62,11 +70,11 @@ namespace SEOBoostAI.Service.Helpers
                     if (retryCount >= maxRetries)
                     {
                         throw new InvalidOperationException(
-                            $"Đã retry {maxRetries} lần nhưng vẫn gặp rate limit. Vui lòng thử lại sau.", ex);
+                            $"Đã retry {maxRetries} lần nhưng vẫn gặp rate limit. Vui lòng thử lại sau 1 phút.", ex);
                     }
 
                     // Chờ một chút trước khi retry
-                    await Task.Delay(500);
+                    await Task.Delay(500 * retryCount);
                 }
                 catch
                 {
@@ -76,32 +84,6 @@ namespace SEOBoostAI.Service.Helpers
             }
 
             throw new InvalidOperationException("Không thể thực hiện request sau nhiều lần retry.");
-        }
-
-        /// <summary>
-        /// Lấy API key khả dụng và tạo full URL
-        /// </summary>
-        public async Task<(GeminiKey key, string fullUrl)> GetAvailableKeyAndUrlAsync(string baseUrl)
-        {
-            var key = await _rateLimitManager.GetAvailableKeyAsync();
-            var fullUrl = $"{baseUrl}?key={key.ApiKey}";
-            return (key, fullUrl);
-        }
-
-        /// <summary>
-        /// Ghi nhận usage sau khi request thành công
-        /// </summary>
-        public async Task RecordSuccessAsync(int keyId, int estimatedTokens = 100)
-        {
-            await _rateLimitManager.RecordUsageAsync(keyId, estimatedTokens);
-        }
-
-        /// <summary>
-        /// Đánh dấu key bị rate limited
-        /// </summary>
-        public async Task MarkKeyRateLimitedAsync(int keyId)
-        {
-            await _rateLimitManager.MarkKeyRateLimitedAsync(keyId);
         }
     }
 }
