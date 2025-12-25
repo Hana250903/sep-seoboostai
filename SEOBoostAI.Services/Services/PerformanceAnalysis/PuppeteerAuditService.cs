@@ -17,15 +17,17 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         private readonly IAnalysisCacheRepository _cacheRepository;
         private readonly IElementRepository _elementRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly string _browserlessApiKey;
 
         public PuppeteerAuditService(
             IAnalysisCacheRepository cacheRepository,
             IElementRepository elementRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork, ISystemConfigService systemConfigService)
         {
             _cacheRepository = cacheRepository;
             _elementRepository = elementRepository;
             _unitOfWork = unitOfWork;
+            _browserlessApiKey = systemConfigService.GetValue<string>("BrowserlessApiKey", "");
         }
 
         /// <summary>
@@ -36,13 +38,13 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             // 1. Khởi động Puppeteer
             await new BrowserFetcher().DownloadAsync();
 
-            var launchOptions = new LaunchOptions
+            var connectOptions = new ConnectOptions
             {
-                Headless = true,
-                Args = new[] { "--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage" }
+                // Kết nối tới máy chủ trình duyệt bên ngoài
+                BrowserWSEndpoint = $"wss://chrome.browserless.io?token={_browserlessApiKey}"
             };
 
-            using var browser = await Puppeteer.LaunchAsync(launchOptions);
+            using var browser = await Puppeteer.ConnectAsync(connectOptions);
             await using var page = await browser.NewPageAsync();
 
             // Set Viewport theo strategy
