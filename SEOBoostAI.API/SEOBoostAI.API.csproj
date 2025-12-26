@@ -40,7 +40,7 @@
 
 	<ItemGroup>
 	  <None Update="libwkhtmltox.dll">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>
 
