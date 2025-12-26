@@ -208,7 +208,6 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 		{
 			var result = new List<UserQuotaDto>();
 
-			// 1. Lấy tất cả Feature (để đảm bảo hiển thị đủ các tính năng)
 			var features = await _featureRepository.GetAllAsync();
 
 			// 2. Lấy Quota Free hiện tại của User
