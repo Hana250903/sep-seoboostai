@@ -1,4 +1,4 @@
-﻿namespace SEOBoostAI.API.ViewModels
+﻿namespace SEOBoostAI.API.ViewModels.RequestModels
 {
 	public class AdminDepositRequest
 	{
