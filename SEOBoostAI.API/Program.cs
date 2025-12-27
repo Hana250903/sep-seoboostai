@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
 using SEOBoostAI.API;
 using SEOBoostAI.API.Hubs;
 using SEOBoostAI.Service.Services.Interfaces;
@@ -135,6 +136,8 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
 });
 builder.Services.AddSignalR().AddAzureSignalR(builder.Configuration["Azure:SignalR:ConnectionString"]!);
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 

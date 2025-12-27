@@ -158,23 +158,24 @@ namespace SEOBoostAI.API.Controllers
 				// 2. Lấy dữ liệu hóa đơn (DTO)
 				var receiptData = await _transactionService.GetReceiptAsync(id, userId, userRole);
 
-				// 3. Xác định đường dẫn file Template
-				// (Controller xác định đường dẫn vì nó biết về môi trường Hosting)
-				var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Templates", "ReceiptTemplate.html");
+				// Kiểm tra nếu không tìm thấy hóa đơn
+				if (receiptData == null)
+				{
+					return NotFound(new { message = "Không tìm thấy hóa đơn hoặc bạn không có quyền truy cập." });
+				}
 
-				// 4. Gọi Service để tạo PDF
-				byte[] pdfFile = _pdfService.GenerateReceiptPdf(receiptData, path);
+				// 3. Gọi Service để tạo PDF
+				// LƯU Ý: Không cần truyền đường dẫn template nữa vì QuestPDF tự vẽ
+				byte[] pdfFile = _pdfService.GenerateReceiptPdf(receiptData);
 
-				// 5. Trả về file
+				// 4. Trả về file
 				return File(pdfFile, "application/pdf", $"HoaDon_{receiptData.TransactionCode}.pdf");
-			}
-			catch (FileNotFoundException ex)
-			{
-				return StatusCode(500, "Lỗi server: Không tìm thấy mẫu hóa đơn.");
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(new { message = ex.Message });
+				// Log lỗi để debug (nếu cần)
+				// _logger.LogError(ex, "Lỗi khi tải hóa đơn");
+				return BadRequest(new { message = "Không thể tạo hóa đơn: " + ex.Message });
 			}
 		}
 	}
