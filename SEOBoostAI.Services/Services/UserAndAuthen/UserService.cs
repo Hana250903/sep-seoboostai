@@ -88,7 +88,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 				throw new Exception("User not found");
 			}
 			user.Role = UserRole.Staff.ToString();
-			user.UpdatedAt = DateTime.UtcNow;
+			user.UpdatedAt = DateTime.UtcNow.AddHours(7);
 			await _userRepository.UpdateAsync(user);
 			await _unitOfWork.SaveChangesAsync();
 			return user;
@@ -106,7 +106,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 			foreach (var user in listUser)
 			{
 				user.IsBanned = !user.IsBanned;
-				user.UpdatedAt = DateTime.UtcNow;
+				user.UpdatedAt = DateTime.UtcNow.AddHours(7);
 				users.Add(user);
 			}
 			await _userRepository.UpdateRangeAsync(users);

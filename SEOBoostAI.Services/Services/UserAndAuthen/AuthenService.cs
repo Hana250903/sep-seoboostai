@@ -113,7 +113,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
                         Currency = 0M,
                         Avatar = payload.Picture,
                         Password = "".Trim(),
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow.AddHours(7),
                         GoogleID = googleId,
                         IsBanned = false,
                         IsDeleted = false

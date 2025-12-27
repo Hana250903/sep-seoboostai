@@ -36,7 +36,7 @@ namespace SEOBoostAI.Service.Services.Payments
 
 		public async Task<List<RevenueChartDto>> GetRevenueChartAsync(string type)
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.UtcNow.AddHours(7);
 			DateTime fromDate, toDate = now;
 			List<RevenueChartDto> data;
 

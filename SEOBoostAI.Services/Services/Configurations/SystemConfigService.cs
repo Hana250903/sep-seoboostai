@@ -93,7 +93,7 @@ namespace SEOBoostAI.Service.Services.Configurations
                 if (setting != null)
                 {
                     setting.SettingValue = newValue;
-                    setting.LastUpdatedDate = DateTime.UtcNow;
+                    setting.LastUpdatedDate = DateTime.UtcNow.AddHours(7);
                     setting.FeatureID = normalizedFeatureId;
                     await configRepo.UpdateAsync(setting);
                 }
@@ -103,7 +103,7 @@ namespace SEOBoostAI.Service.Services.Configurations
                     {
                         SettingKey = key,
                         SettingValue = newValue,
-                        LastUpdatedDate = DateTime.UtcNow,
+                        LastUpdatedDate = DateTime.UtcNow.AddHours(7),
                         FeatureID = normalizedFeatureId,
                     };
                     await configRepo.CreateAsync(newSetting);

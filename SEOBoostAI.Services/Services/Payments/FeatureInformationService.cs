@@ -63,7 +63,7 @@ namespace SEOBoostAI.Service.Services.Payments
 			{
 				FeatureID = request.FeatureID,
 				InformationFeature = request.InformationFeature,
-				CreatedAt = DateTime.UtcNow
+				CreatedAt = DateTime.UtcNow.AddHours(7)
 			};
 
 			await _featureInformationRepository.CreateAsync(newInfo);
@@ -84,7 +84,7 @@ namespace SEOBoostAI.Service.Services.Payments
 			if (entity == null) throw new Exception("Không tìm thấy thông tin.");
 
 			entity.InformationFeature = request.InformationFeature;
-			entity.UpdatedAt = DateTime.UtcNow;
+			entity.UpdatedAt = DateTime.UtcNow.AddHours(7);
 
 			await _featureInformationRepository.UpdateAsync(entity);
 			await _unitOfWork.SaveChangesAsync();

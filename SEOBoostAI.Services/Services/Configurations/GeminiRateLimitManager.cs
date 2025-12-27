@@ -23,7 +23,7 @@ namespace SEOBoostAI.Service.Services.Configurations
             public GeminiKey Key { get; set; }
             public Queue<DateTime> RequestTimestamps { get; set; } = new Queue<DateTime>();
             public long TokensUsedInMinute { get; set; } = 0;
-            public DateTime LastMinuteReset { get; set; } = DateTime.UtcNow;
+            public DateTime LastMinuteReset { get; set; } = DateTime.UtcNow.AddHours(7);
             public bool IsRateLimited { get; set; } = false;
             public DateTime? RateLimitedUntil { get; set; }
         }
@@ -64,7 +64,7 @@ namespace SEOBoostAI.Service.Services.Configurations
         public async Task<GeminiKey> GetAvailableKeyAsync()
         {
             var maxWaitTime = TimeSpan.FromSeconds(50);
-            var startTime = DateTime.UtcNow;
+            var startTime = DateTime.UtcNow.AddHours(7);
             while (true)
             {
                 GeminiKey selectedKey = null;
@@ -80,8 +80,8 @@ namespace SEOBoostAI.Service.Services.Configurations
                         if (_keyTrackers.IsEmpty) throw new InvalidOperationException("DB không có Key nào active.");
                     }
 
-                    var now = DateTime.UtcNow;
-                    var today = DateTime.UtcNow.Date;
+                    var now = DateTime.UtcNow.AddHours(7);
+                    var today = DateTime.UtcNow.AddHours(7).Date;
 
                     // 2. Tìm kiếm Key khả dụng (Logic Round-Robin hoặc Least Used có thể áp dụng ở đây, hiện tại dùng First Available)
                     // Sắp xếp theo RequestUsedToday để ưu tiên key ít dùng trước (Load balancing đơn giản)
@@ -139,7 +139,6 @@ namespace SEOBoostAI.Service.Services.Configurations
                     _semaphore.Release();
                 }
 
-                // 3. Xử lý kết quả tìm kiếm (Ở ngoài Semaphore)
                 if (selectedKey != null)
                 {
                     return selectedKey;
@@ -151,7 +150,6 @@ namespace SEOBoostAI.Service.Services.Configurations
                     throw new InvalidOperationException("Tất cả API keys đều đang bận.");
                 }
 
-                // Chờ một chút trước khi thử lại (KHÔNG GIỮ KHÓA KHI NGỦ)
                 await Task.Delay(100);
             }
         }

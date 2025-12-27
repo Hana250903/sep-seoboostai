@@ -104,7 +104,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				Description = "Nạp tiền vào ví qua PayOS",
 				GatewayTransactionId = gatewayTransactionId,
 				Status = PaymentStatus.PENDING.ToString(), // Trạng thái quan trọng
-				RequestTime = DateTime.UtcNow,
+				RequestTime = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false,
 				OrderCode = orderCode,
 				Quantity = 1
@@ -136,7 +136,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				{
 					transaction.Status = status;
 					transaction.BankTransId = bankTransId;
-					transaction.CompletedTime = DateTime.UtcNow;
+					transaction.CompletedTime = DateTime.UtcNow.AddHours(7);
 					await UpdateAsync(transaction);
 				}
 			}
@@ -216,8 +216,8 @@ namespace SEOBoostAI.Service.Services.Payments
 				Status = PaymentStatus.COMPLETED.ToString(), // Mua bằng Currency của user nên thành công ngay
 				Description = $"Mua {quantity} lượt {feature.Name} (Giá: {basePrice:N0}đ + VAT {_vatRate}%: {taxAmount:N0}đ)",
 				PaymentMethod = "Account Balance",
-				RequestTime = DateTime.UtcNow,
-				CompletedTime = DateTime.UtcNow,
+				RequestTime = DateTime.UtcNow.AddHours(7),
+				CompletedTime = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false,
 				BalanceAfter = user.Currency,
 				OrderCode = orderCode,
@@ -234,7 +234,7 @@ namespace SEOBoostAI.Service.Services.Payments
 				TransactionID = transaction.TransactionID, // Link với giao dịch vừa tạo
 				TotalQuantity = quantity,
 				RemainingQuantity = quantity, // (Nếu bạn muốn track riêng)
-				PurchaseDate = DateTime.UtcNow,
+				PurchaseDate = DateTime.UtcNow.AddHours(7),
 				IsDeleted = false
 			};
 
@@ -275,8 +275,8 @@ namespace SEOBoostAI.Service.Services.Payments
 				Description = string.IsNullOrEmpty(description) ? "Admin nạp tiền thủ công" : description,
 				IsDeleted = false,
 				BalanceAfter = user.Currency,
-				RequestTime = DateTime.UtcNow,
-				CompletedTime = DateTime.UtcNow
+				RequestTime = DateTime.UtcNow.AddHours(7),
+				CompletedTime = DateTime.UtcNow.AddHours(7)
 			};
 
 			await _transactionRepository.CreateAsync(transaction);

@@ -182,7 +182,7 @@ namespace SEOBoostAI.Service.Services.UserAndAuthen
 			if (userQuota != null && userQuota.UsageCount < userQuota.MonthlyLimit)
 			{
 				userQuota.UsageCount += 1;
-				userQuota.LastUsedAt = DateTime.UtcNow;
+				userQuota.LastUsedAt = DateTime.UtcNow.AddHours(7);
 				await _userMonthlyFreeQuotaRepository.UpdateAsync(userQuota);
 				// Lưu ý: SaveChangesAsync sẽ được gọi ở ContentOptimizationService
 				return;
