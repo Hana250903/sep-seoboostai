@@ -1,6 +1,4 @@
-﻿using DinkToPdf;
-using DinkToPdf.Contracts;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SEOBoostAI.API.Hubs;
 using SEOBoostAI.Repository.GenericRepository;
@@ -99,7 +97,6 @@ namespace SEOBoostAI.API
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICompareUrlString, CompareUrlString>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-			services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 			services.AddDbContext<SEP_SEOBoostAIContext>(options =>
             {
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
