@@ -41,7 +41,7 @@ namespace SEOBoostAI.Service.Services.Payments
 						var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
 						// --- BẮT ĐẦU LOGIC QUÉT DỌN ---
-						var timeThreshold = DateTime.UtcNow.AddMinutes(-15);
+						var timeThreshold = DateTime.UtcNow.AddHours(7).AddMinutes(-15);
 
 						//Bạn đã viết hàm GetExpiredPendingTransactionsAsync trong Repo
 						// Nếu chưa có thì dùng: .Where(x => x.Status == "PENDING" && x.RequestTime < timeThreshold)
