@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SEOBoostAI.API.ViewModels;
+using SEOBoostAI.API.ViewModels.RequestModels;
 using SEOBoostAI.Repository.Enums;
 using SEOBoostAI.Repository.ModelExtensions;
 using SEOBoostAI.Repository.Models;
