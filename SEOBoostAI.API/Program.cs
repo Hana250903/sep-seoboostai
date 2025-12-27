@@ -95,7 +95,7 @@ builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("AllowAll", policy =>
-		policy.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader().AllowCredentials());
+		policy.WithOrigins("http://localhost:5173", "https://seo-boost-ai-fe.vercel.app").AllowAnyMethod().AllowAnyHeader().AllowCredentials());
 });
 
 builder.Services.AddSingleton(provider =>
