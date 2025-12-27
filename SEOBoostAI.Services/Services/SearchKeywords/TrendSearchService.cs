@@ -137,7 +137,7 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                 MemberId = memberId,
                 OriginalQuestion = originalQuestion,
                 FinalAiResponse = finalAiResponseString,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow.AddHours(7),
 
                 AdsSearchRequestId = adsRequestId 
             };
@@ -199,7 +199,7 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                 var clonedRequest = new AdsSearchRequest
                 {
                     QueryList = queryListString,
-                    CreatedAt = DateTime.UtcNow, // Thời gian mới
+                    CreatedAt = DateTime.UtcNow.AddHours(7),
                     AdsKeywordData = cachedData.AdsKeywordData.Select(x => new AdsKeywordDatum
                     {
                         // Copy dữ liệu thô (Tiết kiệm tiền API Google)
@@ -247,7 +247,7 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                 var newRequest = new AdsSearchRequest
                 {
                     QueryList = queryListString,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow.AddHours(7),
                     AdsKeywordData = apiDataProcessed.Select(x => new AdsKeywordDatum
                     {
                         Keyword = x.Keyword,
@@ -317,7 +317,7 @@ namespace SEOBoostAI.Service.Services.SearchKeywords
                 Geolocation = parameters.Geolocation,
                 Language = parameters.Language,
                 Timeframe = parameters.Timeframe,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow.AddHours(7)
             };
 
             bool isComparison = parameters.Query.Contains(",");

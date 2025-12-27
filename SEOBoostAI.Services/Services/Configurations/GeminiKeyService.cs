@@ -43,8 +43,8 @@ namespace SEOBoostAI.Service.Services.Configurations
             }
 
             // Set default values
-            geminiKey.CreatedAt = DateTime.UtcNow;
-            geminiKey.LastResetDate = DateTime.UtcNow.Date;
+            geminiKey.CreatedAt = DateTime.UtcNow.AddHours(7);
+            geminiKey.LastResetDate = DateTime.UtcNow.AddHours(7).Date;
             geminiKey.RequestsUsedToday = 0;
             geminiKey.TokensUsedToday = 0;
 
@@ -120,7 +120,7 @@ namespace SEOBoostAI.Service.Services.Configurations
                 }
 
                 key.IsActive = !key.IsActive;
-                key.UpdatedAt = DateTime.UtcNow;
+                key.UpdatedAt = DateTime.UtcNow.AddHours(7);
                 await _geminiKeyRepository.UpdateAsync(key);
                 await _unitOfWork.SaveChangesAsync();
 

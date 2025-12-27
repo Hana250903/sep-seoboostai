@@ -73,7 +73,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             var performanceHistory = new PerformanceHistory
             {
                 UserID = userId,
-                ScanTime = DateTime.UtcNow
+                ScanTime = DateTime.UtcNow.AddHours(7)
             };
 
             if (analysisCache.AnalysisCacheID > 0)

@@ -53,7 +53,7 @@ namespace SEOBoostAI.Service.Services.Payments
 							{
 								trans.Status = PaymentStatus.CANCELED.ToString();
 								trans.Description += " [Auto-cancel by System]";
-								trans.CompletedTime = DateTime.UtcNow;
+								trans.CompletedTime = DateTime.UtcNow.AddHours(7);
 
 								await transactionRepository.UpdateAsync(trans);
 							}

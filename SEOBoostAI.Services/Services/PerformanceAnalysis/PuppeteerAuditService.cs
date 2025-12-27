@@ -152,7 +152,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             return new
             {
                 url,
-                scanTime = DateTime.Now,
+                scanTime = DateTime.UtcNow.AddHours(7),
                 rawData = data,
                 quickAnalysis = analysis
             };
@@ -169,7 +169,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 ExtractedEvidenceJson = issue.Evidence != null ? JsonConvert.SerializeObject(issue.Evidence) : "[]",
                 Description = issue.Description,
                 HasSuggestion = true,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow.AddHours(7)
             };
         }
 

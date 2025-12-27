@@ -157,7 +157,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     targetElement.HasSuggestion = aiResult.HasSuggestion;
                     targetElement.Description = aiResult.Description;
                     targetElement.AIRecommendation = aiResult.AIRecommendation;
-                    targetElement.UpdatedAt = DateTime.UtcNow;
+                    targetElement.UpdatedAt = DateTime.UtcNow.AddHours(7);
                 }
             }
             try
