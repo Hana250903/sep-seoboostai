@@ -44,8 +44,7 @@ namespace SEOBoostAI.Repository.Repositories
 			var query = _context.Set<Transaction>()
 				.Where(t => t.UserID == userId
 							&& t.Status == PaymentStatus.COMPLETED.ToString()
-							&& t.Type == PaymentType.DEPOSIT.ToString()
-							|| t.Type == PaymentType.PURCHASE.ToString());
+							&& (t.Type == PaymentType.DEPOSIT.ToString() || t.Type == PaymentType.PURCHASE.ToString()));
 
 			// 2. Đếm tổng số lượng
 			var totalItems = await query.CountAsync();
