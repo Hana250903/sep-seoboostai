@@ -9,6 +9,6 @@ namespace SEOBoostAI.Service.Services.Interfaces
 {
 	public interface IPdfService
 	{
-		byte[] GenerateReceiptPdf(PaymentReceiptDto data, string templatePath);
+		byte[] GenerateReceiptPdf(PaymentReceiptDto data);
 	}
 }
