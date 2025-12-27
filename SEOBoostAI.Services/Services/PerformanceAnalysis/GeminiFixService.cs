@@ -50,15 +50,21 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
              */
             var prompt = $@"
                 Vai trò: Chuyên gia Web Developer & SEO cao cấp.
-                Nhiệm vụ: {instruction}
-                Mã lỗi: {issueKey}
-                Mô tả lỗi: {errorTitle}
-        
-                Quy tắc nghiêm ngặt: 
-                1. CHỈ trả về code đã sửa hoàn chỉnh, nguyên bản.
-                2. KHÔNG dùng markdown formatting (không ```html, không ```). 
-                3. KHÔNG giải thích hay viết text khác.
-        
+
+                Nhiệm vụ: Sửa lỗi sau trong code và trả về code đã sửa hoàn chỉnh.
+
+                Thông tin lỗi:
+                - Mã lỗi: {issueKey}
+                - Mô tả: {errorTitle}
+                - Hướng dẫn sửa: {instruction}
+
+                Quy tắc BẮT BUỘC:
+                1. Trả về TOÀN BỘ code đã sửa, không cắt xén
+                2. KHÔNG dùng markdown (không ```, không giải thích)
+                3. CHỈ trả về code, không có text nào khác
+                4. Giữ nguyên cấu trúc và format của code gốc
+                5. Chỉ thay đổi phần liên quan đến lỗi
+
                 Code cần sửa:
                 {code}";
 

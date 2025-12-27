@@ -70,26 +70,42 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
         #region Image Checks
 
+        // Giới hạn số lượng evidence để tránh quá tải (free tools có giới hạn)
+        private const int MAX_EVIDENCE_COUNT = 10;
+
         public static async Task<List<AuditIssueDto>> CheckImagesAsync(IPage page)
         {
             var issues = new List<AuditIssueDto>();
 
             try
             {
+                // Đợi ít nhất 1 img xuất hiện (nếu có) - timeout 3 giây
+                try
+                {
+                    await page.WaitForSelectorAsync("img", new WaitForSelectorOptions { Timeout = 3000 });
+                }
+                catch { /* Không có img cũng OK */ }
+
                 var rawJson = await page.EvaluateFunctionAsync<string>(@"() => {
-                return JSON.stringify(
-                    Array.from(document.querySelectorAll('img')).map(img => ({
-                        src: img.src,
-                        alt: img.alt,
-                        loading: img.getAttribute('loading'),
-                        snippet: img.outerHTML.substring(0, 200)
-                    }))
-                );
-            }");
+                    const images = Array.from(document.querySelectorAll('img'));
+                    // Giới hạn chỉ lấy tối đa 50 ảnh để tránh quá tải
+                    return JSON.stringify(
+                        images.slice(0, 50).map(img => ({
+                            src: img.src || '',
+                            alt: img.alt || '',
+                            className: img.className || '',
+                            loading: img.getAttribute('loading') || '',
+                            snippet: img.outerHTML.substring(0, 250)
+                        }))
+                    );
+                }");
 
                 var images = JsonConvert.DeserializeObject<List<dynamic>>(rawJson) ?? new List<dynamic>();
                 var missingAltEvidence = new List<string>();
                 var missingLazyEvidence = new List<string>();
+
+                int totalMissingAlt = 0;
+                int totalMissingLazy = 0;
 
                 foreach (var img in images)
                 {
@@ -98,19 +114,27 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     string snippet = (string)img?.snippet ?? "";
 
                     if (string.IsNullOrEmpty(alt))
-                        missingAltEvidence.Add(snippet);
+                    {
+                        totalMissingAlt++;
+                        if (missingAltEvidence.Count < MAX_EVIDENCE_COUNT)
+                            missingAltEvidence.Add(snippet);
+                    }
 
                     if (string.IsNullOrEmpty(loading) || loading != "lazy")
-                        missingLazyEvidence.Add(snippet);
+                    {
+                        totalMissingLazy++;
+                        if (missingLazyEvidence.Count < MAX_EVIDENCE_COUNT)
+                            missingLazyEvidence.Add(snippet);
+                    }
                 }
 
-                if (missingAltEvidence.Count > 0)
+                if (totalMissingAlt > 0)
                     issues.Add(new AuditIssueDto("img-missing-alt", "Hình ảnh thiếu thẻ Alt",
-                        $"{missingAltEvidence.Count} hình ảnh thiếu alt.", missingAltEvidence));
+                        $"{totalMissingAlt} hình ảnh thiếu alt (hiển thị {missingAltEvidence.Count} mẫu).", missingAltEvidence));
 
-                if (missingLazyEvidence.Count > 0)
+                if (totalMissingLazy > 0)
                     issues.Add(new AuditIssueDto("img-missing-lazy", "Hình ảnh thiếu Lazy Load",
-                        $"{missingLazyEvidence.Count} hình ảnh thiếu loading=\"lazy\".", missingLazyEvidence));
+                        $"{totalMissingLazy} hình ảnh thiếu loading=\"lazy\" (hiển thị {missingLazyEvidence.Count} mẫu).", missingLazyEvidence));
             }
             catch (Exception ex)
             {
@@ -225,16 +249,50 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             try
             {
                 var rawJson = await page.EvaluateFunctionAsync<string>(@"() => {
-                return JSON.stringify({
-                    domNodeCount: document.querySelectorAll('*').length,
-                    inlineCssBytes: Array.from(document.querySelectorAll('style')).reduce((sum, s) => sum + s.textContent.length, 0),
-                    googleFontCount: document.querySelectorAll('link[href*=""fonts.googleapis.com""]').length,
-                    hasPreconnect: document.querySelectorAll('link[rel=""preconnect""]').length > 0,
-                    blockingCssSnippets: Array.from(document.querySelectorAll('head link[rel=""stylesheet""]'))
-                        .filter(l => !l.media || l.media === 'all')
-                        .map(l => l.outerHTML)
-                });
-            }");
+                    // Tìm large images (ảnh hưởng LCP)
+                    const largeImages = Array.from(document.querySelectorAll('img'))
+                        .filter(img => {
+                            const rect = img.getBoundingClientRect();
+                            return rect.width > 500 || rect.height > 300;
+                        })
+                        .map(img => ({
+                            src: img.src,
+                            width: img.naturalWidth,
+                            height: img.naturalHeight,
+                            hasExplicitDimensions: img.hasAttribute('width') && img.hasAttribute('height'),
+                            snippet: img.outerHTML.substring(0, 250)
+                        }));
+
+                    // Tìm images không có explicit dimensions (gây CLS)
+                    const imagesWithoutDimensions = Array.from(document.querySelectorAll('img'))
+                        .filter(img => !img.hasAttribute('width') || !img.hasAttribute('height'))
+                        .map(img => img.outerHTML.substring(0, 250));
+
+                    // Tìm elements với heavy CSS (filter, backdrop-filter, box-shadow nhiều)
+                    const heavyCssElements = [];
+                    document.querySelectorAll('*').forEach(el => {
+                        const style = getComputedStyle(el);
+                        if (style.filter !== 'none' || 
+                            style.backdropFilter !== 'none' ||
+                            style.boxShadow.split(',').length > 2) {
+                            heavyCssElements.push(el.outerHTML.substring(0, 200));
+                        }
+                    });
+
+                    return JSON.stringify({
+                        domNodeCount: document.querySelectorAll('*').length,
+                        inlineCssBytes: Array.from(document.querySelectorAll('style')).reduce((sum, s) => sum + s.textContent.length, 0),
+                        googleFontCount: document.querySelectorAll('link[href*=""fonts.googleapis.com""]').length,
+                        hasPreconnect: document.querySelectorAll('link[rel=""preconnect""]').length > 0,
+                        blockingCssSnippets: Array.from(document.querySelectorAll('head link[rel=""stylesheet""]'))
+                            .filter(l => !l.media || l.media === 'all')
+                            .map(l => l.outerHTML),
+                        largeImages: largeImages,
+                        imagesWithoutDimensions: imagesWithoutDimensions.slice(0, 10),
+                        heavyCssElements: heavyCssElements.slice(0, 5),
+                        totalImages: document.querySelectorAll('img').length
+                    });
+                }");
 
                 var perfData = JsonConvert.DeserializeObject<dynamic>(rawJson);
                 int domNodeCount = (int)(perfData?.domNodeCount ?? 0);
@@ -242,7 +300,48 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 int googleFontCount = (int)(perfData?.googleFontCount ?? 0);
                 bool hasPreconnect = (bool)(perfData?.hasPreconnect ?? false);
                 var blockingCss = perfData?.blockingCssSnippets?.ToObject<List<string>>() ?? new List<string>();
+                var largeImages = perfData?.largeImages?.ToObject<List<dynamic>>() ?? new List<dynamic>();
+                var imagesWithoutDimensions = perfData?.imagesWithoutDimensions?.ToObject<List<string>>() ?? new List<string>();
+                var heavyCssElements = perfData?.heavyCssElements?.ToObject<List<string>>() ?? new List<string>();
+                int totalImages = (int)(perfData?.totalImages ?? 0);
 
+                // === LCP Issues ===
+                var lcpEvidence = new List<string>();
+                foreach (var img in largeImages)
+                {
+                    bool hasExplicit = (bool)(img?.hasExplicitDimensions ?? true);
+                    if (!hasExplicit)
+                    {
+                        string snippet = (string)img?.snippet ?? "";
+                        if (lcpEvidence.Count < 5)
+                            lcpEvidence.Add(snippet);
+                    }
+                }
+
+                if (lcpEvidence.Count > 0)
+                {
+                    issues.Add(new AuditIssueDto("perf-lcp-large-images",
+                        $"Ảnh lớn thiếu kích thước cụ thể ({lcpEvidence.Count})",
+                        "Ảnh lớn cần có width/height để tối ưu LCP.", lcpEvidence));
+                }
+
+                // === CLS Issues ===
+                if (imagesWithoutDimensions.Count > 0)
+                {
+                    issues.Add(new AuditIssueDto("perf-cls-images-no-dimensions",
+                        $"Ảnh thiếu width/height ({imagesWithoutDimensions.Count})",
+                        "Thêm width và height cho img để tránh layout shift.", imagesWithoutDimensions));
+                }
+
+                // === Heavy CSS Issues - DISABLED: có thể gây false positives ===
+                // if (heavyCssElements.Count > 0)
+                // {
+                //     issues.Add(new AuditIssueDto("perf-heavy-css",
+                //         $"Elements với CSS nặng ({heavyCssElements.Count})",
+                //         "Giảm filter, backdrop-filter, box-shadow để cải thiện FPS.", heavyCssElements));
+                // }
+
+                // === Existing checks ===
                 if (domNodeCount > 1500)
                     issues.Add(new AuditIssueDto("perf-large-dom", $"DOM quá lớn ({domNodeCount} nodes)", "Nên < 1500 nodes.", null));
 
@@ -255,9 +354,16 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 if (!hasPreconnect && googleFontCount > 0)
                     issues.Add(new AuditIssueDto("perf-no-preconnect", "Thiếu preconnect", "Thêm preconnect cho Google Fonts.", null));
 
-                if (blockingCss.Count > 0)
-                    issues.Add(new AuditIssueDto("perf-css-render-blocking", "CSS chặn render",
-                        $"{blockingCss.Count} CSS đang chặn.", blockingCss));
+                // === CSS Render Blocking - DISABLED: Vite tự handle CSS, AI fix sai gây lỗi deploy ===
+                // if (blockingCss.Count > 0)
+                //     issues.Add(new AuditIssueDto("perf-css-render-blocking", "CSS chặn render",
+                //         $"{blockingCss.Count} CSS đang chặn.", blockingCss));
+
+                // === Too many images without lazy ===
+                if (totalImages > 3)
+                    issues.Add(new AuditIssueDto("perf-too-many-images",
+                        $"Quá nhiều ảnh trên trang ({totalImages})",
+                        "Cân nhắc lazy load cho ảnh dưới fold.", null));
             }
             catch (Exception ex)
             {
