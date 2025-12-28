@@ -56,6 +56,22 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             // Load trang và đợi network idle
             await page.GoToAsync(url, new NavigationOptions { WaitUntil = new[] { WaitUntilNavigation.Networkidle2 } });
 
+            // Đợi thêm cho React/Vue/Angular SPA render hoàn tất
+            // NetworkIdle2 chỉ đảm bảo network xong, nhưng JS có thể vẫn đang render
+            await Task.Delay(2000); // Đợi 2 giây cho client-side rendering
+
+            // Thử đợi một element cụ thể xuất hiện (optional - tùy trang)
+            try
+            {
+                await page.WaitForSelectorAsync("body", new WaitForSelectorOptions { Timeout = 5000 });
+                // Đợi thêm một chút sau khi body xuất hiện
+                await page.WaitForFunctionAsync("() => document.readyState === 'complete'", new WaitForFunctionOptions { Timeout = 10000 });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PUPPETEER] Wait warning: {ex.Message}");
+            }
+
             // 3. BẮT ĐẦU CHECK - Sử dụng PageAuditChecks static class
             var elements = new List<Element>();
 

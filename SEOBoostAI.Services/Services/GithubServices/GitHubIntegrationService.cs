@@ -154,9 +154,37 @@ namespace SEOBoostAI.Service.Services.GithubServices
             }
             else
             {
-                // Nếu không có đuôi file, lấy class hoặc id
-                var attrMatch = Regex.Match(targetString, "(?:class|id)=[\"'](.+?)[\"']");
-                if (attrMatch.Success) keyword = attrMatch.Groups[1].Value.Split(' ')[0];
+                // Nếu không có đuôi file, lấy class, className hoặc id
+                // Hỗ trợ cả HTML (class=) và JSX (className=)
+                var attrMatch = Regex.Match(targetString, "(?:class|className|id)=[\"']([^\"']+)[\"']");
+                if (attrMatch.Success)
+                {
+                    keyword = attrMatch.Groups[1].Value.Split(' ')[0];
+                }
+
+                // Nếu vẫn không có keyword, thử lấy src của img
+                if (string.IsNullOrEmpty(keyword))
+                {
+                    var srcMatch = Regex.Match(targetString, @"src=[""']([^""']+)[""']");
+                    if (srcMatch.Success)
+                    {
+                        // Lấy phần cuối của URL làm keyword (vd: picsum.photos/1200/600)
+                        var srcValue = srcMatch.Groups[1].Value;
+                        if (srcValue.Contains("picsum.photos"))
+                        {
+                            keyword = "picsum.photos";
+                        }
+                        else
+                        {
+                            // Lấy filename từ URL
+                            var lastSlash = srcValue.LastIndexOf('/');
+                            if (lastSlash >= 0 && lastSlash < srcValue.Length - 1)
+                            {
+                                keyword = srcValue.Substring(lastSlash + 1);
+                            }
+                        }
+                    }
+                }
             }
 
             Console.WriteLine($"[DEBUG] Đang tìm: keyword='{keyword}', bundled={isBundledAsset}, evidence='{targetString}'");
@@ -216,20 +244,12 @@ namespace SEOBoostAI.Service.Services.GithubServices
             }
 
             // --- BƯỚC 2.5: NẾU KHÔNG TÌM THẤY, CHECK PRIORITY FILES (FALLBACK) ---
-            // Chỉ check entry points nếu deep scan không tìm thấy
+            // Chỉ check index.html - KHÔNG check App.jsx, main.jsx để tránh tìm nhầm
             var priorityFiles = new List<string>
             {
-                "index.html",           // HTML entry point
+                "index.html",           // HTML entry point (root)
                 "public/index.html",    // Create React App
-                "src/index.html",       // Vite có thể đặt ở đây
-                "src/App.jsx",          // React main component
-                "src/App.tsx",          // React TypeScript
-                "src/main.jsx",         // Vite React
-                "src/main.tsx",         // Vite React TypeScript
-                "src/index.jsx",        // CRA entry
-                "src/index.tsx",        // CRA TypeScript entry
-                "App.js",               // Root level React
-                "App.jsx"               // Root level React
+                "src/index.html"        // Vite có thể đặt ở đây
             };
 
             foreach (var filePath in priorityFiles)
@@ -699,7 +719,7 @@ namespace SEOBoostAI.Service.Services.GithubServices
                     Console.WriteLine($"[FORK PR] Đang tạo fork...");
                     fork = await _client.Repository.Forks.Create(owner, repo, new NewRepositoryFork());
                     Console.WriteLine($"[FORK PR] Fork đã được tạo, đợi GitHub xử lý...");
-                    
+
                     // Đợi GitHub tạo xong fork
                     await Task.Delay(5000);
 
