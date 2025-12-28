@@ -61,6 +61,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             // 3. Group elements theo file
             var issuesByFile = new Dictionary<string, List<(Element, List<string>)>>();
             var cachedStructure = _git.GetCachedStructure(req.RepoOwner, req.RepoName);
+            string branch = cachedStructure?.DefaultBranch ?? "main";  // Sử dụng branch đúng của repo
 
             foreach (var element in elements)
             {
@@ -79,7 +80,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
                         foreach (var tryPath in fallbackPaths.Where(p => !string.IsNullOrEmpty(p)))
                         {
-                            var content = await _git.GetFileContentAsync(req.RepoOwner, req.RepoName, tryPath);
+                            var content = await _git.GetFileContentAsync(req.RepoOwner, req.RepoName, tryPath, branch);
                             if (content != null) { indexPath = tryPath; break; }
                         }
                     }
@@ -140,7 +141,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
                 try
                 {
-                    string code = await _git.GetFileContentAsync(req.RepoOwner, req.RepoName, filePath);
+                    string code = await _git.GetFileContentAsync(req.RepoOwner, req.RepoName, filePath, branch);
                     if (string.IsNullOrEmpty(code))
                     {
                         foreach (var (element, _) in fileIssues)
@@ -283,6 +284,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             response.TotalIssues = elements.Count();
 
             var cachedStructure = _git.GetCachedStructure(req.RepoOwner, req.RepoName);
+            string branch = cachedStructure?.DefaultBranch ?? "main";  // Sử dụng branch đúng của repo
 
             foreach (var element in elements)
             {
@@ -301,7 +303,7 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                             var fallbackPaths = new[] { "client/index.html", "public/index.html", "index.html" };
                             foreach (var indexPath in fallbackPaths)
                             {
-                                var content = await _git.GetFileContentAsync(req.RepoOwner, req.RepoName, indexPath);
+                                var content = await _git.GetFileContentAsync(req.RepoOwner, req.RepoName, indexPath, branch);
                                 if (content != null) { path = indexPath; break; }
                             }
                         }

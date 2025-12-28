@@ -76,6 +76,7 @@
     {
         public string Owner { get; set; }
         public string Repo { get; set; }
+        public string DefaultBranch { get; set; } = "main";  // Default branch của repo (main, master, etc.)
         public string IndexHtmlPath { get; set; }           // "client/index.html", "index.html", "public/index.html"
         public string SrcRoot { get; set; }                  // "client/src", "src", ""
         public List<string> ComponentPaths { get; set; } = new List<string>();  // ["client/src/components", "src/components"]

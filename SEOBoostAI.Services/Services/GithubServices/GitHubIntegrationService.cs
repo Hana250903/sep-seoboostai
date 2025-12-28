@@ -519,7 +519,12 @@ namespace SEOBoostAI.Service.Services.GithubServices
 
             try
             {
-                var rootContents = await _client.Repository.Content.GetAllContents(owner, repo);
+                // Lấy thông tin repo để lấy default branch (quan trọng!)
+                var repoInfo = await _client.Repository.Get(owner, repo);
+                structure.DefaultBranch = repoInfo.DefaultBranch ?? "main";
+                Console.WriteLine($"[RepoStructure] Detected DefaultBranch: {structure.DefaultBranch}");
+
+                var rootContents = await _client.Repository.Content.GetAllContentsByRef(owner, repo, "", structure.DefaultBranch);
                 var rootItems = rootContents.Select(c => c.Name).ToList();
 
                 string srcPrefix = "";
@@ -533,11 +538,11 @@ namespace SEOBoostAI.Service.Services.GithubServices
                     structure.ProjectType = "standard";
                 }
 
-                // Find index.html
+                // Find index.html - sử dụng đúng branch đã detect
                 var indexPaths = new[] { $"{srcPrefix}index.html", $"{srcPrefix}public/index.html", "index.html", "public/index.html" };
                 foreach (var path in indexPaths)
                 {
-                    var content = await GetFileContentAsync(owner, repo, path);
+                    var content = await GetFileContentAsync(owner, repo, path, structure.DefaultBranch);
                     if (content != null)
                     {
                         structure.IndexHtmlPath = path;
@@ -551,7 +556,7 @@ namespace SEOBoostAI.Service.Services.GithubServices
                 {
                     try
                     {
-                        await _client.Repository.Content.GetAllContents(owner, repo, path);
+                        await _client.Repository.Content.GetAllContentsByRef(owner, repo, path, structure.DefaultBranch);
                         structure.SrcRoot = path;
                         break;
                     }
@@ -567,7 +572,7 @@ namespace SEOBoostAI.Service.Services.GithubServices
                         var fullPath = $"{structure.SrcRoot}/{sub}";
                         try
                         {
-                            await _client.Repository.Content.GetAllContents(owner, repo, fullPath);
+                            await _client.Repository.Content.GetAllContentsByRef(owner, repo, fullPath, structure.DefaultBranch);
                             structure.AllSearchableDirs.Add(fullPath);
 
                             if (sub == "components") structure.ComponentPaths.Add(fullPath);
@@ -583,7 +588,7 @@ namespace SEOBoostAI.Service.Services.GithubServices
                 {
                     try
                     {
-                        await _client.Repository.Content.GetAllContents(owner, repo, dir);
+                        await _client.Repository.Content.GetAllContentsByRef(owner, repo, dir, structure.DefaultBranch);
                         structure.AllSearchableDirs.Add(dir);
                         structure.PagePaths.Add(dir);
 
