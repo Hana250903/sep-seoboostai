@@ -22,7 +22,7 @@ namespace SEOBoostAI.Service.Services.Payments
 
 		public async Task<DashboardOverviewDto> GetOverviewAsync()
 		{
-			var now = DateTime.UtcNow;
+			var now = DateTime.UtcNow.AddHours(7);
 			var startOfToday = now.Date;
 			var startOfMonth = new DateTime(now.Year, now.Month, 1);
 
