@@ -18,6 +18,13 @@ using System.Threading.Tasks;
 
 namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 {
+    /// <summary>
+    /// ElementService - Quản lý Elements và Deep Element Analysis
+    /// 
+    /// FLOW CHÍNH:
+    /// 1. Suggestion() - Phân tích chuyên sâu bằng AI, đưa ra AIRecommendation
+    /// 2. GetElementsByAnalysisCacheIdAsync() - Lấy danh sách issues quan trọng
+    /// </summary>
     public class ElementService : IElementService
     {
         private readonly IElementRepository _elementRepository;
@@ -140,31 +147,57 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             }
         }
 
+        /// <summary>
+        /// DEEP ELEMENT ANALYSIS - Phân tích chuyên sâu từng Element
+        /// 
+        /// Flow:
+        /// 1. Lấy danh sách Elements từ AnalysisCache
+        /// 2. Chia batch (50 elements/batch), xử lý song song (5 batch = 250 elements)
+        /// 3. Gửi Gemini AI phân tích từng element
+        /// 4. Update kết quả vào DB
+        /// 5. Trả về danh sách elements có suggestion
+        /// 
+        /// Output cho mỗi element:
+        /// - HasSuggestion: Có cần sửa không?
+        /// - Description: Mô tả vấn đề
+        /// - AIRecommendation: Gợi ý cách fix
+        /// </summary>
         public async Task<List<ElementViewModel>> Suggestion(int analysisCacheID)
         {
+            // ===== BƯỚC 1: LẤY ELEMENTS =====
             var elements = await _elementRepository.GetElementsByAnalysisCacheIdAsync(analysisCacheID);
             if (!elements.Any()) return null;
 
+            // ===== BƯỚC 2: GỌI GEMINI AI =====
+            // AI sẽ phân tích từng element theo loại:
+            // - img: kiểm tra alt, width, height, lazy load
+            // - a: kiểm tra href, aria-label
+            // - link: kiểm tra render-blocking, preconnect
+            // - script: kiểm tra async/defer
             var geminiResults = await _geminiAIService.SuggestionElement(elements);
-            
+
+            // ===== BƯỚC 3: MAP KẾT QUẢ AI VÀO ELEMENTS =====
             foreach (var aiResult in geminiResults)
             {
-                // Tìm phần tử tương ứng trong list đang track
                 var targetElement = elements.FirstOrDefault(e => e.ElementID == aiResult.ElementID);
 
                 if (targetElement != null)
                 {
-                    targetElement.HasSuggestion = aiResult.HasSuggestion;
-                    targetElement.Description = aiResult.Description;
-                    targetElement.AIRecommendation = aiResult.AIRecommendation;
+                    // Cập nhật thông tin từ AI
+                    targetElement.HasSuggestion = aiResult.HasSuggestion;     // Có cần sửa không?
+                    targetElement.Description = aiResult.Description;          // Mô tả vấn đề
+                    targetElement.AIRecommendation = aiResult.AIRecommendation; // Gợi ý cách fix
                     targetElement.UpdatedAt = DateTime.UtcNow.AddHours(7);
                 }
             }
+            // ===== BƯỚC 4: LƯU VÀO DATABASE =====
             try
             {
                 await _elementRepository.UpdateRangeAsync(elements);
                 await _unitOfWork.SaveChangesAsync();
 
+                // ===== BƯỚC 5: TRẢ VỀ ELEMENTS CÓ SUGGESTION =====
+                // Lọc chỉ lấy elements có HasSuggestion = true (để hiển thị cho user)
                 var elementViewModels = new List<ElementViewModel>();
                 foreach (var element in elements)
                 {
@@ -172,12 +205,12 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     {
                         elementViewModels.Add(new ElementViewModel
                         {
-                            AuditId = element.AuditId,
-                            Title = element.Title,
-                            ExtractedEvidenceJson = element.ExtractedEvidenceJson,
-                            HasSuggestion = element.HasSuggestion,
-                            AIRecommendation = element.AIRecommendation,
-                            Description = element.Description
+                            AuditId = element.AuditId,                    // Loại issue (img-missing-alt...)
+                            Title = element.Title,                        // Tiêu đề vấn đề
+                            ExtractedEvidenceJson = element.ExtractedEvidenceJson, // Đoạn code lỗi
+                            HasSuggestion = element.HasSuggestion,        // Có suggestion
+                            AIRecommendation = element.AIRecommendation,  // Gợi ý fix từ AI
+                            Description = element.Description             // Mô tả chi tiết
                         });
                     }                    
                 }
@@ -190,6 +223,10 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách Elements QUAN TRỌNG cho Auto-Fix
+        /// Chỉ lấy elements có HasSuggestion = true và Important = true
+        /// </summary>
         public async Task<List<Element>> GetElementsByAnalysisCacheIdAsync(int analysisCacheId)
         {
             return await _elementRepository.GetElementsImportantByAnalysisCacheIdAsync(analysisCacheId);

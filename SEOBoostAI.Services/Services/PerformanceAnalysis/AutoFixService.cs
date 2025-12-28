@@ -9,8 +9,14 @@ using SEOBoostAI.Service.Services.Interfaces;
 namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 {
     /// <summary>
-    /// AutoFix Service - Batch fix all issues từ AnalysisCache
-    /// Adapted từ mẫu: AuditSession → AnalysisCache, AuditIssue → Element
+    /// AutoFixService - Tự động sửa code và tạo Pull Request
+    /// 
+    /// FLOW CHÍNH:
+    /// 1. Lấy AnalysisCache + Elements (danh sách issues)
+    /// 2. Detect cấu trúc repo (Vite/Next.js/CRA?, branch?)
+    /// 3. Mapping: Issue → File (tìm file chứa code lỗi)
+    /// 4. Gemini AI fix code
+    /// 5. Tạo Pull Request (Direct hoặc Fork-based)
     /// </summary>
     public class AutoFixService : IAutoFixService
     {
@@ -34,11 +40,18 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             _unitOfWork = unitOfWork;
         }
 
+        /// <summary>
+        /// BATCH FIX - SỬa tất cả issues và tạo PR
+        /// 
+        /// Input: AnalysisCacheId, RepoOwner, RepoName, CreateSinglePR, UseForkPR
+        /// Output: BatchFixResponse (FixedCount, FailedCount, PullRequestUrl)
+        /// </summary>
         public async Task<BatchFixResponse> BatchFixAsync(BatchFixRequest req)
         {
             var response = new BatchFixResponse();
 
-            // 1. Lấy AnalysisCache và Elements
+            // ===== BƯỚC 1: LẤY DỮ LIỆU =====
+            // Lấy AnalysisCache và danh sách Elements (issues cần fix)
             var cache = await _cacheRepo.GetByIdAsync(req.AnalysisCacheId);
             if (cache == null)
             {
@@ -55,10 +68,16 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             Console.WriteLine($"[BATCH FIX] URL: {cache.Url}, Issues: {elements.Count()}");
             response.TotalIssues = elements.Count();
 
-            // 2. Auto-detect repo structure
+            // ===== BƯỚC 2: DETECT CẤU TRÚC REPO =====
+            // Phát hiện loại project (Vite, Next.js, CRA...)
+            // Tìm default branch (main/master)
+            // Xác định vị trí index.html, src/, components/...
             await _git.DetectRepoStructureAsync(req.RepoOwner, req.RepoName);
 
-            // 3. Group elements theo file
+            // ===== BƯỚC 3: MAPPING ISSUE → FILE =====
+            // Với mỗi issue, xác định file cần sửa:
+            // - meta-tag, viewport, canonical... → index.html
+            // - img, script, component... → scan tìm file chứa evidence
             var issuesByFile = new Dictionary<string, List<(Element, List<string>)>>();
             var cachedStructure = _git.GetCachedStructure(req.RepoOwner, req.RepoName);
             string branch = cachedStructure?.DefaultBranch ?? "main";  // Sử dụng branch đúng của repo
@@ -129,7 +148,11 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
             Console.WriteLine($"[BATCH FIX] Grouped into {issuesByFile.Count} files");
 
-            // 4. Xử lý từng file
+            // ===== BƯỚC 4: AI FIX CODE =====
+            // Với mỗi file:
+            // 1. Đọc code hiện tại từ GitHub
+            // 2. Gửi code + issues cho Gemini AI
+            // 3. AI trả về code đã fix
             var fileFixMap = new Dictionary<string, string>();
 
             foreach (var fileGroup in issuesByFile)
@@ -204,7 +227,10 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                 }
             }
 
-            // 5. Tạo PR
+            // ===== BƯỚC 5: TẠO PULL REQUEST =====
+            // Có 2 modes:
+            // A) Direct PR: RepoOwner = Token Owner (có write access)
+            // B) Fork-based PR: RepoOwner ≠ Token Owner (cần fork trước)
             if (req.CreateSinglePR && fileFixMap.Count > 0)
             {
                 try
@@ -212,20 +238,24 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
                     string prUrl;
                     string prMessage = $"AI Auto-Fix: {response.FixedCount} issues in {fileFixMap.Count} files";
 
-                    // Lấy username của GitHub token owner để so sánh
+                    // Kiểm tra xem token owner có phải là repo owner không
                     string tokenOwner = await _git.GetCurrentUserLoginAsync();
                     bool isOwnerSameAsTokenOwner = !string.IsNullOrEmpty(tokenOwner) && 
                         tokenOwner.Equals(req.RepoOwner, StringComparison.OrdinalIgnoreCase);
 
                     if (isOwnerSameAsTokenOwner)
                     {
-                        // RepoOwner trùng với Token Owner -> dùng Direct PR (có write access)
+                        // MODE A: DIRECT PR
+                        // RepoOwner trùng với Token Owner -> có write access
+                        // Tạo branch mới, commit, tạo PR trực tiếp trên repo
                         Console.WriteLine($"[BATCH FIX] Owner '{req.RepoOwner}' = Token Owner '{tokenOwner}' -> Using Direct PR...");
                         prUrl = await _git.CreateBatchPullRequestAsync(req.RepoOwner, req.RepoName, fileFixMap, prMessage);
                     }
                     else if (req.UseForkPR || !isOwnerSameAsTokenOwner)
                     {
-                        // RepoOwner khác Token Owner -> phải Fork trước
+                        // MODE B: FORK-BASED PR
+                        // RepoOwner khác Token Owner -> không có write access
+                        // Phải: Fork repo -> Tạo branch trên fork -> Commit -> Tạo cross-repo PR
                         Console.WriteLine($"[BATCH FIX] Owner '{req.RepoOwner}' ≠ Token Owner '{tokenOwner}' -> Using Fork-based PR...");
                         prUrl = await _git.ForkAndCreatePullRequestAsync(req.RepoOwner, req.RepoName, fileFixMap, prMessage);
                     }
@@ -262,6 +292,14 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             return response;
         }
 
+        /// <summary>
+        /// PREVIEW ISSUES - Xem trước danh sách issues và file tương ứng
+        /// 
+        /// Giúp user biết trước:
+        /// - Issue nào sẽ được fix?
+        /// - Sửa ở file nào?
+        /// - Tìm thấy bằng cách nào (evidence_search, meta_tag_file, fallback)?
+        /// </summary>
         public async Task<PreviewIssuesResponse> PreviewIssuesAsync(PreviewIssuesRequest req)
         {
             var response = new PreviewIssuesResponse { AnalysisCacheId = req.AnalysisCacheId };
@@ -388,6 +426,11 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 
         #region Helpers
 
+        /// <summary>
+        /// Parse JSON evidence thành list string
+        /// Evidence là đoạn code HTML cụ thể cần sửa
+        /// Ví dụ: ["<img src='...'>", "<script src='...'>"] 
+        /// </summary>
         private List<string> TryDeserializeEvidences(string? json)
         {
             if (string.IsNullOrEmpty(json)) return new List<string>();
@@ -402,22 +445,29 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
             }
         }
 
+        /// <summary>
+        /// Xác định file target dựa vào loại issue:
+        /// - meta-*, viewport, og-*, canonical, lang... -> index.html
+        /// - Các issue khác -> component (cần scan tìm file)
+        /// </summary>
         private string GetTargetFileTypeForIssue(string issueKey)
         {
             var key = issueKey?.ToLower() ?? "";
 
-            if (key.Contains("meta-") ||
-                key.Contains("viewport") ||
-                key.Contains("og-") ||
-                key.Contains("canonical") ||
-                key.Contains("lang") ||
-                key.Contains("preconnect") ||
-                key.Contains("render-blocking") ||
-                key.Contains("external-fonts"))
+            // Những issue này thường nằm trong <head> của index.html
+            if (key.Contains("meta-") ||      // meta tags
+                key.Contains("viewport") ||   // viewport configuration
+                key.Contains("og-") ||        // Open Graph tags
+                key.Contains("canonical") ||  // canonical URL
+                key.Contains("lang") ||       // html lang attribute
+                key.Contains("preconnect") || // preconnect hints
+                key.Contains("render-blocking") || // render-blocking resources
+                key.Contains("external-fonts"))    // external font loading
             {
                 return "index.html";
             }
 
+            // Các issue khác (img, script trong component...) cần tìm file
             return "component";
         }
 

@@ -8,12 +8,28 @@ using System.Linq;
 
 namespace SEOBoostAI.Service.Services.PerformanceAnalysis
 {
+    /// <summary>
+    /// PageAuditChecks - Puppeteer kiểm tra HTML để tìm issues
+    /// 
+    /// 6 NHÓM CHECK:
+    /// 1. CheckMetadataAsync()      - Title, Description, Viewport
+    /// 2. CheckImagesAsync()        - Alt, Lazy load
+    /// 3. CheckScriptsAsync()       - Async/Defer (render-blocking)
+    /// 4. CheckSeoAsync()           - H1, OG tags, Canonical, Lang
+    /// 5. CheckPerformanceAsync()   - DOM size, Inline CSS, Fonts, LCP, CLS
+    /// 6. CheckAccessibilityAsync() - Buttons, Labels, Links
+    /// </summary>
     public static class PageAuditChecks
     {
         // Check an toàn chung để tránh lặp code
         private static bool IsPageInvalid(IPage page) => page == null || page.IsClosed;
 
         #region Metadata Checks
+        // ===== NHÓM 1: METADATA =====
+        // Kiểm tra các thẻ meta quan trọng trong <head>
+        // - Title: Tiêu đề trang (SEO)
+        // - Description: Mô tả trang (SEO)
+        // - Viewport: Cấu hình responsive (Mobile-friendly)
 
         public static async Task<List<AuditIssueDto>> CheckMetadataAsync(IPage page)
         {
@@ -56,6 +72,10 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         #endregion
 
         #region Image Checks
+        // ===== NHÓM 2: IMAGES =====
+        // Kiểm tra các thẻ <img>:
+        // - Alt: Mô tả ảnh (SEO + Accessibility)
+        // - Lazy load: loading="lazy" (Performance)
 
         private const int MAX_EVIDENCE_COUNT = 10;
 
@@ -119,6 +139,9 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         #endregion
 
         #region Script Checks
+        // ===== NHÓM 3: SCRIPTS =====
+        // Kiểm tra các thẻ <script> trong <head>:
+        // - Nếu thiếu async/defer → Render-blocking → Tăng TBT
 
         public static async Task<List<AuditIssueDto>> CheckScriptsAsync(IPage page)
         {
@@ -154,6 +177,12 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         #endregion
 
         #region SEO Checks
+        // ===== NHÓM 4: SEO =====
+        // Kiểm tra các yếu tố SEO:
+        // - H1: Chỉ nên có 1 thẻ H1
+        // - OG tags: og:title, og:description, og:image (Social sharing)
+        // - Canonical: Tránh duplicate content
+        // - Lang: Ngôn ngữ trang
 
         public static async Task<List<AuditIssueDto>> CheckSeoAsync(IPage page)
         {
@@ -213,6 +242,14 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         #endregion
 
         #region Performance Checks
+        // ===== NHÓM 5: PERFORMANCE (Core Web Vitals) =====
+        // Kiểm tra các yếu tố ảnh hưởng hiệu suất:
+        // - Large images: Ảnh lớn thiếu width/height → CLS
+        // - LCP images với lazy load → LCP chậm
+        // - DOM size > 1500 nodes → TBT cao
+        // - Inline CSS > 10KB → FCP chậm
+        // - Quá nhiều Google Fonts → FCP/LCP chậm
+        // - Thiếu preconnect → Latency cao
 
         public static async Task<List<AuditIssueDto>> CheckPerformanceAsync(IPage page)
         {
@@ -370,6 +407,11 @@ namespace SEOBoostAI.Service.Services.PerformanceAnalysis
         #endregion
 
         #region Accessibility Checks
+        // ===== NHÓM 6: ACCESSIBILITY (A11Y) =====
+        // Kiểm tra khả năng tiếp cận:
+        // - Buttons: Cần text hoặc aria-label
+        // - Inputs: Cần label (for hoặc bao ngoài)
+        // - Links: Cần text mô tả đích đến
 
         public static async Task<List<AuditIssueDto>> CheckAccessibilityAsync(IPage page)
         {
