@@ -192,6 +192,7 @@ namespace SEOBoostAI.Service.Services.GithubServices
             // --- BƯỚC 2: SCAN SÂU VÀO THƯ MỤC PAGES/COMPONENTS TRƯỚC ---
             // Ưu tiên dùng cached structure nếu có, fallback về hardcode
             var cachedStructure = GetCachedStructure(owner, repo);
+            string branch = cachedStructure?.DefaultBranch ?? "main";  // Sử dụng branch đúng của repo
 
             List<string> deepSearchDirs;
             if (cachedStructure != null && cachedStructure.AllSearchableDirs.Count > 0)
@@ -230,7 +231,7 @@ namespace SEOBoostAI.Service.Services.GithubServices
             {
                 try
                 {
-                    var foundFile = await ScanDirectoryRecursivelyForEvidence(owner, repo, dir, "main", targetString, keyword, 0, 4);
+                    var foundFile = await ScanDirectoryRecursivelyForEvidence(owner, repo, dir, branch, targetString, keyword, 0, 4);
                     if (foundFile != null)
                     {
                         Console.WriteLine($"[DEBUG] -> Tìm thấy trong deep scan: {foundFile}!");
@@ -256,7 +257,7 @@ namespace SEOBoostAI.Service.Services.GithubServices
             {
                 try
                 {
-                    var fileContent = await GetFileContentAsync(owner, repo, filePath);
+                    var fileContent = await GetFileContentAsync(owner, repo, filePath, branch);
 
                     if (fileContent != null)
                     {
@@ -366,12 +367,14 @@ namespace SEOBoostAI.Service.Services.GithubServices
         private async Task<string?> FindFileByNamePatternAsync(string owner, string repo, string[] patterns)
         {
             var searchDirs = new[] { "src", "src/pages", "src/views", "src/components", "pages", "app" };
+            var cachedStructure = GetCachedStructure(owner, repo);
+            string branch = cachedStructure?.DefaultBranch ?? "main";
 
             foreach (var dir in searchDirs)
             {
                 try
                 {
-                    var contents = await _client.Repository.Content.GetAllContentsByRef(owner, repo, dir, "main");
+                    var contents = await _client.Repository.Content.GetAllContentsByRef(owner, repo, dir, branch);
 
                     foreach (var pattern in patterns)
                     {
